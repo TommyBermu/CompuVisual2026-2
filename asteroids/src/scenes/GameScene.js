@@ -1,41 +1,55 @@
-/*
-  =========================================================
-  GameScene.js  —  El corazón del juego
-  =========================================================
-  Responsabilidad: contener el bucle principal de juego:
-  crear la nave y los asteroides, leer input, disparar,
-  detectar colisiones y gestionar el estado de la partida.
+import Player from '../objects/Player.js';
+import { WIDTH, HEIGHT } from '../constants.js';
 
-  Métodos de Phaser que implementarás:
+export default class GameScene extends Phaser.Scene {
+	constructor() {
+		super('GameScene');
+	}
 
-  - create():
-      * instanciar la nave (Player)
-      * crear el grupo de asteroides iniciales
-      * crear el grupo de balas
-      * configurar el input del teclado
-          this.cursors = this.input.keyboard.createCursorKeys()
-      * registrar colisiones con this.physics.add.overlap(...)
-          - bala  vs asteroide  -> destruir/partir asteroide, sumar puntos
-          - nave  vs asteroide  -> perder vida / reiniciar
-      * emitir eventos hacia la UIScene (puntos, vidas)
+	create() {
+		// marco para delimitar visualmente el canvas
+		this.dibujarMarco();
 
-  - update(time, delta):
-      * actualizar la nave según las teclas (rotar, acelerar, disparar)
-      * aplicar wrap-around: si algo sale por un borde, aparece
-        por el opuesto (Phaser tiene helpers de "wrap")
-      * comprobar condición de fin de partida / nueva oleada
+		this.player = new Player(this, WIDTH / 2, HEIGHT / 2);
+		this.cursors = this.input.keyboard.createCursorKeys();
+	}
 
-  Ideas de organización:
-  - La lógica de la nave, balas y asteroides puede vivir en clases
-    dentro de src/objects/ para no llenar esta escena.
-  - Mantén aquí la orquestación; delega el comportamiento a los objetos.
+	dibujarMarco() {
+		const grosor = 2;
+		const g = this.add.graphics();
+		g.lineStyle(grosor, 0x44ff88, 0.8);
+		g.strokeRect(
+		grosor / 2,
+		grosor / 2,
+		WIDTH - grosor,
+		HEIGHT - grosor
+		);
+	}
 
-  Recuerda: clase que extiende Phaser.Scene, super('GameScene'),
-  y export default.
-*/
+	update() {
+		this.actualizarNave();
+		this.wrapAround();
+	}
 
-// export default class GameScene extends Phaser.Scene {
-//   constructor() { super('GameScene'); }
-//   create() { }
-//   update(time, delta) { }
-// }
+	actualizarNave() {
+		if (this.cursors.left.isDown)
+			this.player.rotarIzquierda();
+		else if (this.cursors.right.isDown) 
+			this.player.rotarDerecha();
+		else
+			this.player.dejarDeRotar();
+
+		if (this.cursors.up.isDown)
+			this.player.acelerar();
+		else
+			this.player.dejarDeAcelerar();
+
+		//no sé si hacer también que se pueda usar el mouse, tipo que la navecita mire hacia el mouse
+		//y que con click derecho acelere y con izquierdo dispare....
+	}
+
+	// para que la nave salga por el otro lado cuando salga del canvas
+	wrapAround() {
+		this.physics.world.wrap(this.player, this.player.width / 2);
+	}
+}

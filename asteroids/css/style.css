@@ -1,13 +1,3 @@
-/*
-  Estilos básicos. La idea es centrar el canvas del juego y darle
-  un fondo oscuro tipo espacio.
-
-  TODO (tú):
-  - Centrar el #game en la pantalla
-  - Fondo negro / oscuro
-  - Quitar márgenes por defecto del body
-*/
-
 * {
   margin: 0;
   padding: 0;
@@ -15,9 +5,14 @@
 }
 
 body {
-  /* fondo del espacio */
+  background-color: #000; /* fondo de la página, no del canvas*/
+  display: flex; 
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }
 
 #game {
   /* aquí Phaser inyecta el <canvas> */
+  line-height: 0;
 }
