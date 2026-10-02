@@ -4,16 +4,30 @@ Clon de Asteroids hecho con [Phaser 3](https://phaser.io/) + JavaScript, cargand
 
 ## Cómo ejecutar
 
-Como se usan módulos ES (`import`/`export`), **no** basta con abrir el `index.html` haciendo doble clic (el navegador bloquea módulos con `file://`). Levanta un servidor local:
+### Opción A — con Node
+
+Si tienes Node instalado, no necesitas instalar nada permanente, `npx` lo descarga:
 
 ```bash
-# Opción con Python (ya suele estar instalado)
+npx serve
+```
+
+La primera vez te pedirá confirmar la instalación del paquete (responde `y`) y luego mostrará una URL, normalmente http://localhost:3000
+
+### Opción B — con Python
+
+Si tienes Python
+
+```bash
 python3 -m http.server 8000
 ```
 
-Luego abre http://localhost:8000 en el navegador.
+Luego abre http://localhost:8000 en el navegador
 
-> Cualquier servidor estático sirve (la extensión "Live Server" de VS Code, por ejemplo).
+## Controles
+
+- **← / →** : girar la nave
+- **↑** : acelerar (la nave "deriva" por inercia)
 
 ## Estructura de ficheros
 
@@ -43,16 +57,3 @@ asteroids/
 3. `BootScene` carga recursos y pasa a `GameScene`.
 4. `GameScene` crea la nave, los asteroides y las balas, lee el teclado y gestiona colisiones.
 5. `UIScene` corre encima mostrando puntos y vidas, escuchando eventos de `GameScene`.
-
-## Orden sugerido para implementar
-
-1. `constants.js`: define tamaño del mundo y algunos valores base.
-2. `main.js`: config mínima con una sola escena para ver el canvas en pantalla.
-3. `GameScene`: dibuja la nave y muévela con el teclado.
-4. Wrap-around de pantalla.
-5. Disparos (`Bullet`).
-6. Asteroides (`Asteroid`) y que se partan.
-7. Colisiones + puntuación + vidas (`UIScene`).
-8. Oleadas / fin de partida.
-
-Cada archivo tiene comentarios explicando qué debe ir dentro. ¡A por ello!
