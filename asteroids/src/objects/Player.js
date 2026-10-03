@@ -3,6 +3,8 @@ SHIP_THRUST,
 SHIP_ROTATION_SPEED,
 SHIP_MAX_SPEED,
 SHIP_DRAG,
+	SHIP_LIVES,
+	SHIP_INVULNERABILITY_MS,
 } from '../constants.js';
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
@@ -16,6 +18,35 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 		this.setDrag(SHIP_DRAG);
 		this.setMaxVelocity(SHIP_MAX_SPEED);
 		this.setDamping(false);
+		this.vidas = SHIP_LIVES;
+		this.invulnerable = false;
+	}
+
+	recibirDano() {
+		if (this.invulnerable || !this.active) {
+			return false;
+		}
+
+		this.vidas -= 1;
+		this.invulnerable = true;
+		this.setPosition(this.scene.scale.width / 2, this.scene.scale.height / 2);
+		this.setVelocity(0, 0);
+		this.setAcceleration(0, 0);
+
+		this.scene.tweens.add({
+			targets: this,
+			alpha: 0.25,
+			duration: 100,
+			yoyo: true,
+			repeat: Math.floor(SHIP_INVULNERABILITY_MS / 200),
+			onComplete: () => this.setAlpha(1),
+		});
+
+		this.scene.time.delayedCall(SHIP_INVULNERABILITY_MS, () => {
+			this.invulnerable = false;
+		});
+
+		return true;
 	}
 
 	rotarIzquierda() {
