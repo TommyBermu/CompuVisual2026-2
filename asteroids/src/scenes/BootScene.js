@@ -3,10 +3,27 @@ export default class BootScene extends Phaser.Scene {
 		super('BootScene');
 	}
 
+	preload(){
+		this.load.audio('shoot', 'assets/audio/laserShoot.wav');
+		this.load.audio('explosion1', 'assets/audio/explosion1.wav');
+		this.load.audio('explosion2', 'assets/audio/explosion2.wav');
+		this.load.audio('explosion3', 'assets/audio/explosion3.wav');
+		this.load.audio('loseLife', 'assets/audio/hitHurt1.wav');
+		this.load.audio('gameOver', 'assets/audio/hitHurt2.wav');
+		this.load.audio('musica', 'assets/audio/sPACE.wav');
+	}
+
 	create() {
 		this.crearTexturaNave();
 		this.crearTexturaBala();
 		this.crearTexturaAsteroide();
+		this.musica = this.sound.add('musica', { loop: true, volume: 0.15 });
+		if (this.sound.locked) {
+			this.sound.once('unlocked', () => this.musica.play());
+		} else {
+			this.musica.play();
+		}
+		this.scene.get('GameScene').events.once('gameOver', () => this.musica.stop());
 		this.scene.start('GameScene');
 	}
 

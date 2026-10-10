@@ -43,6 +43,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Image {
   }
 
   partir() {
+    this.scene.sound.play(`explosion${this.tamano}`, { volume: 0.5 }); 
     if (this.tamano > 1) {
       const config = ASTEROID_SIZES[this.tamano];
       const cantidad = Phaser.Math.Between(2, 5);

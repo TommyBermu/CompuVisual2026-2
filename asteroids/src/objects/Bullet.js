@@ -22,7 +22,7 @@ export default class Bullet extends Phaser.Physics.Arcade.Image {
             this.body.enable = true;
             this.body.reset(x, y);
             this.scene.physics.velocityFromRotation(angulo, BULLET_SPEED, this.body.velocity);
-
+            this.scene.sound.play('shoot', { volume: 0.3 }); 
             this.expiry = this.scene.time.delayedCall(BULLET_LIFESPAN, () => {
                   this.desactivar();
             });
