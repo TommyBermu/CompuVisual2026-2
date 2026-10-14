@@ -7,6 +7,7 @@ import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
 import UIScene from './scenes/UIScene.js';
+import PauseScene from './scenes/PauseScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -20,7 +21,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, GameScene, UIScene],
+  scene: [BootScene, MenuScene, GameScene, UIScene, PauseScene], // PauseScene al final para dibujarse encima
 };
 
 const game = new Phaser.Game(config);

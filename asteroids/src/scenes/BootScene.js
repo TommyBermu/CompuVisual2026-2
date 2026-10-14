@@ -23,7 +23,6 @@ export default class BootScene extends Phaser.Scene {
 		} else {
 			this.musica.play();
 		}
-		this.scene.get('GameScene').events.once('gameOver', () => this.musica.stop());
 		this.scene.start('MenuScene');
 	}
 

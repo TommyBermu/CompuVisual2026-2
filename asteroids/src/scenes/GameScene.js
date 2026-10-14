@@ -8,20 +8,42 @@ export default class GameScene extends Phaser.Scene {
 		super('GameScene');
 	}
 
-	// datos llega desde el menú: { vidas, asteroides }
+	// datos llega desde el menú: { vidas, asteroides, velocidad, color, musica, efectos }
 	create(datos) {
+		this.datos = datos; // se guardan para poder reiniciar con la misma configuración
+		this.terminada = false;
+		this.physics.resume(); // por si venimos de una partida perdida (terminarPartida pausa la física)
+
 		const vidas = datos?.vidas ?? SHIP_LIVES;
 		const cantidadAsteroides = datos?.asteroides ?? ASTEROID_COUNT;
+		// Asteroid.js lee estos dos valores de la escena
+		this.velocidadMaxima = ASTEROID_MAX_SPEED * (datos?.velocidad ?? 1);
+		this.efectos = datos?.efectos ?? true;
+
+		const musica = this.sound.get('musica');
+		musica?.setMute(!(datos?.musica ?? true));
+		if (musica && !musica.isPlaying && !this.sound.locked) {
+			musica.play(); // vuelve a sonar si se detuvo al perder
+		}
 
 		// marco para delimitar visualmente el canvas
 		this.dibujarMarco();
 
 		this.player = new Player(this, WIDTH / 2, HEIGHT / 2);
 		this.player.vidas = vidas;
+		this.player.setTint(datos?.color ?? 0xffffff); // la textura es blanca, el tinte le da el color
 		this.puntuacion = 0;
 		this.cursors = this.input.keyboard.createCursorKeys();
 		this.teclaDisparo = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 		this.ultimoDisparo = -250;
+
+		// ESC abre el menú de pausa (solo mientras se juega)
+		this.input.keyboard.on('keydown-ESC', () => {
+			if (!this.terminada) {
+				this.scene.pause();
+				this.scene.launch('PauseScene', { finPartida: false });
+			}
+		});
 
 		this.bullets = this.physics.add.group({
 			classType: Bullet,
@@ -110,16 +132,37 @@ export default class GameScene extends Phaser.Scene {
 				+ Phaser.Math.FloatBetween(-0.35, 0.35);
 			const rapidez = Phaser.Math.FloatBetween(
 				ASTEROID_MIN_SPEED,
-				ASTEROID_MAX_SPEED,
+				this.velocidadMaxima,
 			);
 			this.physics.velocityFromRotation(direccion, rapidez, asteroide.body.velocity);
 		});
 	}
 
+	// todos los efectos pasan por aquí para poder apagarlos desde el menú
+	sonido(clave, config) {
+		if (this.efectos) {
+			this.sound.play(clave, config);
+		}
+	}
+
 	terminarPartida() {
+		this.terminada = true;
 		this.physics.pause();
 		this.player.setActive(false).setVisible(false);
+		this.sound.get('musica')?.stop();
 		this.events.emit('gameOver');
+		this.scene.launch('PauseScene', { finPartida: true });
+	}
+
+	// los usa PauseScene
+	reiniciar() {
+		this.scene.stop('UIScene');
+		this.scene.restart(this.datos);
+	}
+
+	irAlMenu() {
+		this.scene.stop('UIScene');
+		this.scene.start('MenuScene');
 	}
 
 	actualizarDisparos() {

@@ -1,35 +1,70 @@
 import { WIDTH, HEIGHT, SHIP_LIVES, ASTEROID_COUNT } from '../constants.js';
 
 /*
-  Menú inicial: se elige la cantidad de vidas y de asteroides y se pasa a GameScene.
+  Menú inicial: se eligen las opciones y se pasan a GameScene.
   Controles: ↑ ↓ para elegir opción, ← → para cambiar el valor, ENTER para jugar.
+
+  Cada opción tiene una lista de valores posibles y el índice del valor elegido.
+  "textos" es opcional: es lo que se muestra en pantalla si el valor no es un número.
 */
+const rango = (min, max) => Array.from({ length: max - min + 1 }, (_, i) => min + i);
+
 export default class MenuScene extends Phaser.Scene {
 	constructor() {
 		super('MenuScene');
 	}
 
 	create() {
-		this.opciones = [
-			{ nombre: 'VIDAS', valor: SHIP_LIVES, min: 1, max: 10 },
-			{ nombre: 'ASTEROIDES', valor: ASTEROID_COUNT, min: 1, max: 20 },
+		// "??" conserva lo elegido al volver al menú desde la partida (la escena se reutiliza)
+		this.opciones = this.opciones ?? [
+			{ clave: 'vidas', nombre: 'VIDAS', valores: rango(1, 10), indice: SHIP_LIVES - 1 },
+			{ clave: 'asteroides', nombre: 'ASTEROIDES', valores: rango(1, 20), indice: ASTEROID_COUNT - 1 },
+			{
+				clave: 'velocidad',
+				nombre: 'VELOCIDAD ASTEROIDES',
+				valores: [0.5, 1, 1.5, 2],
+				textos: ['x0.5', 'x1', 'x1.5', 'x2'],
+				indice: 1,
+			},
+			{
+				clave: 'color',
+				nombre: 'COLOR NAVE',
+				valores: [0xffffff, 0x72f00b, 0x00ffff, 0xffff00, 0xff66cc],
+				textos: ['BLANCO', 'VERDE', 'CIAN', 'AMARILLO', 'ROSA'],
+				indice: 0,
+			},
+			{ clave: 'musica', nombre: 'MÚSICA', valores: [true, false], textos: ['SÍ', 'NO'], indice: 0 },
+			{ clave: 'efectos', nombre: 'EFECTOS', valores: [true, false], textos: ['SÍ', 'NO'], indice: 0 },
+			{
+				clave: 'zoom',
+				nombre: 'TAMAÑO PANTALLA',
+				valores: [1, 1.25, 1.5, 1.75, 2],
+				textos: ['x1', 'x1.25', 'x1.5', 'x1.75', 'x2'],
+				indice: 0,
+			},
 		];
 		this.seleccion = 0;
 
-		this.add.text(WIDTH / 2, 120, 'ASTEROIDS', {
+		// la música se detiene al perder; si venimos de ahí, vuelve a sonar
+		const musica = this.sound.get('musica');
+		if (musica && !musica.isPlaying && !this.sound.locked) {
+			musica.play();
+		}
+
+		this.add.text(WIDTH / 2, 90, 'ASTEROIDS', {
 			fontFamily: 'monospace',
 			fontSize: '56px',
 			color: '#ffffff',
 		}).setOrigin(0.5);
 
 		this.textosOpciones = this.opciones.map((opcion, indice) => (
-			this.add.text(WIDTH / 2, 260 + indice * 50, '', {
+			this.add.text(WIDTH / 2, 190 + indice * 40, '', {
 				fontFamily: 'monospace',
 				fontSize: '24px',
 			}).setOrigin(0.5)
 		));
 
-		this.add.text(WIDTH / 2, 420, '[ JUGAR ]', {
+		this.add.text(WIDTH / 2, 490, '[ JUGAR ]', {
 			fontFamily: 'monospace',
 			fontSize: '32px',
 			color: '#72f00b',
@@ -52,6 +87,12 @@ export default class MenuScene extends Phaser.Scene {
 		this.actualizarTextos();
 	}
 
+	// devuelve el valor elegido de una opción, p. ej. this.valor('vidas')
+	valor(clave) {
+		const opcion = this.opciones.find((o) => o.clave === clave);
+		return opcion.valores[opcion.indice];
+	}
+
 	moverSeleccion(delta) {
 		const total = this.opciones.length;
 		this.seleccion = (this.seleccion + delta + total) % total;
@@ -60,23 +101,34 @@ export default class MenuScene extends Phaser.Scene {
 
 	cambiarValor(delta) {
 		const opcion = this.opciones[this.seleccion];
-		opcion.valor = Phaser.Math.Clamp(opcion.valor + delta, opcion.min, opcion.max);
+		opcion.indice = Phaser.Math.Clamp(opcion.indice + delta, 0, opcion.valores.length - 1);
+
+		// la música ya suena en el menú, así que se silencia/activa al instante
+		if (opcion.clave === 'musica') {
+			this.sound.get('musica')?.setMute(!this.valor('musica'));
+		}
+		// agranda el canvas en pantalla; el juego sigue siendo de 800x600 por dentro
+		if (opcion.clave === 'zoom') {
+			this.scale.setZoom(this.valor('zoom'));
+		}
 		this.actualizarTextos();
 	}
 
 	actualizarTextos() {
 		this.opciones.forEach((opcion, indice) => {
 			const elegida = indice === this.seleccion;
+			const texto = opcion.textos ? opcion.textos[opcion.indice] : opcion.valores[opcion.indice];
 			this.textosOpciones[indice]
-				.setText(`${elegida ? '> ' : '  '}${opcion.nombre}: ${opcion.valor}`)
+				.setText(`${elegida ? '> ' : '  '}${opcion.nombre}: ${texto}`)
 				.setColor(elegida ? '#72f00b' : '#aaaaaa');
 		});
 	}
 
 	iniciarJuego() {
-		this.scene.start('GameScene', {
-			vidas: this.opciones[0].valor,
-			asteroides: this.opciones[1].valor,
+		const datos = {};
+		this.opciones.forEach((opcion) => {
+			datos[opcion.clave] = this.valor(opcion.clave);
 		});
+		this.scene.start('GameScene', datos);
 	}
 }

@@ -29,9 +29,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
 
 		this.vidas -= 1;
 		if (this.vidas > 0) {
-		this.scene.sound.play('loseLife', { volume: 0.6 });
+		this.scene.sonido('loseLife', { volume: 0.6 });
 		} else {
-		this.scene.sound.play('gameOver', { volume: 0.7 });
+		this.scene.sonido('gameOver', { volume: 0.7 });
 		}
 		
 		this.invulnerable = true;

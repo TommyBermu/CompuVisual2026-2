@@ -24,7 +24,6 @@ export default class UIScene extends Phaser.Scene {
 
     this.gameScene.events.on('livesChanged', this.actualizarVidas, this);
     this.gameScene.events.on('scoreChanged', this.actualizarPuntuacion, this);
-    this.gameScene.events.on('gameOver', this.mostrarFinPartida, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.eliminarEventos, this);
   }
 
@@ -36,19 +35,9 @@ export default class UIScene extends Phaser.Scene {
     this.textoPuntuacion.setText(`PUNTOS: ${puntuacion}`);
   }
 
-  mostrarFinPartida() {
-    this.add.text(WIDTH / 2, HEIGHT / 2, 'FIN DEL JUEGO', {
-      fontFamily: 'monospace',
-      fontSize: '36px',
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 12, y: 8 },
-    }).setOrigin(0.5).setDepth(20);
-  }
-
+  // el mensaje de "FIN DEL JUEGO" ahora lo muestra PauseScene
   eliminarEventos() {
     this.gameScene.events.off('livesChanged', this.actualizarVidas, this);
     this.gameScene.events.off('scoreChanged', this.actualizarPuntuacion, this);
-    this.gameScene.events.off('gameOver', this.mostrarFinPartida, this);
   }
 }

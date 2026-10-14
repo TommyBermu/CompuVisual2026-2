@@ -18,10 +18,15 @@ export default class Asteroid extends Phaser.Physics.Arcade.Image {
 
     const config = ASTEROID_SIZES[this.tamano];
     this.velocidadMinima = ASTEROID_MIN_SPEED;
-    this.velocidadMaxima = ASTEROID_MAX_SPEED;
+    this.velocidadMaxima = scene.velocidadMaxima ?? ASTEROID_MAX_SPEED; // viene del menú
     this.puntuacion = config.puntuacion;
     this.setDisplaySize(config.diameter, config.diameter);
-    this.body.setCircle(config.diameter * 0.42);
+    // setCircle trabaja en píxeles de la textura (64x64) y Phaser lo escala junto con el sprite,
+    // por eso el radio se calcula sobre la textura (this.width) y no sobre config.diameter.
+    // El offset centra el círculo (si no, queda pegado a la esquina superior izquierda).
+    const radio = this.width * 0.42;
+    const offset = this.width / 2 - radio;
+    this.body.setCircle(radio, offset, offset);
     this.body.setBounce(1);
   }
 
@@ -31,7 +36,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Image {
       const rapidez = Phaser.Math.Clamp(
         velocidad ?? Phaser.Math.FloatBetween(this.velocidadMinima, this.velocidadMaxima),
         ASTEROID_MIN_SPEED,
-        ASTEROID_MAX_SPEED,
+        this.velocidadMaxima,
       );
       this.scene.physics.velocityFromRotation(direccion, rapidez, this.body.velocity);
       this.setAngularVelocity(Phaser.Math.Between(-35, 35));
@@ -43,7 +48,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Image {
   }
 
   partir() {
-    this.scene.sound.play(`explosion${this.tamano}`, { volume: 0.5 }); 
+    this.scene.sonido(`explosion${this.tamano}`, { volume: 0.5 });
     if (this.tamano > 1) {
       const config = ASTEROID_SIZES[this.tamano];
       const cantidad = Phaser.Math.Between(2, 5);
@@ -53,7 +58,7 @@ export default class Asteroid extends Phaser.Physics.Arcade.Image {
       for (let indice = 0; indice < cantidad; indice += 1) {
         const angulo = anguloInicial + separacion * indice
           + Phaser.Math.FloatBetween(-separacion * 0.2, separacion * 0.2);
-        const velocidad = Phaser.Math.FloatBetween(ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED);
+        const velocidad = Phaser.Math.FloatBetween(ASTEROID_MIN_SPEED, this.velocidadMaxima);
         const tamanoHijo = this.tamano - 1;
         const configHijo = ASTEROID_SIZES[tamanoHijo];
         const distancia = config.diameter * 0.42 + configHijo.diameter * 0.42 + 2;
