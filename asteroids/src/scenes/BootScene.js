@@ -24,7 +24,7 @@ export default class BootScene extends Phaser.Scene {
 			this.musica.play();
 		}
 		this.scene.get('GameScene').events.once('gameOver', () => this.musica.stop());
-		this.scene.start('GameScene');
+		this.scene.start('MenuScene');
 	}
 
 	// triángulo apuntando a la derecha (+X) pq es el angulo 0 de phaser, mejor explicado en player.js xd

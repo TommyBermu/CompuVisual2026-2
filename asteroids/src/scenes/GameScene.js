@@ -1,18 +1,23 @@
 import Player from '../objects/Player.js';
 import Bullet from '../objects/Bullet.js';
 import Asteroid from '../objects/Asteroid.js';
-import { WIDTH, HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED } from '../constants.js';
+import { WIDTH, HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, SHIP_LIVES, ASTEROID_COUNT } from '../constants.js';
 
 export default class GameScene extends Phaser.Scene {
 	constructor() {
 		super('GameScene');
 	}
 
-	create() {
+	// datos llega desde el menú: { vidas, asteroides }
+	create(datos) {
+		const vidas = datos?.vidas ?? SHIP_LIVES;
+		const cantidadAsteroides = datos?.asteroides ?? ASTEROID_COUNT;
+
 		// marco para delimitar visualmente el canvas
 		this.dibujarMarco();
 
 		this.player = new Player(this, WIDTH / 2, HEIGHT / 2);
+		this.player.vidas = vidas;
 		this.puntuacion = 0;
 		this.cursors = this.input.keyboard.createCursorKeys();
 		this.teclaDisparo = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -48,7 +53,7 @@ export default class GameScene extends Phaser.Scene {
 			),
 		);
 
-		for (let indice = 0; indice < 6; indice += 1) {
+		for (let indice = 0; indice < cantidadAsteroides; indice += 1) {
 			const lado = Phaser.Math.Between(0, 3);
 			const x = lado < 2
 				? (lado === 0 ? 24 : WIDTH - 24)
