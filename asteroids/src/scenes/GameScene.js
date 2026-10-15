@@ -166,7 +166,7 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	actualizarDisparos() {
-		if (this.teclaDisparo.isDown && this.time.now - this.ultimoDisparo >= 250) {
+		if (!this.terminada && this.teclaDisparo.isDown && this.time.now - this.ultimoDisparo >= 250) {
 			this.disparar();
 		}
 
