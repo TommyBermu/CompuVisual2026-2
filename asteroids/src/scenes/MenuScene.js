@@ -1,4 +1,5 @@
 import { WIDTH, HEIGHT, SHIP_LIVES, ASTEROID_COUNT } from '../constants.js';
+import Asteroid from '../objects/Asteroid.js';
 
 /*
   Menú inicial: se eligen las opciones y se pasan a GameScene.
@@ -51,6 +52,8 @@ export default class MenuScene extends Phaser.Scene {
 			musica.play();
 		}
 
+		this.crearFondo();
+
 		this.add.text(WIDTH / 2, 90, 'ASTEROIDS', {
 			fontFamily: 'monospace',
 			fontSize: '56px',
@@ -85,6 +88,25 @@ export default class MenuScene extends Phaser.Scene {
 		teclado.on('keydown-ENTER', () => this.iniciarJuego());
 
 		this.actualizarTextos();
+	}
+
+	// asteroides decorativos moviéndose detrás del menú (se crean antes que los textos para quedar atrás)
+	crearFondo() {
+		this.fondo = [];
+		for (let indice = 0; indice < 10; indice += 1) {
+			const x = Phaser.Math.Between(0, WIDTH);
+			const y = Phaser.Math.Between(0, HEIGHT);
+			const tamano = Phaser.Math.Between(1, 3);
+			const asteroide = new Asteroid(this, x, y, tamano, { enMovimiento: true });
+			asteroide.spawn(); // dirección, velocidad y giro al azar, como en el juego
+			asteroide.setAlpha(0.3); // más opacos para que no distraigan del menú
+			this.fondo.push(asteroide);
+		}
+	}
+
+	// igual que en GameScene: lo que sale por un borde entra por el otro
+	update() {
+		this.physics.world.wrap(this.fondo, 32);
 	}
 
 	// devuelve el valor elegido de una opción, p. ej. this.valor('vidas')
