@@ -14,9 +14,13 @@ export default class PauseScene extends Phaser.Scene {
 	create(datos) {
 		this.gameScene = this.scene.get('GameScene');
 		this.finPartida = datos?.finPartida ?? false;
+		this.victoria = datos?.victoria ?? false;
 		this.seleccion = 0;
 
-		this.opciones = this.finPartida
+		// la victoria y el fin de partida comparten el mismo menú (REINTENTAR / MENÚ)
+		const esFinal = this.finPartida || this.victoria;
+
+		this.opciones = esFinal
 			? [
 				{ texto: 'REINTENTAR', accion: () => this.reiniciar() },
 				{ texto: 'MENÚ', accion: () => this.irAlMenu() },
@@ -30,14 +34,28 @@ export default class PauseScene extends Phaser.Scene {
 		// fondo semitransparente para oscurecer el juego
 		this.add.rectangle(0, 0, WIDTH, HEIGHT, 0x000000, 0.6).setOrigin(0);
 
-		this.add.text(WIDTH / 2, 200, this.finPartida ? 'FIN DEL JUEGO' : 'PAUSA', {
+		const titulo = this.victoria
+			? '¡FELICITACIONES!'
+			: this.finPartida ? 'FIN DEL JUEGO' : 'PAUSA';
+
+		this.add.text(WIDTH / 2, 200, titulo, {
 			fontFamily: 'monospace',
 			fontSize: '48px',
-			color: '#ffffff',
+			color: this.victoria ? '#72f00b' : '#ffffff',
 		}).setOrigin(0.5);
 
+		if (this.victoria) {
+			this.add.text(WIDTH / 2, 250, `Destruiste todos los asteroides\nPuntuación: ${this.gameScene.puntuacion}`, {
+				fontFamily: 'monospace',
+				fontSize: '20px',
+				color: '#ffffff',
+				align: 'center',
+			}).setOrigin(0.5);
+		}
+
+		const yOpciones = this.victoria ? 340 : 300;
 		this.textosOpciones = this.opciones.map((opcion, indice) => (
-			this.add.text(WIDTH / 2, 300 + indice * 50, '', {
+			this.add.text(WIDTH / 2, yOpciones + indice * 50, '', {
 				fontFamily: 'monospace',
 				fontSize: '28px',
 			}).setOrigin(0.5).setInteractive({ useHandCursor: true })
@@ -49,7 +67,7 @@ export default class PauseScene extends Phaser.Scene {
 		teclado.on('keydown-DOWN', () => this.moverSeleccion(1));
 		teclado.on('keydown-ENTER', () => this.opciones[this.seleccion].accion());
 		teclado.on('keydown-ESC', () => {
-			if (!this.finPartida) {
+			if (!esFinal) {
 				this.continuar();
 			}
 		});

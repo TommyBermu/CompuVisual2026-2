@@ -12,6 +12,7 @@ export default class GameScene extends Phaser.Scene {
 	create(datos) {
 		this.datos = datos; // se guardan para poder reiniciar con la misma configuración
 		this.terminada = false;
+		this.huboAsteroides = false; // evita falsa victoria antes de poblar el campo
 		this.physics.resume(); // por si venimos de una partida perdida (terminarPartida pausa la física)
 
 		const vidas = datos?.vidas ?? SHIP_LIVES;
@@ -89,6 +90,8 @@ export default class GameScene extends Phaser.Scene {
 			this.crearAsteroide(x, y, tipot, { enMovimiento: true });
 		}
 
+		this.huboAsteroides = this.asteroids.countActive(true) > 0;
+
 		this.scene.launch('UIScene');
 	}
 
@@ -105,9 +108,20 @@ export default class GameScene extends Phaser.Scene {
 	}
 
 	update() {
+		if (this.terminada) {
+			return;
+		}
 		this.actualizarNave();
 		this.actualizarDisparos();
 		this.wrapAround();
+		this.comprobarVictoria();
+	}
+
+	// se gana cuando ya no queda ningún asteroide activo en pantalla
+	comprobarVictoria() {
+		if (this.huboAsteroides && this.asteroids.countActive(true) === 0) {
+			this.ganarPartida();
+		}
 	}
 
 
@@ -152,6 +166,14 @@ export default class GameScene extends Phaser.Scene {
 		this.sound.get('musica')?.stop();
 		this.events.emit('gameOver');
 		this.scene.launch('PauseScene', { finPartida: true });
+	}
+
+	ganarPartida() {
+		this.terminada = true;
+		this.physics.pause();
+		this.sound.get('musica')?.stop();
+		this.events.emit('gameOver');
+		this.scene.launch('PauseScene', { victoria: true });
 	}
 
 	// los usa PauseScene
