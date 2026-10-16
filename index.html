@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CompuVisual 2026-2 · Proyectos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+      background: radial-gradient(circle at 50% 0%, #1a1a2e, #0a0a12);
+      color: #fff;
+      font-family: system-ui, Arial, sans-serif;
+    }
+
+    header { text-align: center; }
+    header h1 { font-size: 2rem; letter-spacing: 0.5px; }
+    header p { margin-top: 0.5rem; color: #9aa0b5; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    a.card {
+      display: block;
+      padding: 1.5rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    a.card:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+    a.card h2 { font-size: 1.2rem; margin-bottom: 0.4rem; }
+    a.card span { color: #9aa0b5; font-size: 0.9rem; }
+
+    footer { color: #5a6072; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Computación Visual 2026-2</h1>
+    <p>Proyectos y tareas de la materia</p>
+  </header>
+
+  <!--
+    Cada proyecto es una carpeta con su index.html; Vercel la publica en /carpeta/.
+    Para agregar uno nuevo, duplica una tarjeta y cambia href + textos.
+  -->
+  <nav class="grid">
+    <a class="card" href="/asteroids/">
+      <h2>Asteroids</h2>
+    </a>
+    <a class="card" href="/smashhit/">
+      <h2>Smash Hit</h2>
+    </a>
+  </nav>
+
+  <footer>Un dominio, un proyecto por ruta.</footer>
+</body>
+</html>
