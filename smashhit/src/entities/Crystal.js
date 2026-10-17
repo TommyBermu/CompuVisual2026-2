@@ -14,5 +14,5 @@
 import Entity from './Entity.js';
 
 export default class Crystal extends Entity {
-  // constructor(physics, position, size) { ... super(mesh, body); }
+    // constructor(physics, position, size) { ... super(mesh, body); }
 }

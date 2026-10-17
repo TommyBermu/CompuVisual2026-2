@@ -11,5 +11,5 @@
 */
 
 export default class Shooter {
-  // constructor(renderer, physics, state) { ... }
+    // constructor(renderer, physics, state) { ... }
 }

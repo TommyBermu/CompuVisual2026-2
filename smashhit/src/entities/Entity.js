@@ -14,26 +14,26 @@
 import { syncMeshToBody } from '../utils/sync.js';
 
 export default class Entity {
-  constructor(mesh, body) {
-    this.mesh = mesh;
-    this.body = body;
-  }
-
-  sync() {
-    if (this.mesh && this.body) {
-      syncMeshToBody(this.mesh, this.body);
+    constructor(mesh, body) {
+        this.mesh = mesh;
+        this.body = body;
     }
-  }
 
-  // Añadirse al renderer (Three) y a la física (Cannon) de una sola llamada.
-  addTo(renderer, physics) {
-    if (this.mesh) renderer.add(this.mesh);
-    if (this.body) physics.add(this.body);
-    return this;
-  }
+    sync() {
+        if (this.mesh && this.body) {
+            syncMeshToBody(this.mesh, this.body);
+        }
+    }
 
-  destroy(renderer, physics) {
-    if (this.mesh) renderer.remove(this.mesh);
-    if (this.body) physics.remove(this.body);
-  }
+    // Añadirse al renderer (Three) y a la física (Cannon) de una sola llamada.
+    addTo(renderer, physics) {
+        if (this.mesh) renderer.add(this.mesh);
+        if (this.body) physics.add(this.body);
+        return this;
+    }
+
+    destroy(renderer, physics) {
+        if (this.mesh) renderer.remove(this.mesh);
+        if (this.body) physics.remove(this.body);
+    }
 }

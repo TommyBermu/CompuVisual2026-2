@@ -10,5 +10,5 @@
 */
 
 export default class HUD {
-  // constructor(hudElement) { ... }
+    // constructor(hudElement) { ... }
 }

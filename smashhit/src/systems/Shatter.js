@@ -14,5 +14,5 @@
 */
 
 export default class Shatter {
-  // constructor(renderer, physics) { ... }
+    // constructor(renderer, physics) { ... }
 }

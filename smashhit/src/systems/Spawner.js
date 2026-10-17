@@ -11,5 +11,5 @@
 */
 
 export default class Spawner {
-  // constructor(renderer, physics) { ... }
+    // constructor(renderer, physics) { ... }
 }

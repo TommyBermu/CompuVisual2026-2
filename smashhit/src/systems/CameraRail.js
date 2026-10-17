@@ -10,5 +10,5 @@
 */
 
 export default class CameraRail {
-  // constructor(camera) { ... }
+    // constructor(camera) { ... }
 }

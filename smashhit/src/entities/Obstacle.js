@@ -12,5 +12,5 @@
 import Entity from './Entity.js';
 
 export default class Obstacle extends Entity {
-  // constructor(physics, position, size) { ... super(mesh, body); }
+    // constructor(physics, position, size) { ... super(mesh, body); }
 }

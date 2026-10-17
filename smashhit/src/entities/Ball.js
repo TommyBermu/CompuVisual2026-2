@@ -14,25 +14,25 @@ import Entity from './Entity.js';
 import { BALL_RADIUS, BALL_MASS } from '../constants.js';
 
 export default class Ball extends Entity {
-  constructor(physics, position = { x: 0, y: 8, z: 0 }) {
-    // Visual
-    const geometry = new THREE.SphereGeometry(BALL_RADIUS, 32, 32);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x66ccff,
-      metalness: 0.6,
-      roughness: 0.2,
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
+    constructor(physics, position = { x: 0, y: 8, z: 0 }) {
+        // Visual
+        const geometry = new THREE.SphereGeometry(BALL_RADIUS, 32, 32);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x66ccff,
+            metalness: 0.6,
+            roughness: 0.2,
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
 
-    // Física
-    const body = new CANNON.Body({
-      mass: BALL_MASS,
-      shape: new CANNON.Sphere(BALL_RADIUS),
-      material: physics.defaultMaterial,
-    });
-    body.position.set(position.x, position.y, position.z);
+        // Física
+        const body = new CANNON.Body({
+            mass: BALL_MASS,
+            shape: new CANNON.Sphere(BALL_RADIUS),
+            material: physics.defaultMaterial,
+        });
+        body.position.set(position.x, position.y, position.z);
 
-    super(mesh, body);
-  }
+        super(mesh, body);
+    }
 }

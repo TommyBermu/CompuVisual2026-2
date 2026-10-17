@@ -13,6 +13,6 @@
 */
 
 export function syncMeshToBody(mesh, body) {
-  mesh.position.copy(body.position);
-  mesh.quaternion.copy(body.quaternion);
+    mesh.position.copy(body.position);
+    mesh.quaternion.copy(body.quaternion);
 }

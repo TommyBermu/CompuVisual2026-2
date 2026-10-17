@@ -12,5 +12,5 @@
 */
 
 export default class InputManager {
-  // constructor(container) { ... }
+    // constructor(container) { ... }
 }
