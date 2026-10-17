@@ -13,6 +13,9 @@ export const SHIP_INVULNERABILITY_MS = 1300;    //Invulneravilidad al reeaparece
 // asteroides iniciales (valor por defecto del menú)
 export const ASTEROID_COUNT = 6;
 
+// modo oleadas: cada oleada nueva añade este número de asteroides a la anterior
+export const WAVE_ASTEROID_INCREMENT = 2;
+
 // velocidad de los asteroides
 export const ASTEROID_MIN_SPEED = 0;
 export const ASTEROID_MAX_SPEED = 140;

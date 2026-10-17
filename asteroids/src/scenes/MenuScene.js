@@ -1,5 +1,6 @@
 import { WIDTH, HEIGHT, SHIP_LIVES, ASTEROID_COUNT } from '../constants.js';
 import Asteroid from '../objects/Asteroid.js';
+import { aplicarEscala, setFactorEscala, nitidarTextos } from '../escala.js';
 
 /*
   Menú inicial: se eligen las opciones y se pasan a GameScene.
@@ -18,6 +19,20 @@ export default class MenuScene extends Phaser.Scene {
 	create() {
 		// "??" conserva lo elegido al volver al menú desde la partida (la escena se reutiliza)
 		this.opciones = this.opciones ?? [
+			{
+				clave: 'modo',
+				nombre: 'MODO',
+				valores: ['clasico', 'oleadas'],
+				textos: ['CLÁSICO', 'OLEADAS'],
+				indice: 0,
+			},
+			{
+				clave: 'jugadores',
+				nombre: 'JUGADORES',
+				valores: [1, 2],
+				textos: ['1', '2'],
+				indice: 0,
+			},
 			{ clave: 'vidas', nombre: 'VIDAS', valores: rango(1, 10), indice: SHIP_LIVES - 1 },
 			{ clave: 'asteroides', nombre: 'ASTEROIDES', valores: rango(1, 20), indice: ASTEROID_COUNT - 1 },
 			{
@@ -29,10 +44,17 @@ export default class MenuScene extends Phaser.Scene {
 			},
 			{
 				clave: 'color',
-				nombre: 'COLOR NAVE',
+				nombre: 'COLOR NAVE P1',
 				valores: [0xffffff, 0x72f00b, 0x00ffff, 0xffff00, 0xff66cc],
 				textos: ['BLANCO', 'VERDE', 'CIAN', 'AMARILLO', 'ROSA'],
 				indice: 0,
+			},
+			{
+				clave: 'color2',
+				nombre: 'COLOR NAVE P2',
+				valores: [0xffffff, 0x72f00b, 0x00ffff, 0xffff00, 0xff66cc],
+				textos: ['BLANCO', 'VERDE', 'CIAN', 'AMARILLO', 'ROSA'],
+				indice: 2,
 			},
 			{ clave: 'musica', nombre: 'MÚSICA', valores: [true, false], textos: ['SÍ', 'NO'], indice: 0 },
 			{ clave: 'efectos', nombre: 'EFECTOS', valores: [true, false], textos: ['SÍ', 'NO'], indice: 0 },
@@ -46,6 +68,11 @@ export default class MenuScene extends Phaser.Scene {
 		];
 		this.seleccion = 0;
 
+		// aplica el tamaño real del canvas guardado (al volver de una partida se conserva)
+		const opcionZoom = this.opciones.find((o) => o.clave === 'zoom');
+		setFactorEscala(opcionZoom.valores[opcionZoom.indice]);
+		aplicarEscala(this);
+
 		// la música se detiene al perder; si venimos de ahí, vuelve a sonar
 		const musica = this.sound.get('musica');
 		if (musica && !musica.isPlaying && !this.sound.locked) {
@@ -54,29 +81,35 @@ export default class MenuScene extends Phaser.Scene {
 
 		this.crearFondo();
 
-		this.add.text(WIDTH / 2, 90, 'ASTEROIDS', {
+		this.add.text(WIDTH / 2, 56, 'ASTEROIDS', {
 			fontFamily: 'monospace',
-			fontSize: '56px',
+			fontSize: '48px',
 			color: '#ffffff',
 		}).setOrigin(0.5);
 
 		this.textosOpciones = this.opciones.map((opcion, indice) => (
-			this.add.text(WIDTH / 2, 190 + indice * 40, '', {
+			this.add.text(WIDTH / 2, 128 + indice * 32, '', {
 				fontFamily: 'monospace',
-				fontSize: '24px',
+				fontSize: '20px',
 			}).setOrigin(0.5)
 		));
 
-		this.add.text(WIDTH / 2, 490, '[ JUGAR ]', {
+		this.add.text(WIDTH / 2, 500, '[ JUGAR ]', {
 			fontFamily: 'monospace',
 			fontSize: '32px',
 			color: '#72f00b',
 		}).setOrigin(0.5).setInteractive({ useHandCursor: true })
 			.on('pointerdown', () => this.iniciarJuego());
 
-		this.add.text(WIDTH / 2, HEIGHT - 40, '↑ ↓ elegir     ← → cambiar     ENTER jugar', {
+		this.add.text(WIDTH / 2, HEIGHT - 56, 'P1: ← → ↑  disparar ESPACIO      P2: A D W  disparar MAYÚS', {
 			fontFamily: 'monospace',
-			fontSize: '14px',
+			fontSize: '13px',
+			color: '#aaaaaa',
+		}).setOrigin(0.5);
+
+		this.add.text(WIDTH / 2, HEIGHT - 32, '↑ ↓ elegir     ← → cambiar     ENTER jugar', {
+			fontFamily: 'monospace',
+			fontSize: '13px',
 			color: '#888888',
 		}).setOrigin(0.5);
 
@@ -88,6 +121,7 @@ export default class MenuScene extends Phaser.Scene {
 		teclado.on('keydown-ENTER', () => this.iniciarJuego());
 
 		this.actualizarTextos();
+		nitidarTextos(this); // textos del menú nítidos pese al zoom de cámara
 	}
 
 	// asteroides decorativos moviéndose detrás del menú (se crean antes que los textos para quedar atrás)
@@ -129,9 +163,12 @@ export default class MenuScene extends Phaser.Scene {
 		if (opcion.clave === 'musica') {
 			this.sound.get('musica')?.setMute(!this.valor('musica'));
 		}
-		// agranda el canvas en pantalla; el juego sigue siendo de 800x600 por dentro
+		// cambia el TAMAÑO REAL del canvas (nítido), no un zoom CSS borroso.
+		// el juego sigue siendo de 800x600 por dentro.
 		if (opcion.clave === 'zoom') {
-			this.scale.setZoom(this.valor('zoom'));
+			setFactorEscala(this.valor('zoom'));
+			aplicarEscala(this); // reaplica tamaño de canvas + zoom de cámara al menú
+			nitidarTextos(this); // mantiene los textos nítidos con el nuevo factor
 		}
 		this.actualizarTextos();
 	}

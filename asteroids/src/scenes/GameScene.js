@@ -1,22 +1,30 @@
 import Player from '../objects/Player.js';
-import Bullet from '../objects/Bullet.js';
 import Asteroid from '../objects/Asteroid.js';
-import { WIDTH, HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, SHIP_LIVES, ASTEROID_COUNT } from '../constants.js';
+import { WIDTH, HEIGHT, ASTEROID_MIN_SPEED, ASTEROID_MAX_SPEED, SHIP_LIVES, ASTEROID_COUNT, WAVE_ASTEROID_INCREMENT } from '../constants.js';
+import { aplicarEscala, nitidarTexto } from '../escala.js';
 
 export default class GameScene extends Phaser.Scene {
 	constructor() {
 		super('GameScene');
 	}
 
-	// datos llega desde el menú: { vidas, asteroides, velocidad, color, musica, efectos }
+	// datos llega desde el menú: { modo, jugadores, vidas, asteroides, velocidad, color, color2, musica, efectos, zoom }
 	create(datos) {
 		this.datos = datos; // se guardan para poder reiniciar con la misma configuración
 		this.terminada = false;
 		this.huboAsteroides = false; // evita falsa victoria antes de poblar el campo
 		this.physics.resume(); // por si venimos de una partida perdida (terminarPartida pausa la física)
 
+		// tamaño real del canvas + zoom de cámara (nítido, no CSS). El mundo sigue siendo 800x600.
+		aplicarEscala(this);
+
 		const vidas = datos?.vidas ?? SHIP_LIVES;
 		const cantidadAsteroides = datos?.asteroides ?? ASTEROID_COUNT;
+		// modo 'oleadas' = arcade infinito; 'clasico' = termina al limpiar la pantalla
+		this.modo = datos?.modo ?? 'clasico';
+		this.cantidadBase = cantidadAsteroides; // asteroides de la primera oleada
+		this.oleada = 1;
+		this.numJugadores = datos?.jugadores ?? 1;
 		// Asteroid.js lee estos dos valores de la escena
 		this.velocidadMaxima = ASTEROID_MAX_SPEED * (datos?.velocidad ?? 1);
 		this.efectos = datos?.efectos ?? true;
@@ -30,13 +38,9 @@ export default class GameScene extends Phaser.Scene {
 		// marco para delimitar visualmente el canvas
 		this.dibujarMarco();
 
-		this.player = new Player(this, WIDTH / 2, HEIGHT / 2);
-		this.player.vidas = vidas;
-		this.player.setTint(datos?.color ?? 0xffffff); // la textura es blanca, el tinte le da el color
-		this.puntuacion = 0;
-		this.cursors = this.input.keyboard.createCursorKeys();
-		this.teclaDisparo = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-		this.ultimoDisparo = -250;
+		this.asteroids = this.physics.add.group();
+
+		this.crearJugadores(datos, vidas);
 
 		// ESC abre el menú de pausa (solo mientras se juega)
 		this.input.keyboard.on('keydown-ESC', () => {
@@ -46,26 +50,6 @@ export default class GameScene extends Phaser.Scene {
 			}
 		});
 
-		this.bullets = this.physics.add.group({
-			classType: Bullet,
-			maxSize: 30,
-		});
-		this.asteroids = this.physics.add.group();
-
-		this.physics.add.overlap(this.bullets, this.asteroids, (bala, asteroide) => {
-			bala.desactivar();
-			this.puntuacion += asteroide.puntuacion;
-			this.events.emit('scoreChanged', this.puntuacion);
-			asteroide.partir();
-		});
-		this.physics.add.overlap(this.player, this.asteroids, () => {
-			if (this.player.recibirDano()) {
-				this.events.emit('livesChanged', this.player.vidas);
-				if (this.player.vidas <= 0) {
-					this.terminarPartida();
-				}
-			}
-		});
 		this.physics.add.collider(
 			this.asteroids,
 			this.asteroids,
@@ -76,7 +60,86 @@ export default class GameScene extends Phaser.Scene {
 			),
 		);
 
-		for (let indice = 0; indice < cantidadAsteroides; indice += 1) {
+		this.generarOleada(cantidadAsteroides);
+
+		this.huboAsteroides = this.asteroids.countActive(true) > 0;
+
+		this.scene.launch('UIScene');
+		// la UI muestra el número de oleada solo en modo oleadas
+		this.events.emit('waveChanged', this.oleada, this.modo);
+	}
+
+	// crea 1 o 2 naves con sus controles, colores y colisiones propias
+	crearJugadores(datos, vidas) {
+		const K = Phaser.Input.Keyboard.KeyCodes;
+		const teclado = this.input.keyboard;
+
+		// P1: flechas + ESPACIO. P2: WASD + SHIFT izquierdo.
+		const configs = [
+			{
+				id: 1,
+				color: datos?.color ?? 0xffffff,
+				teclas: {
+					izquierda: teclado.addKey(K.LEFT),
+					derecha: teclado.addKey(K.RIGHT),
+					acelerar: teclado.addKey(K.UP),
+					disparar: teclado.addKey(K.SPACE),
+				},
+			},
+			{
+				id: 2,
+				color: datos?.color2 ?? 0x00ffff,
+				teclas: {
+					izquierda: teclado.addKey(K.A),
+					derecha: teclado.addKey(K.D),
+					acelerar: teclado.addKey(K.W),
+					disparar: teclado.addKey(K.SHIFT),
+				},
+			},
+		].slice(0, this.numJugadores);
+
+		// con 2 jugadores los separamos un poco para que no aparezcan encima
+		const posiciones = this.numJugadores === 2
+			? [{ x: WIDTH / 2 - 80, y: HEIGHT / 2 }, { x: WIDTH / 2 + 80, y: HEIGHT / 2 }]
+			: [{ x: WIDTH / 2, y: HEIGHT / 2 }];
+
+		this.jugadores = configs.map((config, i) => {
+			const jugador = new Player(this, posiciones[i].x, posiciones[i].y, { ...config, vidas });
+
+			// balas de este jugador contra asteroides: suman a SU puntuación
+			this.physics.add.overlap(jugador.bullets, this.asteroids, (bala, asteroide) => {
+				bala.desactivar();
+				jugador.puntuacion += asteroide.puntuacion;
+				this.events.emit('scoreChanged', jugador.id, jugador.puntuacion);
+				asteroide.partir();
+			});
+
+			// esta nave contra asteroides: pierde vida; si todas las naves mueren, fin
+			this.physics.add.overlap(jugador, this.asteroids, () => {
+				if (jugador.recibirDano()) {
+					this.events.emit('livesChanged', jugador.id, jugador.vidas);
+					if (jugador.vidas <= 0) {
+						jugador.eliminar();
+						this.comprobarFinJuego();
+					}
+				}
+			});
+
+			return jugador;
+		});
+	}
+
+	// la partida termina cuando TODAS las naves se han quedado sin vidas
+	comprobarFinJuego() {
+		const quedanVivos = this.jugadores.some((j) => j.vidas > 0);
+		if (!quedanVivos) {
+			this.terminarPartida();
+		}
+	}
+
+	// crea `cantidad` asteroides en los bordes del canvas (usado al iniciar y en cada oleada)
+	generarOleada(cantidad) {
+		for (let indice = 0; indice < cantidad; indice += 1) {
 			const lado = Phaser.Math.Between(0, 3);
 			const x = lado < 2
 				? (lado === 0 ? 24 : WIDTH - 24)
@@ -89,10 +152,6 @@ export default class GameScene extends Phaser.Scene {
 
 			this.crearAsteroide(x, y, tipot, { enMovimiento: true });
 		}
-
-		this.huboAsteroides = this.asteroids.countActive(true) > 0;
-
-		this.scene.launch('UIScene');
 	}
 
 	dibujarMarco() {
@@ -107,21 +166,55 @@ export default class GameScene extends Phaser.Scene {
 		);
 	}
 
-	update() {
+	update(time) {
 		if (this.terminada) {
 			return;
 		}
-		this.actualizarNave();
-		this.actualizarDisparos();
+		this.jugadores.forEach((jugador) => jugador.actualizar(time));
 		this.wrapAround();
 		this.comprobarVictoria();
 	}
 
-	// se gana cuando ya no queda ningún asteroide activo en pantalla
+	// clásico: se gana al limpiar la pantalla. oleadas: se genera la siguiente oleada
 	comprobarVictoria() {
-		if (this.huboAsteroides && this.asteroids.countActive(true) === 0) {
+		if (!(this.huboAsteroides && this.asteroids.countActive(true) === 0)) {
+			return;
+		}
+
+		if (this.modo === 'oleadas') {
+			this.siguienteOleada();
+		} else {
 			this.ganarPartida();
 		}
+	}
+
+	// avanza a la siguiente oleada: más asteroides, conservando puntos y vidas
+	siguienteOleada() {
+		this.oleada += 1;
+		const cantidad = this.cantidadBase + (this.oleada - 1) * WAVE_ASTEROID_INCREMENT;
+
+		// mensaje breve de "OLEADA N" antes de poblar el campo
+		const aviso = this.add.text(WIDTH / 2, HEIGHT / 2, `OLEADA ${this.oleada}`, {
+			fontFamily: 'monospace',
+			fontSize: '48px',
+			color: '#72f00b',
+		}).setOrigin(0.5).setDepth(20);
+		nitidarTexto(aviso); // nítido pese al zoom de cámara
+
+		this.events.emit('waveChanged', this.oleada, this.modo);
+
+		// pausa breve para que el jugador se reubique antes de que lleguen los asteroides
+		this.time.delayedCall(900, () => {
+			aviso.destroy();
+			if (this.terminada) {
+				return;
+			}
+			this.generarOleada(cantidad);
+			this.huboAsteroides = this.asteroids.countActive(true) > 0;
+		});
+
+		// evita que comprobarVictoria dispare otra oleada mientras el campo está vacío
+		this.huboAsteroides = false;
 	}
 
 
@@ -162,7 +255,7 @@ export default class GameScene extends Phaser.Scene {
 	terminarPartida() {
 		this.terminada = true;
 		this.physics.pause();
-		this.player.setActive(false).setVisible(false);
+		this.jugadores.forEach((jugador) => jugador.eliminar());
 		this.sound.get('musica')?.stop();
 		this.events.emit('gameOver');
 		this.scene.launch('PauseScene', { finPartida: true });
@@ -187,51 +280,15 @@ export default class GameScene extends Phaser.Scene {
 		this.scene.start('MenuScene');
 	}
 
-	actualizarDisparos() {
-		if (!this.terminada && this.teclaDisparo.isDown && this.time.now - this.ultimoDisparo >= 250) {
-			this.disparar();
-		}
-
-		this.bullets.children.iterate((bala) => {
-			if (bala?.active && (bala.x < 0 || bala.x > WIDTH || bala.y < 0 || bala.y > HEIGHT)) {
-				bala.desactivar();			// rango y eliminacion al tocar bordes
-			}
-		});
-	}
-
-	disparar() {
-		const angulo = this.player.rotation;
-		const distancia = this.player.width / 2 + 8;
-		const x = this.player.x + Math.cos(angulo) * distancia;
-		const y = this.player.y + Math.sin(angulo) * distancia;
-		const bala = this.bullets.get();
-
-		if (bala) {
-			bala.disparar(x, y, angulo);
-			this.ultimoDisparo = this.time.now;
-		}
-	}
-
-	actualizarNave() {
-		if (this.cursors.left.isDown)
-			this.player.rotarIzquierda();
-		else if (this.cursors.right.isDown) 
-			this.player.rotarDerecha();
-		else
-			this.player.dejarDeRotar();
-
-		if (this.cursors.up.isDown)
-			this.player.acelerar();
-		else
-			this.player.dejarDeAcelerar();
-
-		//no sé si hacer también que se pueda usar el mouse, tipo que la navecita mire hacia el mouse
-		//y que con click derecho acelere y con izquierdo dispare....
-	}
-
 	// para que la nave salga por el otro lado cuando salga del canvas
 	wrapAround() {
-		this.physics.world.wrap(this.player, this.player.width / 2);
+		// naves, balas de cada jugador y asteroides salen por el lado opuesto
+		this.jugadores.forEach((jugador) => {
+			if (jugador.active) {
+				this.physics.world.wrap(jugador, jugador.width / 2);
+			}
+			this.physics.world.wrap(jugador.bullets, 0);
+		});
 		this.asteroids.children.iterate((asteroide) => {
 			if (asteroide?.active) {
 				this.physics.world.wrap(asteroide, asteroide.displayWidth / 2);

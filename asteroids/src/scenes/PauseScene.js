@@ -1,4 +1,5 @@
 import { WIDTH, HEIGHT } from '../constants.js';
+import { aplicarZoomCamara, nitidarTextos } from '../escala.js';
 
 /*
   Se dibuja encima de GameScene en dos casos:
@@ -12,6 +13,8 @@ export default class PauseScene extends Phaser.Scene {
 	}
 
 	create(datos) {
+		// alinea esta capa con el zoom del juego
+		aplicarZoomCamara(this);
 		this.gameScene = this.scene.get('GameScene');
 		this.finPartida = datos?.finPartida ?? false;
 		this.victoria = datos?.victoria ?? false;
@@ -45,7 +48,7 @@ export default class PauseScene extends Phaser.Scene {
 		}).setOrigin(0.5);
 
 		if (this.victoria) {
-			this.add.text(WIDTH / 2, 250, `Destruiste todos los asteroides\nPuntuación: ${this.gameScene.puntuacion}`, {
+			this.add.text(WIDTH / 2, 250, `Destruiste todos los asteroides\n${this.textoPuntuaciones()}`, {
 				fontFamily: 'monospace',
 				fontSize: '20px',
 				color: '#ffffff',
@@ -53,7 +56,19 @@ export default class PauseScene extends Phaser.Scene {
 			}).setOrigin(0.5);
 		}
 
-		const yOpciones = this.victoria ? 340 : 300;
+		// en modo oleadas no hay victoria: al perder, se muestra hasta dónde llegó
+		const modoOleadas = this.gameScene.modo === 'oleadas';
+		if (this.finPartida && modoOleadas) {
+			this.add.text(WIDTH / 2, 250, `Llegaste a la oleada ${this.gameScene.oleada}\n${this.textoPuntuaciones()}`, {
+				fontFamily: 'monospace',
+				fontSize: '20px',
+				color: '#ffffff',
+				align: 'center',
+			}).setOrigin(0.5);
+		}
+
+		const haySubtitulo = this.victoria || (this.finPartida && modoOleadas);
+		const yOpciones = haySubtitulo ? 340 : 300;
 		this.textosOpciones = this.opciones.map((opcion, indice) => (
 			this.add.text(WIDTH / 2, yOpciones + indice * 50, '', {
 				fontFamily: 'monospace',
@@ -73,6 +88,16 @@ export default class PauseScene extends Phaser.Scene {
 		});
 
 		this.actualizarTextos();
+		nitidarTextos(this); // menú de pausa/fin nítido pese al zoom de cámara
+	}
+
+	// línea(s) de puntuación: "Puntuación: N" con 1 jugador, "P1: N   P2: M" con 2
+	textoPuntuaciones() {
+		const jugadores = this.gameScene.jugadores;
+		if (jugadores.length === 1) {
+			return `Puntuación: ${jugadores[0].puntuacion}`;
+		}
+		return jugadores.map((j) => `P${j.id}: ${j.puntuacion}`).join('     ');
 	}
 
 	moverSeleccion(delta) {
