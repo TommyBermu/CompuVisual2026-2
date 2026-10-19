@@ -1,13 +1,13 @@
 # Smash Hit 3D (Three.js + Cannon-es)
 
-Clon básico de Smash Hit en 3D hecho con **Three.js** (gráficos) y **Cannon-es**
+Juego 3D inspirado en Smash Hit hecho con **Three.js** (gráficos) y **Cannon-es**
 (físicas), cargados desde CDN como módulos ES (sin instalar nada, igual que el
 Asteroids del repo).
 
-> **Estado actual:** demo de verificación — una bola que cae y rebota en el
-> suelo. Sirve para comprobar que Three.js + Cannon-es cargan y que despliega
-> bien en Vercel. El resto de piezas están como andamiaje (archivos con la
-> responsabilidad documentada, listos para rellenar).
+> **Estado actual (paso 1):** la cámara avanza por un pasillo infinito con
+> iluminación de atardecer (cielo degradado que también se refleja, sol con
+> sombras, niebla). Cada 150 m sube el nivel y con él la velocidad. Siguiente:
+> disparo de bolas.
 
 ## Cómo ejecutar
 
