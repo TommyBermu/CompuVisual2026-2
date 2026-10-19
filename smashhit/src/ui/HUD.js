@@ -4,8 +4,8 @@
     HUD en HTML/CSS por encima del canvas (div #hud). Más simple que dibujar
     dentro de la escena 3D.
 
-    Paso 1: nivel + distancia, y un cartel "Nivel N" al cambiar de nivel.
-    Más adelante: bolas restantes y puntuación.
+    Nivel + bolas restantes (grande, al centro) + distancia, y un cartel
+    "Nivel N" al cambiar de nivel.
 */
 
 export default class HUD {
@@ -13,11 +13,13 @@ export default class HUD {
         hudElement.innerHTML = `
             <div class="hud-top">
                 <span class="hud-level"></span>
+                <span class="hud-balls"></span>
                 <span class="hud-distance"></span>
             </div>
             <div class="hud-banner"></div>
         `;
         this.levelEl = hudElement.querySelector('.hud-level');
+        this.ballsEl = hudElement.querySelector('.hud-balls');
         this.distanceEl = hudElement.querySelector('.hud-distance');
         this.bannerEl = hudElement.querySelector('.hud-banner');
         this._bannerTimer = null;
@@ -25,6 +27,11 @@ export default class HUD {
 
     setLevel(level, total) {
         this.levelEl.textContent = `Nivel ${level}/${total}`;
+    }
+
+    setBalls(n) {
+        this.ballsEl.textContent = n;
+        this.ballsEl.classList.toggle('empty', n === 0);
     }
 
     setDistance(meters) {

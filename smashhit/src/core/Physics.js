@@ -37,7 +37,8 @@ export default class Physics {
     }
 
     step(delta) {
-        // paso fijo de 1/60 con interpolación según el delta real
-        this.world.step(1 / 60, delta, 3);
+        // Paso fijo de 1/120 s: las bolas van rápido (~40 m/s) y con pasos más
+        // grandes podrían "atravesar" paredes delgadas sin detectar el choque.
+        this.world.step(1 / 120, delta, 12);
     }
 }

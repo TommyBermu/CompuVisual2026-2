@@ -8,13 +8,16 @@
     Recorrido: 9 niveles fijos (levels.js) de ~30 s cada uno. Al entrar a un
     nivel sube la velocidad y cambia la paleta de colores. Al terminar el
     nivel 9 la cámara se detiene: recorrido completado.
-    Próximos pasos: Shooter (disparo), cristales + Shatter, bolas/game over.
+    Clic/toque dispara una bola (InputManager -> Shooter).
+    Próximos pasos: cristales + Shatter, bolas como vida/game over.
 */
 
 import Renderer from './Renderer.js';
 import Physics from './Physics.js';
+import InputManager from './InputManager.js';
 import CameraRail from '../systems/CameraRail.js';
 import Spawner from '../systems/Spawner.js';
+import Shooter from '../systems/Shooter.js';
 import HUD from '../ui/HUD.js';
 import { LEVELS, TOTAL_LENGTH, levelIndexAt } from '../levels.js';
 import { MAX_DELTA, THEME_TRANSITION } from '../constants.js';
@@ -26,6 +29,15 @@ export default class Game {
         this.rail = new CameraRail(this.renderer.camera);
         this.spawner = new Spawner(this.renderer, this.physics);
         this.hud = new HUD(document.getElementById('hud'));
+
+        this.shooter = new Shooter(this.renderer, this.physics, this.rail);
+        this.shooter.onAmmoChange = (n) => this.hud.setBalls(n);
+        this.hud.setBalls(this.shooter.ammo);
+
+        this.input = new InputManager(this.renderer.renderer.domElement, this.renderer.camera);
+        this.input.onShoot = (dir) => {
+            if (!this.finished) this.shooter.shoot(dir);
+        };
 
         this.entities = []; // entidades dinámicas (bolas, fragmentos...) que necesitan sync()
         this.levelIndex = -1;
@@ -70,7 +82,8 @@ export default class Game {
         this.renderer.update(delta);                          //    (transición de colores)
         this.spawner.update(this.renderer.camera.position.z); // 2. genera/borra pasillo
         this.physics.step(delta);                             // 3. avanza la física
-        this.entities.forEach((e) => e.sync());               // 4. body -> mesh
+        this.shooter.update(delta);                           // 4. body -> mesh de bolas + limpieza
+        this.entities.forEach((e) => e.sync());               //    (y del resto de entidades)
 
         // 5. ¿cambiamos de nivel o terminamos?
         const distance = this.rail.distance;

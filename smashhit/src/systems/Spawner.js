@@ -8,7 +8,7 @@
     Cada tramo se pinta con los colores del nivel al que pertenece, así el
     pasillo del siguiente nivel ya se ve "distinto" desde lejos.
 
-    Paso 1: solo tramos de túnel.
+    Por ahora solo tramos de túnel.
     Más adelante: en cada tramo nuevo, colocar un patrón de cristales/obstáculos
     elegido según el nivel (dificultad).
 */

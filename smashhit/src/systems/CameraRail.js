@@ -36,6 +36,7 @@ export default class CameraRail {
 
     pause() {
         this.paused = true;
+        this.velocity.set(0, 0, 0);
     }
 
     resume() {

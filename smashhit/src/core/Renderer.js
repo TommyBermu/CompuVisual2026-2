@@ -28,8 +28,10 @@ export default class Renderer {
     constructor(container) {
         // Escena
         this.scene = new THREE.Scene();
+        // Proporción 2:1 (equirectangular). OJO: Three calcula el tamaño de los
+        // reflejos con el ANCHO / 4; si el canvas es muy angosto los reflejos salen negros.
         this.skyCanvas = document.createElement('canvas');
-        this.skyCanvas.width = 16;
+        this.skyCanvas.width = 512;
         this.skyCanvas.height = 256;
         this.sky = this._canvasToSkyTexture(this.skyCanvas);
         this.scene.background = this.sky;

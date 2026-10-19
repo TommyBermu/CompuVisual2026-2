@@ -4,10 +4,13 @@ Juego 3D inspirado en Smash Hit hecho con **Three.js** (gráficos) y **Cannon-es
 (físicas), cargados desde CDN como módulos ES (sin instalar nada, igual que el
 Asteroids del repo).
 
-> **Estado actual (paso 1):** la cámara avanza por un pasillo infinito con
-> iluminación de atardecer (cielo degradado que también se refleja, sol con
-> sombras, niebla). Cada 150 m sube el nivel y con él la velocidad. Siguiente:
-> disparo de bolas.
+> **Estado actual (paso 2):** la cámara avanza por un pasillo con 9 niveles
+> fijos de ~30 s (`src/levels.js`); cada nivel sube la velocidad y cambia la
+> paleta (cielo, niebla, luces, pasillo) con una transición suave. Clic/toque
+> lanza bolas de metal que heredan la velocidad de la cámara y caen por
+> gravedad (25 bolas). Siguiente: cristales que se rompen.
+>
+> Atajo para probar: `?nivel=N` en la URL empieza en el nivel N.
 
 ## Cómo ejecutar
 

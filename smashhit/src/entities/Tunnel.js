@@ -2,8 +2,9 @@
     entities/Tunnel.js
     ------------------
     UN tramo del pasillo (largo SEGMENT_LENGTH): suelo + dos paredes + un arco
-    decorativo a la entrada. Se pinta con los colores del nivel al que pertenece. El Spawner pone muchos tramos seguidos para que el
-    pasillo parezca infinito y borra los que quedan atrás.
+    decorativo a la entrada. Se pinta con los colores del nivel al que pertenece.
+    El Spawner pone muchos tramos seguidos para que el pasillo parezca infinito
+    y borra los que quedan atrás.
 
     Truco para encajar en Entity (un mesh + un body):
         - mesh = THREE.Group con todas las piezas visuales.
@@ -38,11 +39,14 @@ const materialsByLevel = new Map();
 function materialsFor(levelIndex) {
     if (!materialsByLevel.has(levelIndex)) {
         const c = LEVELS[levelIndex].colors;
+        // envMapIntensity bajo: el cielo (scene.environment) aclara poco el pasillo,
+        // así los colores del nivel no se ven "lavados". Las bolas sí lo reflejan completo.
+        const env = 0.35;
         materialsByLevel.set(levelIndex, {
-            floorA: new THREE.MeshStandardMaterial({ color: c.floorA, roughness: 0.8 }),
-            floorB: new THREE.MeshStandardMaterial({ color: c.floorB, roughness: 0.8 }),
-            wall: new THREE.MeshStandardMaterial({ color: c.wall, roughness: 0.6 }),
-            arch: new THREE.MeshStandardMaterial({ color: c.arch, roughness: 0.4, metalness: 0.2 }),
+            floorA: new THREE.MeshStandardMaterial({ color: c.floorA, roughness: 0.8, envMapIntensity: env }),
+            floorB: new THREE.MeshStandardMaterial({ color: c.floorB, roughness: 0.8, envMapIntensity: env }),
+            wall: new THREE.MeshStandardMaterial({ color: c.wall, roughness: 0.6, envMapIntensity: env }),
+            arch: new THREE.MeshStandardMaterial({ color: c.arch, roughness: 0.4, metalness: 0.2, envMapIntensity: env }),
         });
     }
     return materialsByLevel.get(levelIndex);

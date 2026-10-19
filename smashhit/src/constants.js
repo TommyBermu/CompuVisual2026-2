@@ -27,9 +27,11 @@ export const LEVEL_DURATION = 30;  // segundos aprox. que dura cada nivel
 export const THEME_TRANSITION = 2; // segundos que tarda el cielo/luces en cambiar de paleta
 
 // --- Bola ---
-export const BALL_RADIUS = 0.5;
+export const BALL_RADIUS = 0.35;
 export const BALL_MASS = 1;
-export const BALL_SPEED = 28;     // velocidad inicial al lanzar (para el Shooter, paso 2)
+export const BALL_SPEED = 28;       // velocidad del lanzamiento (se le suma la de la cámara)
+export const BALL_SPAWN_OFFSET = 1; // metros delante de la cámara donde nace la bola
+export const BALL_LIFETIME = 6;     // segundos antes de borrar una bola
 export const BALLS_AVAILABLE = 25;
 
 // --- Cristales / rotura (para más adelante) ---
