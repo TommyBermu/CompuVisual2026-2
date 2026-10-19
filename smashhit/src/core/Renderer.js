@@ -58,9 +58,11 @@ export default class Renderer {
 
         this.sun = new THREE.DirectionalLight(0xffffff, 2);
         this.sun.castShadow = true;
-        this.sun.shadow.mapSize.set(1024, 1024);
+        this.sun.shadow.mapSize.set(2048, 2048); // más resolución: cubrir más área sin pixelar
         const s = this.sun.shadow.camera; // zona que cubre la sombra alrededor de la cámara
-        s.left = -15; s.right = 15; s.top = 15; s.bottom = -15; s.near = 1; s.far = 80;
+        s.left = -30; s.right = 30; s.top = 30; s.bottom = -40; s.near = 1; s.far = 160;
+        s.updateProjectionMatrix();
+        this.sun.shadow.bias = -0.0005; // evita "shadow acne" al ampliar el área
         this.scene.add(this.sun, this.sun.target);
         this.followCamera();
 
@@ -157,14 +159,28 @@ export default class Renderer {
     }
 
     // El sol se queda en la misma posición RELATIVA a la cámara (bajo, delante y a un lado).
+    // El target apunta más adelante (-Z) para que el área de sombra, ahora más
+    // grande, cubra el tramo que el jugador tiene por delante.
     followCamera() {
         const c = this.camera.position;
-        this.sun.position.set(c.x + 8, c.y + 12, c.z - 25);
-        this.sun.target.position.set(c.x, 0, c.z - 10);
+        this.sun.position.set(c.x + 10, c.y + 20, c.z - 45);
+        this.sun.target.position.set(c.x, 0, c.z - 35);
     }
 
     add(mesh) {
         this.scene.add(mesh);
+    }
+
+    // Aplicar ajustes del jugador: FOV y sombras on/off
+    applySettings(s) {
+        if (typeof s.fov === 'number') {
+            this.camera.fov = s.fov;
+            this.camera.updateProjectionMatrix();
+        }
+        if (typeof s.shadows === 'boolean') {
+            this.renderer.shadowMap.enabled = s.shadows;
+            this.sun.castShadow = s.shadows;
+        }
     }
 
     remove(mesh) {

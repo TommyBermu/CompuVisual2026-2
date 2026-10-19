@@ -14,15 +14,17 @@
 */
 
 import Ball from '../entities/Ball.js';
+import { getSettings } from '../settings.js';
 import {
     BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE, DESPAWN_BEHIND,
 } from '../constants.js';
 
 export default class Shooter {
-    constructor(renderer, physics, rail) {
+    constructor(renderer, physics, rail, audio = null) {
         this.renderer = renderer;
         this.physics = physics;
         this.rail = rail;
+        this.audio = audio;
         this.balls = [];
         this.ammo = BALLS_AVAILABLE;
         this.onAmmoChange = null; // callback para el HUD
@@ -37,12 +39,15 @@ export default class Shooter {
         origin.y -= 0.3;
 
         const ball = new Ball(this.physics, origin);
-        const v = direction.clone().multiplyScalar(BALL_SPEED).add(this.rail.velocity);
+        // La sensibilidad (ajuste del jugador) escala la fuerza del lanzamiento
+        const speed = BALL_SPEED * (getSettings().sensitivity || 1);
+        const v = direction.clone().multiplyScalar(speed).add(this.rail.velocity);
         ball.body.velocity.set(v.x, v.y, v.z);
         ball.age = 0;
         ball.addTo(this.renderer, this.physics);
         this.balls.push(ball);
 
+        if (this.audio) this.audio.playSfx('shoot');
         this.setAmmo(this.ammo - 1);
         return true;
     }
@@ -50,6 +55,31 @@ export default class Shooter {
     setAmmo(n) {
         this.ammo = Math.max(0, n);
         if (this.onAmmoChange) this.onAmmoChange(this.ammo);
+    }
+
+    // Explosión de bolas estilo Sonic (animación de muerte): suelta un puñado
+    // de bolas delante de la cámara que se "desparraman" suave y caen por gravedad.
+    scatter(count = 14) {
+        const camera = this.renderer.camera;
+        for (let i = 0; i < count; i++) {
+            const origin = camera.position.clone();
+            origin.y -= 0.5;
+            origin.z -= 1; // justo delante
+            // pequeña dispersión en la posición para que no nazcan todas en el mismo punto
+            origin.x += (Math.random() - 0.5) * 1.2;
+            origin.y += (Math.random() - 0.5) * 0.6;
+            const ball = new Ball(this.physics, origin);
+            ball.inert = true; // decorativa: no rompe cristales
+            // velocidades suaves: se desparraman, no salen disparadas
+            ball.body.velocity.set(
+                (Math.random() - 0.5) * 3,       // lateral suave
+                1 + Math.random() * 2,           // un saltito hacia arriba
+                (Math.random() - 0.5) * 2.5,     // adelante/atrás leve
+            );
+            ball.age = 0;
+            ball.addTo(this.renderer, this.physics);
+            this.balls.push(ball);
+        }
     }
 
     // Llamar después de physics.step(): sincroniza y limpia bolas viejas

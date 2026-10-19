@@ -17,12 +17,24 @@ export default class HUD {
                 <span class="hud-distance"></span>
             </div>
             <div class="hud-banner"></div>
+            <div class="hud-damage"></div>
         `;
         this.levelEl = hudElement.querySelector('.hud-level');
         this.ballsEl = hudElement.querySelector('.hud-balls');
         this.distanceEl = hudElement.querySelector('.hud-distance');
         this.bannerEl = hudElement.querySelector('.hud-banner');
+        this.damageEl = hudElement.querySelector('.hud-damage');
         this._bannerTimer = null;
+        this.root = hudElement;
+        this.hide();
+    }
+
+    show() {
+        this.root.style.display = '';
+    }
+
+    hide() {
+        this.root.style.display = 'none';
     }
 
     setLevel(level, total) {
@@ -44,5 +56,14 @@ export default class HUD {
         this.bannerEl.classList.add('visible');
         clearTimeout(this._bannerTimer);
         this._bannerTimer = setTimeout(() => this.bannerEl.classList.remove('visible'), ms);
+    }
+
+    // Marco rojo de daño (animación de muerte)
+    showDamage() {
+        this.damageEl.classList.add('visible');
+    }
+
+    hideDamage() {
+        this.damageEl.classList.remove('visible');
     }
 }

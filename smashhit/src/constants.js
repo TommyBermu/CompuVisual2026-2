@@ -14,12 +14,30 @@ export const CAMERA_HEIGHT = 2.2; // altura de los "ojos" sobre el suelo
 export const MAX_DELTA = 0.1;     // tope de delta (s) para que no salte al volver de otra pestaña
 
 // --- Túnel / pasillo ---
-export const TUNNEL_WIDTH = 8;     // ancho interior (X)
-export const TUNNEL_HEIGHT = 6;    // alto de las paredes (Y)
+export const TUNNEL_WIDTH = 11;    // ancho interior (X)
+export const TUNNEL_HEIGHT = 8;    // alto de las paredes (Y)
 export const WALL_THICKNESS = 0.5;
 export const SEGMENT_LENGTH = 20;  // largo de cada tramo de pasillo (Z)
 export const SPAWN_AHEAD = 140;    // cuántos metros por delante de la cámara se generan
 export const DESPAWN_BEHIND = 10;  // metros detrás de la cámara antes de borrar
+
+// --- Muros de cristal (salen del suelo, tipo "topo") ---
+export const CRYSTAL_WALL_CHANCE = 0.85; // probabilidad de que un tramo tenga un muro (0..1)
+export const CRYSTAL_THICKNESS = 0.3;    // grosor del panel de cristal (Z)
+export const CRYSTAL_OPACITY = 0.5;      // transparencia del cristal (0 = invisible, 1 = opaco)
+export const CRYSTAL_MIN_WIDTH = 2;      // ancho mínimo del muro (X)
+export const CRYSTAL_MAX_WIDTH = 4;      // ancho máximo del muro (X)
+export const CRYSTAL_MIN_HEIGHT = 2.5;   // alto mínimo del muro (Y)
+export const CRYSTAL_MAX_HEIGHT = 4.5;   // alto máximo del muro (Y)
+export const CRYSTAL_RISE_TIME = 0.6;    // segundos que tarda en salir del suelo
+export const CRYSTAL_RISE_AHEAD = 45;    // a cuántos metros de la cámara empieza a subir
+
+// --- Muerte / colisión con la cámara ---
+// La cámara se trata como una pequeña caja (tiene "volumen"), no un punto:
+// mueres un poco antes de tocar el muro, lo que se siente más justo.
+export const DEATH_MARGIN_Z = 1;  // holgura en Z (profundidad)
+export const DEATH_MARGIN_X = 1;  // holgura en X (laterales)
+export const DEATH_MARGIN_Y = 1;  // holgura en Y (altura, por si el muro es bajo)
 
 // --- Niveles ---
 // Los 9 niveles (velocidad + colores) están en src/levels.js.

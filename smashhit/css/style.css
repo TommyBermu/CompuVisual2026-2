@@ -78,3 +78,248 @@ body {
     cursor: crosshair;
     touch-action: none; /* que el toque dispare en vez de hacer scroll/zoom */
 }
+
+/* ===========================================================
+   MENÚ / SELECTOR DE NIVEL / AJUSTES  (overlay sobre el canvas)
+   =========================================================== */
+
+#menu {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    color: #fff;
+    font-family: system-ui, Arial, sans-serif;
+    background: radial-gradient(circle at 50% 30%, rgba(30, 20, 50, 0.72), rgba(8, 6, 16, 0.92));
+    backdrop-filter: blur(6px);
+    z-index: 10;
+}
+
+#menu.hidden {
+    display: none;
+}
+
+.screen {
+    width: 100%;
+    max-width: 880px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    text-align: center;
+}
+
+.screen.hidden {
+    display: none;
+}
+
+.title {
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 900;
+    letter-spacing: 6px;
+    background: linear-gradient(120deg, #ffd9a0, #ff7ab0, #9fb4ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 6px 30px rgba(255, 120, 170, 0.25);
+}
+
+.title-sm {
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    color: #b9b2cf;
+    margin-top: -10px;
+}
+
+/* --- Botones --- */
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(320px, 80vw);
+}
+
+.btn {
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 14px 20px;
+    border-radius: 12px;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn-primary {
+    background: linear-gradient(120deg, #ff7ab0, #9f7bff);
+    border: none;
+    font-size: 1.2rem;
+}
+
+.btn-ghost {
+    background: transparent;
+    width: min(220px, 70vw);
+}
+
+/* --- Rejilla de niveles --- */
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+.level-card {
+    pointer-events: auto;
+    cursor: pointer;
+    position: relative;
+    height: 120px;
+    border-radius: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 12px;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.level-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.level-num {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    opacity: 0.85;
+}
+
+.level-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.level-speed {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+/* --- Ajustes --- */
+.settings-list {
+    width: min(460px, 90vw);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.setting {
+    pointer-events: auto;
+    display: grid;
+    grid-template-columns: 1fr 160px 48px;
+    align-items: center;
+    gap: 12px;
+    font-size: 1rem;
+}
+
+.setting-label {
+    text-align: left;
+    color: #e7e2f3;
+}
+
+.setting-value {
+    text-align: right;
+    color: #b9b2cf;
+    font-variant-numeric: tabular-nums;
+}
+
+.setting input[type="range"] {
+    width: 100%;
+    accent-color: #ff7ab0;
+    cursor: pointer;
+}
+
+/* toggle como interruptor */
+.setting-toggle {
+    grid-template-columns: 1fr auto;
+}
+
+.setting-toggle input {
+    display: none;
+}
+
+.switch {
+    width: 46px;
+    height: 26px;
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.2);
+    position: relative;
+    transition: background 0.15s ease;
+}
+
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.15s ease;
+}
+
+.setting-toggle input:checked + .switch {
+    background: #ff7ab0;
+}
+
+.setting-toggle input:checked + .switch::after {
+    transform: translateX(20px);
+}
+
+/* ===========================================================
+   MARCO ROJO DE DAÑO / MUERTE
+   =========================================================== */
+
+.hud-damage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    /* borde rojo grueso que se desvanece hacia el centro */
+    box-shadow: inset 0 0 120px 30px rgba(220, 20, 40, 0.0);
+    border: 0 solid rgba(220, 20, 40, 0);
+}
+
+.hud-damage.visible {
+    opacity: 1;
+    box-shadow: inset 0 0 160px 50px rgba(220, 20, 40, 0.85);
+    animation: damage-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes damage-pulse {
+    from { box-shadow: inset 0 0 120px 40px rgba(220, 20, 40, 0.65); }
+    to   { box-shadow: inset 0 0 200px 70px rgba(220, 20, 40, 0.95); }
+}

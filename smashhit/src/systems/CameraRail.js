@@ -34,6 +34,11 @@ export default class CameraRail {
         this.speed = speed;
     }
 
+    // Reiniciar el contador de distancia tomando la posición actual como origen.
+    resetDistance() {
+        this.startZ = this.camera.position.z;
+    }
+
     pause() {
         this.paused = true;
         this.velocity.set(0, 0, 0);

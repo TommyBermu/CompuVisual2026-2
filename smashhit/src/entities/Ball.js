@@ -37,6 +37,22 @@ export default class Ball extends Entity {
         body.position.set(position.x, position.y, position.z);
 
         super(mesh, body);
+
+        // Etiqueta + detección de choque contra un cristal.
+        // Solo marcamos una bandera (crystal.hit); el borrado/caída lo hace el
+        // Spawner fuera del step de física (modificar el mundo dentro del
+        // callback de colisión es arriesgado).
+        body.userData = { type: 'ball', entity: this };
+        body.addEventListener('collide', (e) => {
+            if (this.inert) return; // las bolas de la animación de muerte no rompen nada
+            const other = e.body.userData;
+            if (other && other.type === 'crystal' && !other.entity.hit) {
+                other.entity.hit = true;
+                other.entity._impact = body.velocity.clone();
+            }
+        });
+
+        this.inert = false; // true = decorativa (no rompe cristales)
         this.sync();
     }
 }
