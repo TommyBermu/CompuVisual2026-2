@@ -20,6 +20,7 @@ import {
     CRYSTAL_THICKNESS, CRYSTAL_OPACITY,
     CRYSTAL_MIN_WIDTH, CRYSTAL_MAX_WIDTH, CRYSTAL_MIN_HEIGHT, CRYSTAL_MAX_HEIGHT,
     CRYSTAL_RISE_TIME, TUNNEL_WIDTH,
+    GROUP_WORLD, GROUP_CRYSTAL, GROUP_BALL,
 } from '../constants.js';
 
 const CT = CRYSTAL_THICKNESS;
@@ -62,6 +63,10 @@ export default class Crystal extends Entity {
         // --- Física: caja estática ---
         const body = new CANNON.Body({ mass: 0, material: physics.defaultMaterial });
         body.addShape(new CANNON.Box(new CANNON.Vec3(width / 2, height / 2, CT / 2)));
+        // Cristal: choca con el mundo y con bolas NORMALES. Las bolas inertes
+        // (animación de muerte) lo atraviesan porque su máscara no incluye CRYSTAL.
+        body.collisionFilterGroup = GROUP_CRYSTAL;
+        body.collisionFilterMask = GROUP_WORLD | GROUP_BALL;
 
         super(mesh, body);
 
@@ -78,6 +83,7 @@ export default class Crystal extends Entity {
         this.rise = 0;                  // 0 = hundido, 1 = fuera del todo
         this.rising = false;            // lo activa el Spawner cuando la cámara se acerca
         this.hit = false;               // la marca una bola al golpearlo
+        this.charged = false;           // ya cobró penalización al jugador (choque de cámara)
         this.falling = false;           // ya convertido a dinámico (cayéndose)
 
         this._place();

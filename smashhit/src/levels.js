@@ -14,8 +14,6 @@
     Más adelante: aquí también irán los patrones de cristales/obstáculos de cada nivel.
 */
 
-import { LEVEL_DURATION, SEGMENT_LENGTH } from './constants.js';
-
 export const LEVELS = [
     {
         name: 'Tarde dorada',
@@ -107,23 +105,40 @@ export const LEVELS = [
             floorA: '#f5dcc0', floorB: '#ecd0b2', wall: '#fff3e6', arch: '#e0a040',
         },
     },
+    {
+        name: 'Cénit',
+        speed: 16.5,
+        sunIntensity: 3.0,
+        colors: {
+            skyTop: '#c8d4ff', skyMid: '#e6e1ff', skyHorizon: '#ffffff', skyBottom: '#d8e4f0',
+            fog: '#eef0ff', sun: '#ffffff', hemiSky: '#ffffff', hemiGround: '#cfd6ec',
+            floorA: '#eceaff', floorB: '#dcd8f5', wall: '#ffffff', arch: '#b9a9e8',
+        },
+    },
 ];
 
-// Calcular dónde empieza (start) y cuánto mide (length) cada nivel, en metros.
-let acc = 0;
-LEVELS.forEach((level) => {
-    const segments = Math.max(1, Math.round((level.speed * LEVEL_DURATION) / SEGMENT_LENGTH));
-    level.start = acc;
-    level.length = segments * SEGMENT_LENGTH;
-    acc += level.length;
-});
+// --- Checkpoints por distancia fija -------------------------------------
+// El recorrido es lineal y continuo. Se divide en tramos de CHECKPOINT_LENGTH
+// metros: el checkpoint 0 va de 0 a 500, el 1 de 500 a 1000, etc. Cada
+// checkpoint reutiliza una de las paletas de LEVELS como ambiente.
+import { CHECKPOINT_LENGTH, CHECKPOINT_COUNT } from './constants.js';
 
-export const TOTAL_LENGTH = acc; // metros de todo el recorrido
+// Metros donde EMPIEZA cada checkpoint (0, 500, 1000, ...)
+export function checkpointStart(n) {
+    return n * CHECKPOINT_LENGTH;
+}
 
-// Índice (0..8) del nivel al que pertenece una distancia recorrida.
-export function levelIndexAt(distance) {
-    for (let i = LEVELS.length - 1; i >= 0; i--) {
-        if (distance >= LEVELS[i].start) return i;
-    }
-    return 0;
+// Longitud total del recorrido (hasta el final del último checkpoint).
+export const TOTAL_LENGTH = CHECKPOINT_COUNT * CHECKPOINT_LENGTH;
+
+// Checkpoint (0..CHECKPOINT_COUNT-1) al que pertenece una distancia recorrida.
+export function checkpointAt(distance) {
+    const n = Math.floor(distance / CHECKPOINT_LENGTH);
+    return Math.max(0, Math.min(CHECKPOINT_COUNT - 1, n));
+}
+
+// Ambiente (paleta + velocidad + nombre) de un checkpoint. Si hay más
+// checkpoints que paletas, se reutiliza la última.
+export function ambienceFor(checkpoint) {
+    return LEVELS[Math.min(checkpoint, LEVELS.length - 1)];
 }

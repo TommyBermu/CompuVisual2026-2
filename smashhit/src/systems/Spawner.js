@@ -15,7 +15,7 @@
 
 import Tunnel from '../entities/Tunnel.js';
 import Crystal from '../entities/Crystal.js';
-import { levelIndexAt } from '../levels.js';
+import { checkpointAt, LEVELS } from '../levels.js';
 import {
     SEGMENT_LENGTH, SPAWN_AHEAD, DESPAWN_BEHIND, CRYSTAL_WALL_CHANCE,
     CRYSTAL_RISE_AHEAD, DEATH_MARGIN_Z, DEATH_MARGIN_X, DEATH_MARGIN_Y,
@@ -27,6 +27,7 @@ export default class Spawner {
         this.physics = physics;
         this.segments = [];
         this.crystals = [];
+        this.onCrystalBroken = null; // callback(crystal) cuando una bola rompe un cristal
         // Primer tramo empieza un tramo detrás de la cámara (z=0), así los
         // arcos caen justo en múltiplos de SEGMENT_LENGTH = inicios de nivel.
         this.nextZ = SEGMENT_LENGTH;
@@ -37,7 +38,8 @@ export default class Spawner {
         // Generar por delante (z más negativo = más adelante)
         while (this.nextZ > cameraZ - SPAWN_AHEAD) {
             const midDistance = -(this.nextZ - SEGMENT_LENGTH / 2); // distancia del centro del tramo
-            const level = levelIndexAt(Math.max(0, midDistance));
+            // La paleta del tramo = la del checkpoint al que pertenece (tope en la última paleta)
+            const level = Math.min(checkpointAt(Math.max(0, midDistance)), LEVELS.length - 1);
             const seg = new Tunnel(this.physics, this.nextZ, level, this.count++);
             seg.addTo(this.renderer, this.physics);
             this.segments.push(seg);
@@ -57,10 +59,14 @@ export default class Spawner {
             this.nextZ -= SEGMENT_LENGTH;
         }
 
-        // Animar los muros: empiezan a salir cuando la cámara está cerca.
-        // Si una bola golpeó uno (c.hit), lo tumbamos para que se caiga.
+        // Animar los muros. Si una bola disparada golpeó uno (c.hit), lo
+        // tumbamos y avisamos (recompensa +bolas). Un muro tumbado por choque
+        // de cámara lleva charged=true y NO premia.
         this.crystals.forEach((c) => {
-            if (c.hit && !c.falling) c.knockDown(c._impact);
+            if (c.hit && !c.falling) {
+                c.knockDown(c._impact);
+                if (!c.charged && this.onCrystalBroken) this.onCrystalBroken(c);
+            }
             if (!c.rising && !c.falling && c.z > cameraZ - CRYSTAL_RISE_AHEAD) c.startRising();
             c.update(delta);
         });
@@ -83,20 +89,25 @@ export default class Spawner {
         });
     }
 
-    // ¿La cámara está tocando un muro de cristal ya visible? -> muerte.
-    hitCamera(camera) {
+    // ¿La cámara está tocando un muro de cristal? Devuelve ese cristal (una sola
+    // vez por muro, para no cobrar en cada frame) o null. Ya NO mata: el Game
+    // decide la penalización de bolas y tumba el cristal.
+    crystalHittingCamera(camera) {
         const p = camera.position;
         for (const c of this.crystals) {
+            if (c.charged) continue; // ya cobrado
             const box = c.aabb();
             if (!box) continue;
-            // La cámara se trata con "volumen": sumamos un margen en cada eje,
-            // así mueres al acercarte al muro, no solo al tocar su centro exacto.
+            // La cámara se trata con "volumen": margen en cada eje.
             const inZ = Math.abs(p.z - box.z) <= box.halfZ + DEATH_MARGIN_Z;
             const inX = p.x >= box.minX - DEATH_MARGIN_X && p.x <= box.maxX + DEATH_MARGIN_X;
-            const inY = p.y <= box.maxY + DEATH_MARGIN_Y; // el muro sube desde el suelo
-            if (inZ && inX && inY) return true;
+            const inY = p.y <= box.maxY + DEATH_MARGIN_Y;
+            if (inZ && inX && inY) {
+                c.charged = true;
+                return c;
+            }
         }
-        return false;
+        return null;
     }
 
     // Para reiniciar partida

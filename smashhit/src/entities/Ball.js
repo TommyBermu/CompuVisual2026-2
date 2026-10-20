@@ -12,7 +12,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Entity from './Entity.js';
-import { BALL_RADIUS, BALL_MASS } from '../constants.js';
+import {
+    BALL_RADIUS, BALL_MASS, GROUP_BALL, GROUP_WORLD, GROUP_CRYSTAL,
+} from '../constants.js';
 
 // Compartidos por todas las bolas (se dispara mucho, no recrearlos cada vez)
 const geometry = new THREE.SphereGeometry(BALL_RADIUS, 24, 16);
@@ -35,6 +37,9 @@ export default class Ball extends Entity {
             material: physics.defaultMaterial,
         });
         body.position.set(position.x, position.y, position.z);
+        // Por defecto (bola disparada): choca con el mundo y con los cristales.
+        body.collisionFilterGroup = GROUP_BALL;
+        body.collisionFilterMask = GROUP_WORLD | GROUP_CRYSTAL;
 
         super(mesh, body);
 
@@ -54,5 +59,13 @@ export default class Ball extends Entity {
 
         this.inert = false; // true = decorativa (no rompe cristales)
         this.sync();
+    }
+
+    // Marca la bola como "inerte" (animación de muerte): no rompe cristales y
+    // físicamente los ATRAVIESA, pero sigue chocando con suelo y paredes.
+    setInert() {
+        this.inert = true;
+        this.body.collisionFilterMask = GROUP_WORLD; // quita CRYSTAL de la máscara
+        return this;
     }
 }

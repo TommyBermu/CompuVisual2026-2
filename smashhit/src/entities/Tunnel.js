@@ -20,6 +20,7 @@ import Entity from './Entity.js';
 import { LEVELS } from '../levels.js';
 import {
     TUNNEL_WIDTH, TUNNEL_HEIGHT, WALL_THICKNESS, SEGMENT_LENGTH,
+    GROUP_WORLD, GROUP_CRYSTAL, GROUP_BALL,
 } from '../constants.js';
 
 // Geometrías y materiales compartidos por todos los tramos (no recrearlos cada vez).
@@ -92,6 +93,9 @@ export default class Tunnel extends Entity {
         body.addShape(wallShape, new CANNON.Vec3(-W / 2 - T / 2, H / 2, -L / 2));
         body.addShape(wallShape, new CANNON.Vec3(W / 2 + T / 2, H / 2, -L / 2));
         body.position.set(0, 0, startZ);
+        // Mundo: choca con todas las bolas (normales e inertes) y todo lo demás.
+        body.collisionFilterGroup = GROUP_WORLD;
+        body.collisionFilterMask = GROUP_WORLD | GROUP_CRYSTAL | GROUP_BALL;
 
         super(group, body);
         this.startZ = startZ;

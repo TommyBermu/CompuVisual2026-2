@@ -37,8 +37,8 @@ export default class HUD {
         this.root.style.display = 'none';
     }
 
-    setLevel(level, total) {
-        this.levelEl.textContent = `Nivel ${level}/${total}`;
+    setLevel(checkpoint, total) {
+        this.levelEl.textContent = `Checkpoint ${checkpoint}/${total}`;
     }
 
     setBalls(n) {
@@ -65,5 +65,12 @@ export default class HUD {
 
     hideDamage() {
         this.damageEl.classList.remove('visible');
+    }
+
+    // Destello rojo breve (al chocar con un cristal, sin ser game over)
+    flashDamage() {
+        this.damageEl.classList.add('flash');
+        clearTimeout(this._flashTimer);
+        this._flashTimer = setTimeout(() => this.damageEl.classList.remove('flash'), 220);
     }
 }

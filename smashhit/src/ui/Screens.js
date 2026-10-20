@@ -19,8 +19,9 @@
         onStart(levelIndex) -> callback que arranca el juego en ese nivel
 */
 
-import { LEVELS } from '../levels.js';
+import { ambienceFor } from '../levels.js';
 import { getSettings, saveSettings } from '../settings.js';
+import { CHECKPOINT_COUNT } from '../constants.js';
 
 export default class Screens {
     constructor(menuEl, { audio, onStart, onResume, onExitToMenu }) {
@@ -37,18 +38,18 @@ export default class Screens {
         this.el.innerHTML = `
             <div class="screen" data-view="home">
                 <h1 class="title">SMASH&nbsp;HIT</h1>
-                <p class="subtitle">9 niveles · un pasillo infinito de color</p>
+                <p class="subtitle">un pasillo lineal de color · rompe cristales para no quedarte sin bolas</p>
                 <div class="menu-buttons">
                     <button class="btn btn-primary" data-action="play">▶ Jugar</button>
-                    <button class="btn" data-action="levels">Seleccionar nivel</button>
+                    <button class="btn" data-action="levels">Elegir checkpoint</button>
                     <button class="btn" data-action="settings">⚙ Configuración</button>
                 </div>
             </div>
 
             <div class="screen hidden" data-view="levels">
-                <h2 class="title-sm">Elige un nivel</h2>
+                <h2 class="title-sm">Elige un checkpoint</h2>
                 <div class="level-grid">
-                    ${LEVELS.map((lv, i) => this._levelCard(lv, i)).join('')}
+                    ${Array.from({ length: CHECKPOINT_COUNT }, (_, i) => this._levelCard(ambienceFor(i), i)).join('')}
                 </div>
                 <button class="btn btn-ghost" data-action="back">← Volver</button>
             </div>
@@ -85,9 +86,9 @@ export default class Screens {
         const bg = `linear-gradient(160deg, ${c.skyTop}, ${c.skyMid} 45%, ${c.skyHorizon} 70%, ${c.skyBottom})`;
         return `
             <button class="level-card" data-level="${i}" style="background:${bg}">
-                <span class="level-num">${i + 1}</span>
+                <span class="level-num">${i}</span>
                 <span class="level-name">${level.name}</span>
-                <span class="level-speed">${level.speed} m/s</span>
+                <span class="level-speed">${i * 500} m</span>
             </button>
         `;
     }

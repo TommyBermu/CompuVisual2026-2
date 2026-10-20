@@ -39,6 +39,23 @@ export const DEATH_MARGIN_Z = 1;  // holgura en Z (profundidad)
 export const DEATH_MARGIN_X = 1;  // holgura en X (laterales)
 export const DEATH_MARGIN_Y = 1;  // holgura en Y (altura, por si el muro es bajo)
 
+// --- Grupos de colisión (Cannon-es) ---
+// Dos cuerpos chocan solo si el grupo de cada uno está en la máscara del otro.
+// Sirve para que las bolas de la muerte (inertes) atraviesen los cristales
+// pero sigan chocando con suelo y paredes.
+export const GROUP_WORLD = 1;   // túnel: suelo + paredes
+export const GROUP_CRYSTAL = 2; // muros de cristal
+export const GROUP_BALL = 4;    // bolas normales (disparadas)
+
+// --- Checkpoints / avance lineal ---
+export const CHECKPOINT_LENGTH = 500; // metros por checkpoint
+export const CHECKPOINT_COUNT = 10;   // checkpoints 0..9 (fin del recorrido en el 9)
+
+// --- Economía de bolas (las bolas son munición Y vida) ---
+export const CRYSTAL_BREAK_REWARD = 3; // +bolas al romper un cristal con un disparo
+export const CRASH_PENALTY_BASE = 5;   // -bolas base al chocar de frente con un cristal
+// penalización total al chocar = CRASH_PENALTY_BASE + checkpoint actual (N)
+
 // --- Niveles ---
 // Los 9 niveles (velocidad + colores) están en src/levels.js.
 export const LEVEL_DURATION = 30;  // segundos aprox. que dura cada nivel

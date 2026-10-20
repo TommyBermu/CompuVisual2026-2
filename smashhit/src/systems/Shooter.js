@@ -57,6 +57,12 @@ export default class Shooter {
         if (this.onAmmoChange) this.onAmmoChange(this.ammo);
     }
 
+    // Sumar (o restar con delta negativo) bolas. Devuelve el ammo resultante.
+    addAmmo(delta) {
+        this.setAmmo(this.ammo + delta);
+        return this.ammo;
+    }
+
     // Explosión de bolas estilo Sonic (animación de muerte): suelta un puñado
     // de bolas delante de la cámara que se "desparraman" suave y caen por gravedad.
     scatter(count = 14) {
@@ -69,7 +75,7 @@ export default class Shooter {
             origin.x += (Math.random() - 0.5) * 1.2;
             origin.y += (Math.random() - 0.5) * 0.6;
             const ball = new Ball(this.physics, origin);
-            ball.inert = true; // decorativa: no rompe cristales
+            ball.setInert(); // decorativa: atraviesa cristales, choca con suelo/paredes
             // velocidades suaves: se desparraman, no salen disparadas
             ball.body.velocity.set(
                 (Math.random() - 0.5) * 3,       // lateral suave
