@@ -32,20 +32,22 @@ export const CRYSTAL_MAX_HEIGHT = 4.5;   // alto máximo del muro (Y)
 export const CRYSTAL_RISE_TIME = 0.6;    // segundos que tarda en salir del suelo
 export const CRYSTAL_RISE_AHEAD = 45;    // a cuántos metros de la cámara empieza a subir
 
-// --- Muerte / colisión con la cámara ---
-// La cámara se trata como una pequeña caja (tiene "volumen"), no un punto:
-// mueres un poco antes de tocar el muro, lo que se siente más justo.
-export const DEATH_MARGIN_Z = 1;  // holgura en Z (profundidad)
-export const DEATH_MARGIN_X = 1;  // holgura en X (laterales)
-export const DEATH_MARGIN_Y = 1;  // holgura en Y (altura, por si el muro es bajo)
+// --- Choque cámara-vidrio ---
+// La cámara se trata como una ESFERA (tiene "volumen", no es un punto). Se
+// comprueba contra cada trozo de vidrio que siga en pie (y bloques grandes que
+// se estén cayendo), así un panel roto a medias sigue golpeando por su parte sana.
+export const CAMERA_RADIUS = 0.6;       // radio de la cámara (m)
+export const CRASH_BREAK_RADIUS = 1.0;  // radio que rompe la cámara al chocar
+export const CRASH_COOLDOWN = 0.5;      // s sin recibir otro golpe tras chocar
 
 // --- Grupos de colisión (Cannon-es) ---
 // Dos cuerpos chocan solo si el grupo de cada uno está en la máscara del otro.
 // Sirve para que las bolas de la muerte (inertes) atraviesen los cristales
 // pero sigan chocando con suelo y paredes.
 export const GROUP_WORLD = 1;   // túnel: suelo + paredes
-export const GROUP_CRYSTAL = 2; // muros de cristal
+export const GROUP_CRYSTAL = 2; // paneles de cristal (en pie)
 export const GROUP_BALL = 4;    // bolas normales (disparadas)
+export const GROUP_CHUNK = 8;   // bloques de vidrio cayéndose
 
 // --- Checkpoints / avance lineal ---
 export const CHECKPOINT_LENGTH = 500; // metros por checkpoint
@@ -66,8 +68,18 @@ export const BALL_RADIUS = 0.35;
 export const BALL_MASS = 1;
 export const BALL_SPEED = 28;       // velocidad del lanzamiento (se le suma la de la cámara)
 export const BALL_SPAWN_OFFSET = 1; // metros delante de la cámara donde nace la bola
+export const BALL_SPAWN_DROP = 0.5; // metros por debajo de la mira donde nace la bola
 export const BALL_LIFETIME = 6;     // segundos antes de borrar una bola
 export const BALLS_AVAILABLE = 25;
+export const AIM_MAX_DISTANCE = 40; // si el clic no apunta a nada, se apunta a esta distancia
 
-// --- Cristales / rotura (para más adelante) ---
-export const CRYSTAL_SHARDS = 8;  // nº de fragmentos al romper un cristal
+// --- Rotura del vidrio (ver utils/fracture.js y entities/Crystal.js) ---
+export const GLASS_HOLE_RADIUS = 0.7;     // radio base del agujero de una bola (m)
+export const GLASS_HEIGHT_WEAKNESS = 1.2; // golpe arriba del todo: radio x (1 + esto)
+export const GLASS_EDGE_WEAKNESS = 0.6;   // golpe junto a un borde lateral: radio x (1 + esto)
+export const GLASS_BALL_SLOWDOWN = 0.85;  // la bola atraviesa el vidrio conservando este % de velocidad
+export const GLASS_CHUNK_DENSITY = 1.5;   // masa por m² de los bloques que se caen
+export const CHUNK_HARMFUL_AREA = 0.3;    // bloques cayéndose de más área (m²) golpean a la cámara
+export const CHUNK_LIFETIME = 8;          // s antes de borrar un bloque caído
+export const DEBRIS_LIFETIME = 2.5;       // s que duran las astillas
+export const MAX_DEBRIS = 200;            // tope de astillas a la vez

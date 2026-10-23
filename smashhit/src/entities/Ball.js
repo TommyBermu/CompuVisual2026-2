@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Entity from './Entity.js';
 import {
-    BALL_RADIUS, BALL_MASS, GROUP_BALL, GROUP_WORLD, GROUP_CRYSTAL,
+    BALL_RADIUS, BALL_MASS, GROUP_BALL, GROUP_WORLD, GROUP_CRYSTAL, GROUP_CHUNK,
 } from '../constants.js';
 
 // Compartidos por todas las bolas (se dispara mucho, no recrearlos cada vez)
@@ -37,23 +37,24 @@ export default class Ball extends Entity {
             material: physics.defaultMaterial,
         });
         body.position.set(position.x, position.y, position.z);
-        // Por defecto (bola disparada): choca con el mundo y con los cristales.
+        // Por defecto (bola disparada): choca con el mundo, los paneles y los bloques que caen.
         body.collisionFilterGroup = GROUP_BALL;
-        body.collisionFilterMask = GROUP_WORLD | GROUP_CRYSTAL;
+        body.collisionFilterMask = GROUP_WORLD | GROUP_CRYSTAL | GROUP_CHUNK;
 
         super(mesh, body);
 
-        // Etiqueta + detección de choque contra un cristal.
-        // Solo marcamos una bandera (crystal.hit); el borrado/caída lo hace el
+        // Etiqueta + detección de choque contra el vidrio.
+        // Solo se ENCOLA el golpe (registerBallHit); romper el panel lo hace el
         // Spawner fuera del step de física (modificar el mundo dentro del
-        // callback de colisión es arriesgado).
+        // callback de colisión es arriesgado). Los paneles tienen
+        // collisionResponse = false: la bola no rebota, los atraviesa.
         body.userData = { type: 'ball', entity: this };
+        this.hitCrystals = new Set(); // paneles que esta bola ya rompió (uno por pasada)
         body.addEventListener('collide', (e) => {
             if (this.inert) return; // las bolas de la animación de muerte no rompen nada
             const other = e.body.userData;
-            if (other && other.type === 'crystal' && !other.entity.hit) {
-                other.entity.hit = true;
-                other.entity._impact = body.velocity.clone();
+            if (other && (other.type === 'crystal' || other.type === 'chunk')) {
+                other.entity.registerBallHit(this);
             }
         });
 

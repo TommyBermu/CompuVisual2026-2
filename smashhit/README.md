@@ -4,11 +4,12 @@ Juego 3D inspirado en Smash Hit hecho con **Three.js** (gráficos) y **Cannon-es
 (físicas), cargados desde CDN como módulos ES (sin instalar nada, igual que el
 Asteroids del repo).
 
-> **Estado actual (paso 2):** la cámara avanza por un pasillo con 9 niveles
-> fijos de ~30 s (`src/levels.js`); cada nivel sube la velocidad y cambia la
-> paleta (cielo, niebla, luces, pasillo) con una transición suave. Clic/toque
-> lanza bolas de metal que heredan la velocidad de la cámara y caen por
-> gravedad (25 bolas). Siguiente: cristales que se rompen.
+> **Estado actual (paso 3):** recorrido lineal con checkpoints; las bolas
+> salen hacia donde apunta la mira (tiro parabólico compensado) y los paneles
+> de vidrio se ROMPEN según dónde se golpeen (Voronoi radial alrededor del
+> impacto, ver `src/utils/fracture.js`): agujero en el centro, mucho más
+> destrozo si el golpe es alto o junto a un borde, y los trozos que quedan sin
+> apoyo se caen. Lo que sigue en pie sigue siendo sólido para bolas y cámara.
 >
 > Atajo para probar: `?nivel=N` en la URL empieza en el nivel N.
 
@@ -77,19 +78,21 @@ smashhit/
     ├── entities/           # Objetos: mesh (Three) + body (Cannon) juntos
     │   ├── Entity.js       # Base: sync() body->mesh, destroy() (funcional)
     │   ├── Ball.js         # La bola de metal (funcional, se usa en la demo)
-    │   ├── Crystal.js      # Cristal rompible (andamiaje)
+    │   ├── Crystal.js      # Panel de vidrio rompible (trozos convexos)
     │   ├── Obstacle.js     # Paredes/columnas sólidas (andamiaje)
-    │   └── Tunnel.js       # El corredor (andamiaje)
+    │   └── Tunnel.js       # El corredor
     ├── systems/            # Lógica que actúa sobre las entidades
-    │   ├── Shooter.js      # Lanza bolas (andamiaje)
-    │   ├── Spawner.js      # Genera/recicla cristales y obstáculos (andamiaje)
-    │   ├── Shatter.js      # Rompe cristales en fragmentos (andamiaje)
-    │   └── CameraRail.js   # Avance de la cámara por el túnel (andamiaje)
+    │   ├── Shooter.js      # Lanza bolas hacia la mira
+    │   ├── Spawner.js      # Genera pasillo/paneles, golpes y choque de cámara
+    │   ├── Shatter.js      # Astillas (física propia) y bloques que caen (Cannon)
+    │   └── CameraRail.js   # Avance de la cámara por el túnel
     ├── ui/
     │   ├── HUD.js          # Puntuación / bolas restantes (andamiaje)
     │   └── Screens.js      # Menú / game over / pausa (andamiaje)
     └── utils/
         ├── sync.js         # Copiar posición/rotación body -> mesh (funcional)
+        ├── fracture.js     # Geometría 2D: Voronoi, rotura y conectividad
+        ├── glass.js        # Polígono -> geometría Three + forma Cannon
         └── loaders.js      # Carga de audio/texturas (andamiaje)
 ```
 

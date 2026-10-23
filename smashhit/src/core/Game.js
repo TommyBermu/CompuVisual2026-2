@@ -12,8 +12,8 @@
     Recorrido LINEAL y continuo, dividido en checkpoints de 500 m (0..9). Al
     cruzar cada checkpoint cambia el ambiente (paleta + velocidad). Las bolas son
     munición Y vida: disparar cuesta 1; romper un cristal con un disparo da +3;
-    chocar de frente contra un cristal resta (5 + N) bolas (N = checkpoint) y
-    tumba ese cristal. Si las bolas llegan a 0 -> game over. Llegar al final
+    chocar contra vidrio sólido resta (5 + N) bolas (N = checkpoint) y lo rompe
+    donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
     (TOTAL_LENGTH) completa el recorrido.
     ESC pausa/reanuda. Clic/toque dispara una bola (InputManager -> Shooter).
 */
@@ -29,7 +29,7 @@ import HUD from '../ui/HUD.js';
 import Screens from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
 import { getSettings, onSettingsChange } from '../settings.js';
-import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD } from '../constants.js';
+import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN } from '../constants.js';
 export default class Game {
     constructor(container) {
         this.renderer = new Renderer(container);
@@ -40,6 +40,7 @@ export default class Game {
         this.hud = new HUD(document.getElementById('hud'));
 
         this.shooter = new Shooter(this.renderer, this.physics, this.rail, this.audio);
+        this.shooter.getAimTargets = () => this.spawner.aimTargets(); // para apuntar donde está la mira
         this.shooter.onAmmoChange = (n) => {
             this.hud.setBalls(n);
             // Las bolas son vida: si se acaban durante la partida, game over.
@@ -110,6 +111,7 @@ export default class Game {
         this.hud.setBalls(this.shooter.ammo);
         this.hud.hideDamage();
         this.checkpoint = -1;
+        this.crashCooldown = 0;
         this.finished = false;
         this.dead = false;
         this.started = true;
@@ -154,15 +156,18 @@ export default class Game {
         setTimeout(() => this._exitToMenu(), 2800);
     }
 
-    // El jugador chocó de frente con un cristal: pierde (5 + N) bolas y el
-    // cristal se cae (como si lo hubiera golpeado una bola).
-    _crashInto(crystal) {
+    // El jugador chocó con vidrio sólido (un trozo de panel o un bloque que
+    // cae): pierde (5 + N) bolas y rompe el vidrio donde lo tocó. Después hay
+    // un pequeño tiempo de gracia; pasado ese tiempo, cualquier otro trozo
+    // sólido que se cruce (p.ej. un bloque que rebotó) vuelve a golpear.
+    _crashInto(hit) {
         const penalty = CRASH_PENALTY_BASE + this.checkpoint; // N = checkpoint actual
         this.shooter.addAmmo(-penalty);
         this.hud.showBanner(`-${penalty}`, 900);
         this.hud.flashDamage();        // destello rojo breve
         this.audio.playSfx('shoot');
-        crystal.hit = true;            // que el Spawner lo tumbe (sin premiar, va charged)
+        this.spawner.breakByCamera(hit, this.rail.velocity);
+        this.crashCooldown = CRASH_COOLDOWN;
     }
 
     // --- Pausa (ESC) ---------------------------------------------------------
@@ -220,8 +225,8 @@ export default class Game {
         }
         this.renderer.followCamera();                         //    (el sol la sigue)
         this.renderer.update(delta);                          //    (transición de colores)
-        this.spawner.update(this.renderer.camera.position.z, delta); // 2. genera/borra/anima pasillo
-        this.physics.step(delta);                             // 3. avanza la física
+        this.physics.step(delta);                             // 2. avanza la física
+        this.spawner.update(this.renderer.camera.position.z, delta); // 3. genera/borra pasillo, rompe vidrio
         this.shooter.update(delta);                           // 4. body -> mesh de bolas + limpieza
         this.entities.forEach((e) => e.sync());               //    (y del resto de entidades)
 
@@ -233,9 +238,13 @@ export default class Game {
             const cp = checkpointAt(distance);
             if (cp !== this.checkpoint) this._setAmbience(cp);
 
-            // ¿chocamos de frente con un cristal? -> penalización de bolas
-            const crystal = this.spawner.crystalHittingCamera(this.renderer.camera);
-            if (crystal) this._crashInto(crystal);
+            // ¿chocamos con vidrio sólido? -> penalización de bolas (con tiempo de gracia)
+            if (this.crashCooldown > 0) {
+                this.crashCooldown -= delta;
+            } else {
+                const hit = this.spawner.cameraCollision(this.renderer.camera);
+                if (hit) this._crashInto(hit);
+            }
 
             // ¿llegamos al final del recorrido?
             if (distance >= TOTAL_LENGTH) this._finish();

@@ -5,18 +5,21 @@
     cámara y le da su velocidad inicial. Lleva la cuenta de bolas disponibles.
 
     Física del disparo:
-        velocidad bola = dirección * BALL_SPEED + velocidad de la cámara
-    La bola "hereda" el movimiento del jugador (momentum), igual que una pelota
-    lanzada desde un tren en marcha. Después solo actúa la gravedad -> parábola.
+        la bola sale con la rapidez del lanzamiento + la de la cámara (hereda el
+        momentum, como una pelota lanzada desde un tren) y su velocidad se
+        calcula para que la parábola (gravedad) termine justo donde apunta la
+        mira (ver _aimVelocity).
 
     También elimina las bolas que ya no sirven (quedaron atrás o vivieron
     demasiado), para no acumular cuerpos en la física.
 */
 
+import * as THREE from 'three';
 import Ball from '../entities/Ball.js';
 import { getSettings } from '../settings.js';
 import {
     BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE, DESPAWN_BEHIND,
+    AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP,
 } from '../constants.js';
 
 export default class Shooter {
@@ -27,21 +30,25 @@ export default class Shooter {
         this.audio = audio;
         this.balls = [];
         this.ammo = BALLS_AVAILABLE;
-        this.onAmmoChange = null; // callback para el HUD
+        this.onAmmoChange = null;   // callback para el HUD
+        this.getAimTargets = null;  // () => objetos 3D contra los que apuntar (lo asigna el Game)
+        this.raycaster = new THREE.Raycaster();
     }
 
     shoot(direction) {
         if (this.ammo <= 0) return false;
 
         const camera = this.renderer.camera;
-        // Nace un poco delante de la cámara (y algo abajo) para no "salir del ojo"
+        // Nace un poco delante de la cámara, SOBRE la línea de la mira
+        // (antes nacía 0.3 m más abajo y además la gravedad la hacía caer:
+        // por eso pegaba por debajo de la cruz).
         const origin = camera.position.clone().addScaledVector(direction, BALL_SPAWN_OFFSET);
-        origin.y -= 0.3;
+        origin.y -= BALL_SPAWN_DROP; // un poco por debajo de la mira (el tiro igual llega al punto apuntado)
 
         const ball = new Ball(this.physics, origin);
         // La sensibilidad (ajuste del jugador) escala la fuerza del lanzamiento
         const speed = BALL_SPEED * (getSettings().sensitivity || 1);
-        const v = direction.clone().multiplyScalar(speed).add(this.rail.velocity);
+        const v = this._aimVelocity(origin, direction, speed);
         ball.body.velocity.set(v.x, v.y, v.z);
         ball.age = 0;
         ball.addTo(this.renderer, this.physics);
@@ -50,6 +57,34 @@ export default class Shooter {
         if (this.audio) this.audio.playSfx('shoot');
         this.setAmmo(this.ammo - 1);
         return true;
+    }
+
+    /*
+        Velocidad para que la bola LLEGUE al punto bajo la mira (como en el Smash
+        Hit original), aunque la gravedad la curve.
+            1. Rayo desde la cámara en la dirección del clic -> primer objeto que
+               toca (vidrio, suelo, pared). Si no toca nada, un punto a
+               AIM_MAX_DISTANCE.
+            2. Tiempo de vuelo t = distancia / rapidez, donde la rapidez es la del
+               lanzamiento + la heredada de la cámara (momentum).
+            3. Tiro parabólico: p(t) = p0 + v·t + ½·g·t²  =>  v = (p - p0)/t - ½·g·t
+    */
+    _aimVelocity(origin, direction, speed) {
+        const camera = this.renderer.camera;
+        const targets = this.getAimTargets ? this.getAimTargets() : [];
+        this.raycaster.set(camera.position, direction);
+        this.raycaster.far = AIM_MAX_DISTANCE;
+        const hit = this.raycaster.intersectObjects(targets, true)[0];
+        const target = hit
+            ? hit.point
+            : camera.position.clone().addScaledVector(direction, AIM_MAX_DISTANCE);
+
+        const launch = direction.clone().multiplyScalar(speed).add(this.rail.velocity);
+        const toTarget = target.clone().sub(origin);
+        const t = Math.max(toTarget.length() / launch.length(), 1e-3);
+        const v = toTarget.divideScalar(t);
+        v.y -= 0.5 * GRAVITY * t; // GRAVITY es negativa: compensa hacia arriba
+        return v;
     }
 
     setAmmo(n) {
