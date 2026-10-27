@@ -48,6 +48,46 @@ Asteroids del repo).
 > pausa y se apagan al morir, terminar o salir al menú. Ajustes en
 > `src/constants.js` (bloque `POWER_*`).
 
+## Puntuación, combo y récord
+
+La puntuación la lleva `src/systems/Score.js` (solo cuenta; el HUD la pinta y
+el `Game` le pasa los eventos). Todos los números están en `src/constants.js`
+(bloque "Puntuación y combo").
+
+| Qué | Puntos |
+|---|---|
+| Distancia | `SCORE_PER_METER` (5) por metro **recorrido** en la partida |
+| Cristal roto de un disparo | `SCORE_CRYSTAL` (50) **x combo** |
+| Cristal de power-up | `SCORE_POWERUP` (250) x combo, extra (`score.addPowerUp()`) |
+| Cruzar un checkpoint | `SCORE_CHECKPOINT` (1000) |
+| Completar el recorrido | `SCORE_FINISH` (5000) + `SCORE_FINISH_PER_BALL` (50) por bola que quede |
+
+**Combo:** cada cristal roto seguido suma 1 a la racha; cada `COMBO_STEP` (5)
+aciertos el multiplicador sube (x1 → x2 → … → x5, `COMBO_MAX`). Se pierde al
+**chocar** con vidrio y al **fallar** un tiro: una bola cuyo primer choque no
+es vidrio (suelo, pared, metal, o pasar por un agujero ya hecho) o que
+desaparece sin tocar nada (`Shooter.onMiss`, desactivable con
+`COMBO_RESET_ON_MISS`).
+
+En el HUD la puntuación va arriba a la derecha (bajo la distancia) con la
+insignia "xN" y una barrita de progreso hacia el siguiente multiplicador; al
+sumar sale un "+N" pequeño junto al marcador (no en el centro, para no tapar
+la mira). En pausa, tras morir o tras terminar no se suma nada.
+
+**Récord** (`src/records.js`, localStorage `smashhit.records`, con try/catch
+como `settings.js`): mejor puntuación, más metros recorridos en una partida y
+checkpoint más lejano alcanzado empezando desde el 0. Empezar desde un
+checkpoint avanzado **sí cuenta** para puntuación y distancia, porque solo
+suman los metros que de verdad recorres (no los que te saltas); para el
+"checkpoint más lejano" solo valen las partidas desde el inicio. Se guarda al
+morir, al completar y también al salir al menú desde la pausa. El récord sale
+en el menú principal y en la pantalla de resultados (con "¡Nuevo récord!" si
+se batió), que tiene **Reintentar** (mismo checkpoint) y **Menú**.
+
+Para enganchar otros eventos basta una línea en el `Game`:
+`this.score.addHit()`, `addPowerUp()`, `addCheckpoint()`, `addFinish(bolas)`,
+`onCrash()`, `onMiss()`.
+
 ## Cómo ejecutar
 
 Necesita un servidor local porque usa módulos ES (abrir el `index.html` con
@@ -103,7 +143,9 @@ smashhit/
 │   └── textures/           # texturas/skybox (opcional)
 └── src/
     ├── main.js             # Crea Game y lo arranca
-    ├── constants.js        # Números de ajuste (gravedad, rebote, bola...)
+    ├── constants.js        # Números de ajuste (gravedad, rebote, bola, puntos...)
+    ├── settings.js         # Ajustes del jugador (localStorage)
+    ├── records.js          # Récords: mejor puntuación/distancia (localStorage)
     ├── core/               # El "motor": piezas base
     │   ├── Game.js         # Orquestador + bucle principal (DEMO funcional)
     │   ├── Renderer.js     # Three.js: escena, cámara, luces, render (funcional)
@@ -133,10 +175,11 @@ smashhit/
     │   ├── PowerUps.js     # Poderes activos: temporizadores, triple, infinitas, cámara lenta
     │   ├── Spawner.js      # Genera pasillo/obstáculos/relleno/gemas, golpes y choque de cámara
     │   ├── Shatter.js      # Astillas (física propia) y bloques que caen (Cannon)
-    │   └── CameraRail.js   # Avance de la cámara a lo largo del recorrido
+    │   ├── CameraRail.js   # Avance de la cámara a lo largo del recorrido
+    │   └── Score.js        # Puntuación + combo (racha de aciertos)
     ├── ui/
-    │   ├── HUD.js          # Bolas restantes, distancia, poderes activos y carteles
-    │   └── Screens.js      # Menú / game over / pausa (andamiaje)
+    │   ├── HUD.js          # Bolas, distancia, puntuación + combo, poderes activos, carteles
+    │   └── Screens.js      # Menú (con récord) / resultados / pausa / ajustes
     └── utils/
         ├── sync.js         # Copiar posición/rotación body -> mesh (funcional)
         ├── fracture.js     # Geometría 2D: Voronoi, rotura y conectividad

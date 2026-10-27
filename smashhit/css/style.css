@@ -146,6 +146,111 @@ body {
     transform: scale(1);
 }
 
+/* --- Puntuación + combo (arriba a la derecha, bajo la distancia) --- */
+.hud-score {
+    position: absolute;
+    top: 52px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    text-shadow: 0 2px 6px rgba(60, 20, 40, 0.6);
+}
+
+.hud-score-value {
+    font-size: 1.7rem;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.hud-score-value.pulse {
+    animation: score-pulse 0.25s ease-out;
+}
+
+@keyframes score-pulse {
+    from { transform: scale(1.18); color: #ffe7a3; }
+    to   { transform: scale(1); }
+}
+
+.hud-combo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.hud-combo b {
+    font-weight: 800;
+    min-width: 2ch;
+    text-align: right;
+}
+
+/* barrita: progreso hacia el siguiente multiplicador */
+.hud-combo-bar {
+    display: block;
+    width: 54px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    overflow: hidden;
+}
+
+.hud-combo-bar > i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: currentColor;
+    transition: width 0.15s ease;
+}
+
+/* el color del combo sube de nivel: x2 dorado ... x5 rosa intenso */
+.hud-combo[data-level="2"] { opacity: 1; color: #ffe08a; }
+.hud-combo[data-level="3"] { opacity: 1; color: #ffb36b; }
+.hud-combo[data-level="4"] { opacity: 1; color: #ff8a8a; }
+.hud-combo[data-level="5"] { opacity: 1; color: #ff7ab0; }
+
+.hud-combo.bump {
+    animation: combo-bump 0.4s ease-out;
+}
+
+@keyframes combo-bump {
+    0%   { transform: scale(1.6); }
+    100% { transform: scale(1); }
+}
+
+/* "+N" que sube y se desvanece junto al marcador */
+.hud-popups {
+    position: relative;
+    height: 0;
+    width: 100%;
+}
+
+.hud-popup {
+    position: absolute;
+    top: 6px;
+    right: 0;
+    white-space: nowrap;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff3c4;
+    animation: popup-rise 0.9s ease-out forwards;
+}
+
+.hud-popup.combo      { color: #ff7ab0; font-size: 1.2rem; }
+.hud-popup.checkpoint { color: #9fe0ff; }
+.hud-popup.finish     { color: #9fffb0; font-size: 1.3rem; }
+.hud-popup.powerup    { color: #d6a8ff; }
+
+@keyframes popup-rise {
+    0%   { opacity: 0; transform: translateY(14px) scale(0.9); }
+    15%  { opacity: 1; transform: translateY(0) scale(1.05); }
+    100% { opacity: 0; transform: translateY(-26px) scale(1); }
+}
+
 #game canvas {
     cursor: crosshair;
     touch-action: none; /* que el toque dispare en vez de hacer scroll/zoom */
@@ -245,6 +350,97 @@ body {
 .btn-ghost {
     background: transparent;
     width: min(220px, 70vw);
+}
+
+/* --- Récord (menú) y resultados (fin de partida) --- */
+.record-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 22px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.record-label {
+    font-size: 0.75rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #b9b2cf;
+}
+
+.record-score {
+    font-size: 1.8rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: #ffd9a0;
+}
+
+.record-extra,
+.record-empty {
+    font-size: 0.85rem;
+    color: #b9b2cf;
+}
+
+.new-record {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    color: #2a1630;
+    background: linear-gradient(120deg, #ffd9a0, #ff7ab0);
+    box-shadow: 0 0 30px rgba(255, 122, 176, 0.5);
+    animation: record-glow 0.9s ease-in-out infinite alternate;
+}
+
+.new-record.hidden {
+    display: none;
+}
+
+@keyframes record-glow {
+    from { transform: scale(1);    box-shadow: 0 0 18px rgba(255, 122, 176, 0.35); }
+    to   { transform: scale(1.06); box-shadow: 0 0 36px rgba(255, 217, 160, 0.7); }
+}
+
+.result-score {
+    font-size: clamp(2.6rem, 9vw, 4.2rem);
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(120deg, #ffd9a0, #ff7ab0, #9fb4ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 26px;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.result-stats span {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.result-stats small {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #b9b2cf;
+}
+
+.result-record {
+    color: #b9b2cf;
 }
 
 /* --- Rejilla de niveles --- */

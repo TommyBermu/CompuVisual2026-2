@@ -51,7 +51,9 @@ export default class Ball extends Entity {
         // collisionResponse = false: la bola no rebota, los atraviesa.
         body.userData = { type: 'ball', entity: this };
         this.hitCrystals = new Set(); // paneles que esta bola ya rompió (uno por pasada)
+        this.firstContact = null;     // tipo de lo PRIMERO que tocó ('crystal', 'chunk', 'world'): para detectar fallos
         body.addEventListener('collide', (e) => {
+            if (this.firstContact === null) this.firstContact = e.body.userData?.type ?? 'world';
             if (this.flying) {
                 // primer choque: vuelve la gravedad normal y la joroba visual se desvanece
                 this.flying = false;

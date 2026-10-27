@@ -18,6 +18,11 @@
                            (giradas ±POWER_SPREAD_ANGLE alrededor del "arriba"
                            de la cámara), pero cuesta solo 1;
         bolas infinitas -> freeShots: el disparo no gasta bolas.
+
+    FALLO (para el combo de systems/Score.js): una bola disparada cuyo primer
+    choque NO es vidrio (suelo, pared, metal...), o que desaparece sin tocar
+    nada, avisa onMiss() una sola vez. Con triple bola se juzga el DISPARO
+    entero (la "ráfaga"): solo es fallo si ninguna de sus bolas tocó vidrio.
 */
 
 import * as THREE from 'three';
@@ -39,6 +44,7 @@ export default class Shooter {
         this.balls = [];
         this.ammo = BALLS_AVAILABLE;
         this.onAmmoChange = null;   // callback para el HUD
+        this.onMiss = null;         // callback: un tiro no tocó vidrio (rompe el combo)
         this.getAimTargets = null;  // () => objetos 3D contra los que apuntar (lo asigna el Game)
         this.powers = null;         // PowerUps activos (triple bola, bolas infinitas); lo asigna el Game
         this.raycaster = new THREE.Raycaster();
@@ -48,8 +54,11 @@ export default class Shooter {
         const free = this.powers ? this.powers.freeShots : false;
         if (this.ammo <= 0 && !free) return false;
 
-        // Triple bola: la central + las laterales en abanico (un solo coste)
-        for (const dir of this._spread(direction)) this._launch(dir);
+        // Triple bola: la central + las laterales en abanico (un solo coste).
+        // Todas comparten la ráfaga: el disparo falla solo si fallan todas.
+        const dirs = this._spread(direction);
+        const volley = { pending: dirs.length, hit: false };
+        for (const dir of dirs) this._launch(dir).volley = volley;
 
         if (this.audio) this.audio.playSfx('shoot');
         if (!free) this.setAmmo(this.ammo - 1);
@@ -192,6 +201,7 @@ export default class Shooter {
         this.balls = this.balls.filter((ball) => {
             ball.age += delta;
             const dead = ball.age > BALL_LIFETIME || Shatter.gone(ball.body.position, view);
+            this._judge(ball, dead);
             if (dead) {
                 ball.destroy(this.renderer, this.physics);
                 return false;
@@ -199,6 +209,17 @@ export default class Shooter {
             ball.sync();
             return true;
         });
+    }
+
+    // ¿Acertó o falló? Se decide en su primer choque (o al morir sin tocar
+    // nada). Las bolas inertes (animación de muerte) no cuentan.
+    _judge(ball, dead) {
+        if (ball.inert || ball.judged || (!ball.firstContact && !dead)) return;
+        ball.judged = true;
+        const glass = ball.firstContact === 'crystal' || ball.firstContact === 'chunk';
+        const volley = ball.volley || { pending: 1, hit: false };
+        volley.hit ||= glass;
+        if (--volley.pending === 0 && !volley.hit && this.onMiss) this.onMiss();
     }
 
     // Para reiniciar partida

@@ -17,6 +17,8 @@
     chocar contra vidrio sólido resta (5 + N) bolas (N = checkpoint) y lo rompe
     donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
     (TOTAL_LENGTH) completa el recorrido.
+    Puntuación y combo en systems/Score.js; al morir / terminar / salir se
+    guarda el récord (records.js) y se enseña la pantalla de resultados.
     ESC pausa/reanuda. Clic/toque dispara una bola (InputManager -> Shooter).
 
     Cristales de PODER (gemas de colores, ver systems/PowerUps.js): romper
@@ -34,10 +36,12 @@ import Track from '../systems/Track.js';
 import Spawner from '../systems/Spawner.js';
 import Shooter from '../systems/Shooter.js';
 import PowerUps from '../systems/PowerUps.js';
+import Score from '../systems/Score.js';
 import HUD from '../ui/HUD.js';
 import Screens from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
 import { getSettings, onSettingsChange } from '../settings.js';
+import { submitRun } from '../records.js';
 import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS } from '../constants.js';
 export default class Game {
     constructor(container) {
@@ -49,6 +53,12 @@ export default class Game {
         this.spawner = new Spawner(this.renderer, this.physics, this.track);
         this.hud = new HUD(document.getElementById('hud'));
 
+        // Puntuación: el Score lleva la cuenta y el HUD la pinta
+        this.score = new Score();
+        this.score.onChange = (state) => this.hud.setScore(state);
+        this.score.onGain = (points, kind, mult) => this.hud.popScore(points, kind, mult);
+        this.startCheckpoint = 0;
+
         this.shooter = new Shooter(this.renderer, this.physics, this.rail, this.audio);
         this.shooter.getAimTargets = () => this.spawner.aimTargets(); // para apuntar donde está la mira
         this.shooter.onAmmoChange = (n) => {
@@ -56,11 +66,13 @@ export default class Game {
             // Las bolas son vida: si se acaban durante la partida, game over.
             if (this.started && !this.dead && n <= 0) this._gameOver();
         };
+        this.shooter.onMiss = () => this.score.onMiss(); // tiro que no tocó vidrio: pierde el combo
 
         // Romper un cristal con un disparo premia con bolas (+CRYSTAL_BREAK_REWARD)
         this.spawner.onCrystalBroken = () => {
             this.shooter.addAmmo(CRYSTAL_BREAK_REWARD);
             this.hud.showBanner(`+${CRYSTAL_BREAK_REWARD}`, 700);
+            this.score.addHit();
         };
 
         // Poderes: el Shooter los consulta al disparar y el HUD muestra lo que queda
@@ -84,7 +96,7 @@ export default class Game {
 
         // ESC: pausar/reanudar durante la partida (no si ya terminó el recorrido)
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.started && !this.finished) {
+            if (e.key === 'Escape' && this.started && !this.finished && !this.dead) {
                 e.preventDefault();
                 this._togglePause();
             }
@@ -141,6 +153,8 @@ export default class Game {
         this.finished = false;
         this.dead = false;
         this.started = true;
+        this.startCheckpoint = startCheckpoint;
+        this.score.start(startDistance); // puntuación y combo a cero
         this.audio.startMusic();
         this.hud.show();
         this.spawner.update(this._view()); // generar el primer tramo
@@ -157,6 +171,7 @@ export default class Game {
         this.renderer.setTheme(amb.colors, amb.sunIntensity, first ? 0 : 2);
         this.hud.setLevel(checkpoint, 9); // muestra "Checkpoint N/9"
         this.hud.showBanner(amb.name);
+        if (!first) this.score.addCheckpoint(); // bono por llegar (no por el de salida)
     }
 
     _finish() {
@@ -164,9 +179,12 @@ export default class Game {
         this.finished = true;
         this.rail.pause();
         this.powers.clear();
+        this.score.setDistance(this.rail.distance); // los últimos metros, antes de cerrar
+        this.score.addFinish(this.shooter.ammo); // bono final + bolas que quedan
+        const result = this._saveRun('¡Recorrido completado!');
         this.hud.showBanner('¡Recorrido completado!', 4000);
         this.audio.stopMusic();
-        setTimeout(() => this._exitToMenu(), 4200);
+        setTimeout(() => this._showResults(result), 4200);
     }
 
     // Game over: se acabaron las bolas. Marco rojo, lluvia de bolas (estilo
@@ -176,12 +194,30 @@ export default class Game {
         this.dead = true;
         this.rail.pause();
         this.powers.clear();
+        const result = this._saveRun('¡Sin bolas!'); // deja de sumar ya
         this.hud.showDamage();
         this.hud.showBanner('¡Sin bolas!', 2500);
         this.shooter.scatter();        // lluvia de bolas
         this.audio.playSfx('shoot');
         this.audio.stopMusic();
-        setTimeout(() => this._exitToMenu(), 2800);
+        setTimeout(() => this._showResults(result), 2800);
+    }
+
+    // Cierra la puntuación de la partida y guarda el récord (records.js).
+    // Devuelve el resultado para la pantalla final, o null si ya estaba cerrada.
+    _saveRun(title) {
+        if (!this.score.active) return null;
+        this.score.stop();
+        const sum = this.score.summary();
+        const saved = submitRun({ ...sum, startCheckpoint: this.startCheckpoint, checkpoint: this.checkpoint });
+        return { title, ...sum, checkpoint: this.checkpoint, ...saved };
+    }
+
+    // Tras la animación de fin: limpia la escena (como salir al menú) y
+    // enseña los resultados encima.
+    _showResults(result) {
+        this._exitToMenu();
+        if (result) this.screens.showResults(result);
     }
 
     // Una bola rompió un cristal de poder: activarlo (+bolas al instante si es el bonus)
@@ -190,6 +226,7 @@ export default class Game {
         const def = this.powers.activate(type);
         if (!def) return;
         if (type === 'bonus') this.shooter.addAmmo(POWER_BONUS_BALLS);
+        this.score.addPowerUp();       // puntos extra (x combo)
         this.hud.showPower(def.duration ? `¡${def.name}!` : def.name, def.color);
         this.audio.playSfx('power');
     }
@@ -200,6 +237,7 @@ export default class Game {
     // sólido que se cruce (p.ej. un bloque que rebotó) vuelve a golpear.
     _crashInto(hit) {
         const penalty = CRASH_PENALTY_BASE + this.checkpoint; // N = checkpoint actual
+        this.score.onCrash();          // el choque rompe el combo (antes de que el game over cierre la puntuación)
         this.shooter.addAmmo(-penalty);
         this.hud.showBanner(`-${penalty}`, 900);
         this.hud.flashDamage();        // destello rojo breve
@@ -228,6 +266,7 @@ export default class Game {
 
     // Salir de la partida y volver al menú principal
     _exitToMenu() {
+        this._saveRun('');   // salir desde la pausa también guarda el récord (no-op si ya se guardó)
         this.paused = false;
         this.started = false;
         this.finished = false;
@@ -295,6 +334,7 @@ export default class Game {
             if (distance >= TOTAL_LENGTH) this._finish();
 
             this.hud.setDistance(distance);
+            this.score.setDistance(distance);
         }
 
         this.renderer.render();                               // 7. dibuja

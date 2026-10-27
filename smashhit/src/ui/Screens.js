@@ -12,9 +12,15 @@
     sensibilidad de disparo. Se guardan en settings.js (localStorage) y el
     AudioManager / Game reaccionan en vivo.
 
+    Récord: el menú principal muestra la mejor puntuación guardada
+    (records.js) y, al morir o terminar, la vista de RESULTADOS enseña la
+    puntuación de la partida, sus datos, el récord y "¡Nuevo récord!" si se
+    batió, con botones Reintentar (mismo checkpoint) y Menú.
+
     API usada por Game:
         new Screens(menuEl, { audio, onStart })
-        showMenu()  -> muestra el menú principal
+        showMenu()  -> muestra el menú principal (con el récord al día)
+        showResults(result) -> pantalla de fin de partida (ver _fillResults)
         hide()      -> oculta el overlay (al empezar a jugar)
         onStart(levelIndex) -> callback que arranca el juego en ese nivel
 */
@@ -22,6 +28,7 @@
 import { ambienceFor } from '../levels.js';
 import { OBSTACLE_NAMES } from '../obstacles/index.js';
 import { getSettings, saveSettings } from '../settings.js';
+import { getRecords } from '../records.js';
 import { CHECKPOINT_COUNT } from '../constants.js';
 
 export default class Screens {
@@ -31,6 +38,7 @@ export default class Screens {
         this.onStart = onStart;
         this.onResume = onResume;
         this.onExitToMenu = onExitToMenu;
+        this.lastStart = 0; // checkpoint de la última partida (para "Reintentar")
         this._render();
     }
 
@@ -44,6 +52,19 @@ export default class Screens {
                     <button class="btn btn-primary" data-action="play">▶ Jugar</button>
                     <button class="btn" data-action="levels">Elegir checkpoint</button>
                     <button class="btn" data-action="settings">⚙ Configuración</button>
+                </div>
+                <div class="record-card" data-record></div>
+            </div>
+
+            <div class="screen hidden" data-view="results">
+                <h2 class="title-sm" data-res="title"></h2>
+                <div class="new-record hidden" data-res="new">¡Nuevo récord!</div>
+                <div class="result-score" data-res="score"></div>
+                <div class="result-stats" data-res="stats"></div>
+                <div class="result-record" data-res="record"></div>
+                <div class="menu-buttons">
+                    <button class="btn btn-primary" data-action="retry">↻ Reintentar</button>
+                    <button class="btn" data-action="home">Menú</button>
                 </div>
             </div>
 
@@ -133,6 +154,8 @@ export default class Screens {
                 else if (action === 'levels') this._show('levels');
                 else if (action === 'settings') this._show('settings');
                 else if (action === 'back') this._show('home');
+                else if (action === 'home') this.showMenu();
+                else if (action === 'retry') this._start(this.lastStart);
                 else if (action === 'resume') this.onResume?.();
                 else if (action === 'to-menu') this.onExitToMenu?.();
             });
@@ -177,13 +200,60 @@ export default class Screens {
     }
 
     _start(levelIndex) {
+        this.lastStart = levelIndex;
         this.hide();
         this.onStart(levelIndex);
     }
 
     showMenu() {
+        this._fillRecord();
         this.el.classList.remove('hidden');
         this._show('home');
+    }
+
+    // Tarjeta del récord en el menú principal
+    _fillRecord() {
+        const r = getRecords();
+        const card = this.el.querySelector('[data-record]');
+        if (r.score <= 0) {
+            card.innerHTML = `<span class="record-label">Récord</span><span class="record-empty">aún sin récord: ¡juega una partida!</span>`;
+            return;
+        }
+        const reach = r.checkpoint >= 1 ? ` · checkpoint ${r.checkpoint} desde el inicio` : '';
+        card.innerHTML = `
+            <span class="record-label">Récord</span>
+            <span class="record-score">${fmt(r.score)}</span>
+            <span class="record-extra">mejor recorrido ${fmt(r.distance)} m${reach}</span>`;
+    }
+
+    /*
+        Fin de partida. result = {
+            title,                              // '¡Sin bolas!' / '¡Recorrido completado!'
+            score, distance, crystals, bestMultiplier, checkpoint,
+            newScore,                           // ¿batió el récord de puntuación?
+            records,                            // récords ya actualizados
+        }
+    */
+    showResults(result) {
+        this._fillResults(result);
+        this.el.classList.remove('hidden');
+        this._show('results');
+    }
+
+    _fillResults(r) {
+        const q = (k) => this.el.querySelector(`[data-res="${k}"]`);
+        q('title').textContent = r.title;
+        q('new').classList.toggle('hidden', !r.newScore);
+        q('score').textContent = fmt(r.score);
+        q('stats').innerHTML = [
+            ['Distancia', `${fmt(r.distance)} m`],
+            ['Cristales', fmt(r.crystals)],
+            ['Mejor combo', `x${r.bestMultiplier}`],
+            ['Checkpoint', r.checkpoint],
+        ].map(([k, v]) => `<span><small>${k}</small>${v}</span>`).join('');
+        q('record').textContent = r.newScore
+            ? `Mejor recorrido: ${fmt(r.records.distance)} m`
+            : `Récord: ${fmt(r.records.score)} · mejor recorrido ${fmt(r.records.distance)} m`;
     }
 
     showPause() {
@@ -194,4 +264,9 @@ export default class Screens {
     hide() {
         this.el.classList.add('hidden');
     }
+}
+
+// Número con separador de miles (12 345)
+function fmt(n) {
+    return Math.floor(n).toLocaleString('es');
 }

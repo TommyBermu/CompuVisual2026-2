@@ -90,6 +90,20 @@ export const CRYSTAL_BREAK_REWARD = 3; // +bolas al romper un cristal con un dis
 export const CRASH_PENALTY_BASE = 5;   // -bolas base al chocar de frente con un cristal
 // penalización total al chocar = CRASH_PENALTY_BASE + checkpoint actual (N)
 
+// --- Puntuación y combo (ver systems/Score.js) ---
+// Puntos = metros recorridos + cristales rotos (x combo) + bonos.
+export const SCORE_PER_METER = 5;         // puntos por metro recorrido (sin combo)
+export const SCORE_CRYSTAL = 50;          // puntos base por cristal roto de un disparo (x combo)
+export const SCORE_POWERUP = 250;         // puntos base extra por un cristal de power-up (x combo)
+export const SCORE_CHECKPOINT = 1000;     // bono al cruzar un checkpoint
+export const SCORE_FINISH = 5000;         // bono al completar el recorrido
+export const SCORE_FINISH_PER_BALL = 50;  // + por cada bola que quede al terminar
+// Combo: aciertos seguidos sin fallar ni chocar. Cada COMBO_STEP aciertos
+// sube el multiplicador en 1 (x1, x2, ... hasta xCOMBO_MAX).
+export const COMBO_STEP = 5;
+export const COMBO_MAX = 5;
+export const COMBO_RESET_ON_MISS = true;  // ¿una bola que no toca vidrio rompe el combo?
+
 // --- Niveles ---
 // Los 9 niveles (velocidad + colores) están en src/levels.js.
 export const LEVEL_DURATION = 30;  // segundos aprox. que dura cada nivel
