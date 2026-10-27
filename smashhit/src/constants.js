@@ -66,9 +66,22 @@ export const THEME_TRANSITION = 2; // segundos que tarda el cielo/luces en cambi
 // --- Bola ---
 export const BALL_RADIUS = 0.35;
 export const BALL_MASS = 1;
-export const BALL_SPEED = 28;       // velocidad del lanzamiento (se le suma la de la cámara)
+export const BALL_SPEED = 24;       // velocidad del lanzamiento (se le suma la de la cámara)
 export const BALL_SPAWN_OFFSET = 1; // metros delante de la cámara donde nace la bola
-export const BALL_SPAWN_DROP = 0.5; // metros por debajo de la mira donde nace la bola
+export const BALL_SPAWN_DROP = 0.3; // metros por debajo de la mira donde nace la bola
+// El arco del tiro sube ~g·t²/8 sobre la línea de la mira (t = tiempo de vuelo).
+// Para que sea plano SIN que la bola vaya rapidísima, en el vuelo (hasta su
+// primer choque) la bola siente solo una fracción de la gravedad.
+export const BALL_FLIGHT_GRAVITY = 0.4;   // fracción de la gravedad hasta el primer choque
+// Tope del tiempo de vuelo (s): solo los tiros MUY lejanos salen algo más rápidos.
+// Ojo: muy bajo = bolas muy rápidas que podrían atravesar el vidrio sin detectarlo.
+export const BALL_MAX_FLIGHT_TIME = 0.8;
+// Arco SOLO VISUAL: el mesh de la bola se dibuja por encima de su cuerpo físico
+// con una "joroba" que vale 0 al salir y 0 al llegar, así se ve una parábola
+// marcada pero el impacto sigue siendo donde apunta la mira.
+// 1 = se ve como si tuviera la gravedad completa; 0 = sin arco extra.
+export const BALL_VISUAL_ARC = 1;
+export const BALL_ARC_FADE = 0.12; // s en que se desvanece la joroba si choca antes de llegar
 export const BALL_LIFETIME = 6;     // segundos antes de borrar una bola
 export const BALLS_AVAILABLE = 25;
 export const AIM_MAX_DISTANCE = 40; // si el clic no apunta a nada, se apunta a esta distancia

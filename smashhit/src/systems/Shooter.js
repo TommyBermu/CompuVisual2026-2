@@ -19,7 +19,7 @@ import Ball from '../entities/Ball.js';
 import { getSettings } from '../settings.js';
 import {
     BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE, DESPAWN_BEHIND,
-    AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP,
+    AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP, BALL_RADIUS, BALL_MAX_FLIGHT_TIME, BALL_FLIGHT_GRAVITY,
 } from '../constants.js';
 
 export default class Shooter {
@@ -48,8 +48,9 @@ export default class Shooter {
         const ball = new Ball(this.physics, origin);
         // La sensibilidad (ajuste del jugador) escala la fuerza del lanzamiento
         const speed = BALL_SPEED * (getSettings().sensitivity || 1);
-        const v = this._aimVelocity(origin, direction, speed);
+        const { velocity: v, time } = this._aimVelocity(origin, direction, speed);
         ball.body.velocity.set(v.x, v.y, v.z);
+        ball.setFlying(time);
         ball.age = 0;
         ball.addTo(this.renderer, this.physics);
         this.balls.push(ball);
@@ -62,29 +63,61 @@ export default class Shooter {
     /*
         Velocidad para que la bola LLEGUE al punto bajo la mira (como en el Smash
         Hit original), aunque la gravedad la curve.
-            1. Rayo desde la cámara en la dirección del clic -> primer objeto que
-               toca (vidrio, suelo, pared). Si no toca nada, un punto a
-               AIM_MAX_DISTANCE.
+            1. Rayo en la dirección del clic -> primer objeto que toca (vidrio,
+               suelo, pared). Si no toca nada, un punto a AIM_MAX_DISTANCE.
+               El rayo sale de donde ESTARÁ la cámara cuando la bola llegue
+               (posición + velocidad del riel · t), no de donde está ahora:
+               la cámara sigue avanzando durante el vuelo y, con el rayo desde
+               la posición actual, al momento del impacto el punto ya no
+               quedaba bajo el cursor (se "abría" hacia arriba y a los lados,
+               más cuanto más cerca y más lento el tiro). Como t depende del
+               objetivo, se itera un par de veces (converge enseguida).
             2. Tiempo de vuelo t = distancia / rapidez, donde la rapidez es la del
-               lanzamiento + la heredada de la cámara (momentum).
+               lanzamiento + la heredada de la cámara (momentum), con tope
+               BALL_MAX_FLIGHT_TIME: los tiros lejanos salen más rápido y así
+               la parábola no sube tanto por encima de la mira.
             3. Tiro parabólico: p(t) = p0 + v·t + ½·g·t²  =>  v = (p - p0)/t - ½·g·t
+               con g = la gravedad reducida del vuelo (BALL_FLIGHT_GRAVITY).
     */
     _aimVelocity(origin, direction, speed) {
         const camera = this.renderer.camera;
+        const launchSpeed = direction.clone().multiplyScalar(speed).add(this.rail.velocity).length();
+
+        let t = 0;
+        let target;
+        for (let i = 0; i < 3; i++) {
+            const eye = camera.position.clone().addScaledVector(this.rail.velocity, t);
+            target = this._aimPoint(eye, direction);
+            t = Math.min(Math.max(target.distanceTo(origin) / launchSpeed, 1e-3), BALL_MAX_FLIGHT_TIME);
+        }
+
+        const v = target.clone().sub(origin).divideScalar(t);
+        v.y -= 0.5 * GRAVITY * BALL_FLIGHT_GRAVITY * t; // GRAVITY es negativa: compensa hacia arriba
+        return { velocity: v, time: t };
+    }
+
+    /*
+        Punto al que debe llegar el CENTRO de la bola mirando desde `eye`.
+        Se separa BALL_RADIUS de la superficie (por su normal): la esfera toca
+        la pared cuando su centro está a un radio de ella. Sin esto, en tiros
+        rasantes a las paredes laterales la bola chocaba antes de llegar, en la
+        parte alta de la parábola, y pegaba por encima de la mira.
+    */
+    _aimPoint(eye, direction) {
         const targets = this.getAimTargets ? this.getAimTargets() : [];
-        this.raycaster.set(camera.position, direction);
+        this.raycaster.set(eye, direction);
         this.raycaster.far = AIM_MAX_DISTANCE;
         const hit = this.raycaster.intersectObjects(targets, true)[0];
-        const target = hit
-            ? hit.point
-            : camera.position.clone().addScaledVector(direction, AIM_MAX_DISTANCE);
+        if (!hit) return eye.clone().addScaledVector(direction, AIM_MAX_DISTANCE);
 
-        const launch = direction.clone().multiplyScalar(speed).add(this.rail.velocity);
-        const toTarget = target.clone().sub(origin);
-        const t = Math.max(toTarget.length() / launch.length(), 1e-3);
-        const v = toTarget.divideScalar(t);
-        v.y -= 0.5 * GRAVITY * t; // GRAVITY es negativa: compensa hacia arriba
-        return v;
+        const target = hit.point.clone();
+        if (hit.face) {
+            // Normal de la cara en coordenadas de mundo, mirando hacia la cámara
+            const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+            if (normal.dot(direction) > 0) normal.negate();
+            target.addScaledVector(normal, BALL_RADIUS);
+        }
+        return target;
     }
 
     setAmmo(n) {
