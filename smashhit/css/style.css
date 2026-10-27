@@ -74,6 +74,78 @@ body {
     color: #ff6b6b;
 }
 
+/* --- Poderes activos (cristales de colores): una pastilla por poder --- */
+.hud-powers {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    width: min(92vw, 560px);
+}
+
+.hud-power {
+    --power: #fff;
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 10px;
+    align-items: baseline;
+    padding: 6px 12px 7px;
+    border-radius: 10px;
+    border: 2px solid var(--power);
+    background: rgba(10, 8, 20, 0.45);
+    box-shadow: 0 0 14px var(--power);
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+.hud-power-time {
+    color: var(--power);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.hud-power-bar {
+    grid-column: 1 / -1;
+    height: 4px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+.hud-power-bar i {
+    display: block;
+    height: 100%;
+    background: var(--power);
+}
+
+/* Cartel al activar un poder (de su color, algo más abajo que el normal) */
+.hud-power-banner {
+    --power: #fff;
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    text-align: center;
+    font-size: 2.6rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--power);
+    text-shadow: 0 0 18px var(--power), 0 3px 10px rgba(0, 0, 0, 0.6);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hud-power-banner.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
 #game canvas {
     cursor: crosshair;
     touch-action: none; /* que el toque dispare en vez de hacer scroll/zoom */

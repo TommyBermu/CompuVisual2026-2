@@ -45,6 +45,25 @@ export const SPINNER_SPEED = [1.1, 1.9];      // rad/s (min, max)
 export const GATE_HEIGHT = 6;                 // alto de las puertas (m)
 export const GATE_OPEN_TIME = 0.45;           // s que tardan en abrirse
 
+// --- Cristales con poderes (ver entities/PowerCrystal.js y systems/PowerUps.js) ---
+// Gemas de colores que flotan fuera del camino. Romperlas de un disparo
+// activa un poder durante unos segundos (no dan las +3 bolas normales).
+export const POWER_CHANCE = [0.05, 0.12];     // prob. por tramo: checkpoint 0 .. checkpoint 9 (interpolada)
+export const POWER_MIN_GAP = 60;              // metros mínimos entre dos cristales de poder
+export const POWER_WEIGHTS = { triple: 0.35, infinite: 0.3, slowmo: 0.15, bonus: 0.2 }; // qué poder sale
+export const POWER_MAX_TIME = 20;             // tope (s) al acumular el mismo poder varias veces
+// Triple bola: cada disparo lanza 3 bolas en abanico (cuesta 1)
+export const POWER_TRIPLE_DURATION = 10;      // s
+export const POWER_SPREAD_ANGLE = 0.09;       // rad entre la bola central y cada lateral (~5°)
+// Bolas infinitas: disparar no gasta bolas
+export const POWER_INFINITE_DURATION = 8;     // s
+// Cámara lenta: todo el juego (cámara, física, bolas) va más despacio
+export const POWER_SLOWMO_DURATION = 6;       // s (de tiempo real)
+export const POWER_SLOWMO_SCALE = 0.5;        // velocidad del juego durante la cámara lenta
+export const POWER_SLOWMO_EASE = 0.35;        // s que tarda en entrar/salir la cámara lenta
+// Bonus: +bolas al instante (sin duración)
+export const POWER_BONUS_BALLS = 10;
+
 // --- Choque cámara-vidrio ---
 // La cámara se trata como una ESFERA (tiene "volumen", no es un punto). Se
 // comprueba contra cada trozo de vidrio que siga en pie (y bloques grandes que

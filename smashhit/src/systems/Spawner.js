@@ -13,10 +13,14 @@
     En cada tramo puede haber:
         - un OBSTÁCULO de vidrio (src/obstacles/) en el centro, de uno de los
           tipos que usa su nivel (levels.js -> obstacles), con su variante al azar;
-        - RELLENO sólido (Props) cerca del arco de entrada (levels.js -> props).
+        - RELLENO sólido (Props) cerca del arco de entrada (levels.js -> props);
+        - a veces un CRISTAL DE PODER (obstacles/PowerUp.js) flotando en un
+          hueco libre, más a menudo en los últimos checkpoints.
 
     Los golpes de bola a los paneles se procesan aquí (fuera del step de
-    física) y los trozos sueltos los gestiona el Shatter.
+    física) y los trozos sueltos los gestiona el Shatter. Romper un cristal
+    normal avisa con onCrystalBroken(panel); uno de poder, con
+    onPowerCrystalBroken(tipo, panel) (sin el premio de bolas).
 
     `view` (lo da el Game) = { s, position, forward, floorY } de la cámara.
 */
@@ -25,10 +29,11 @@ import * as CANNON from 'cannon-es';
 import Tunnel from '../entities/Tunnel.js';
 import Shatter from './Shatter.js';
 import { createObstacles, createProps } from '../obstacles/index.js';
+import PowerUp from '../obstacles/PowerUp.js';
 import { checkpointAt, LEVELS } from '../levels.js';
 import {
     SEGMENT_LENGTH, SPAWN_AHEAD, DESPAWN_BEHIND, CRYSTAL_WALL_CHANCE,
-    CAMERA_RADIUS, CRASH_BREAK_RADIUS,
+    CAMERA_RADIUS, CRASH_BREAK_RADIUS, POWER_CHANCE, POWER_MIN_GAP,
 } from '../constants.js';
 
 // Ningún obstáculo se extiende más de esto (en s) desde su centro (descarte rápido)
@@ -37,6 +42,9 @@ const OBSTACLE_REACH = 7;
 const FREE_START = 40;
 // Dónde va el relleno dentro del tramo (metros desde su inicio)
 const PROPS_AT = 3;
+// Dónde va el cristal de poder si el tramo tiene obstáculo: en el hueco entre
+// el obstáculo (centro ± ~5 m) y el relleno del tramo siguiente
+const POWER_GAP_AT = 17.5;
 
 export default class Spawner {
     constructor(renderer, physics, track) {
@@ -47,6 +55,7 @@ export default class Spawner {
         this.segments = [];
         this.obstacles = [];
         this.onCrystalBroken = null; // callback(panel) cuando una bola rompe un cristal
+        this.onPowerCrystalBroken = null; // callback(tipo, panel) cuando una bola rompe un cristal de poder
         this._startAt(0);
     }
 
@@ -57,6 +66,7 @@ export default class Spawner {
     _startAt(cameraS) {
         this.nextS = Math.floor(cameraS / SEGMENT_LENGTH) * SEGMENT_LENGTH - SEGMENT_LENGTH;
         this.freeUntilS = cameraS + FREE_START;
+        this.lastPowerS = -Infinity; // último cristal de poder generado
         this.count = 0;
     }
 
@@ -83,7 +93,9 @@ export default class Spawner {
                 if (hits > 0 && !panel.broken) {
                     panel.broken = true;
                     ob.onPanelBroken(panel);
-                    if (this.onCrystalBroken) this.onCrystalBroken(panel);
+                    if (panel.power) {
+                        if (this.onPowerCrystalBroken) this.onPowerCrystalBroken(panel.power, panel);
+                    } else if (this.onCrystalBroken) this.onCrystalBroken(panel);
                 }
             }
             ob.prunePanels();
@@ -114,14 +126,31 @@ export default class Spawner {
             ob.addTo(this.renderer, this.physics);
             this.obstacles.push(ob);
         };
+        let hasObstacle = false;
         if (center > this.freeUntilS && Math.random() < CRYSTAL_WALL_CHANCE) {
             const type = cfg.obstacles[Math.floor(Math.random() * cfg.obstacles.length)];
             createObstacles(type, this.track, center, level).forEach(add);
+            hasObstacle = true;
         }
         const propsS = s0 + PROPS_AT;
         if (propsS > this.freeUntilS - 20 && Math.random() < (cfg.props ?? 0.5)) {
             add(createProps(this.track, propsS, level));
         }
+        const power = this._maybePower(s0, level, hasObstacle);
+        if (power) add(power);
+    }
+
+    // A veces, un cristal de poder: en el centro del tramo si quedó libre, o
+    // en el hueco detrás del obstáculo. La probabilidad sube con el checkpoint
+    // (POWER_CHANCE) y nunca salen dos a menos de POWER_MIN_GAP metros.
+    _maybePower(s0, level, hasObstacle) {
+        const s = s0 + (hasObstacle ? POWER_GAP_AT : SEGMENT_LENGTH / 2);
+        if (s <= this.freeUntilS || s - this.lastPowerS < POWER_MIN_GAP) return null;
+        const k = level / Math.max(1, LEVELS.length - 1); // 0 en el primero .. 1 en el último
+        const p = POWER_CHANCE[0] + (POWER_CHANCE[1] - POWER_CHANCE[0]) * k;
+        if (Math.random() >= p) return null;
+        this.lastPowerS = s;
+        return new PowerUp(this.track.frameAt(s), level);
     }
 
     // ¿La cámara (una esfera de radio CAMERA_RADIUS) toca algo sólido?

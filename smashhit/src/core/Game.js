@@ -18,6 +18,11 @@
     donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
     (TOTAL_LENGTH) completa el recorrido.
     ESC pausa/reanuda. Clic/toque dispara una bola (InputManager -> Shooter).
+
+    Cristales de PODER (gemas de colores, ver systems/PowerUps.js): romper
+    uno activa triple bola, bolas infinitas, cámara lenta o +bolas. Los
+    poderes cuentan en tiempo real, se congelan en la pausa y se apagan al
+    morir, terminar o salir al menú. La cámara lenta escala el delta del juego.
 */
 
 import Renderer from './Renderer.js';
@@ -28,11 +33,12 @@ import CameraRail from '../systems/CameraRail.js';
 import Track from '../systems/Track.js';
 import Spawner from '../systems/Spawner.js';
 import Shooter from '../systems/Shooter.js';
+import PowerUps from '../systems/PowerUps.js';
 import HUD from '../ui/HUD.js';
 import Screens from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
 import { getSettings, onSettingsChange } from '../settings.js';
-import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN } from '../constants.js';
+import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS } from '../constants.js';
 export default class Game {
     constructor(container) {
         this.renderer = new Renderer(container);
@@ -56,6 +62,12 @@ export default class Game {
             this.shooter.addAmmo(CRYSTAL_BREAK_REWARD);
             this.hud.showBanner(`+${CRYSTAL_BREAK_REWARD}`, 700);
         };
+
+        // Poderes: el Shooter los consulta al disparar y el HUD muestra lo que queda
+        this.powers = new PowerUps();
+        this.shooter.powers = this.powers;
+        this.powers.onChange = (list) => this.hud.setPowers(list);
+        this.spawner.onPowerCrystalBroken = (type) => this._activatePower(type);
 
         this.input = new InputManager(this.renderer.renderer.domElement, this.renderer.camera);
         this.input.onShoot = (dir) => {
@@ -120,6 +132,7 @@ export default class Game {
         this.track.reset();                // cada partida tiene curvas distintas
         this.rail.place(startDistance);
         this.shooter.clear();
+        this.powers.clear();
         this.rail.resume();             // reactivar el avance (si veníamos de morir/pausa)
         this.hud.setBalls(this.shooter.ammo);
         this.hud.hideDamage();
@@ -150,6 +163,7 @@ export default class Game {
         if (this.finished) return;
         this.finished = true;
         this.rail.pause();
+        this.powers.clear();
         this.hud.showBanner('¡Recorrido completado!', 4000);
         this.audio.stopMusic();
         setTimeout(() => this._exitToMenu(), 4200);
@@ -161,12 +175,23 @@ export default class Game {
         if (this.dead) return;
         this.dead = true;
         this.rail.pause();
+        this.powers.clear();
         this.hud.showDamage();
         this.hud.showBanner('¡Sin bolas!', 2500);
         this.shooter.scatter();        // lluvia de bolas
         this.audio.playSfx('shoot');
         this.audio.stopMusic();
         setTimeout(() => this._exitToMenu(), 2800);
+    }
+
+    // Una bola rompió un cristal de poder: activarlo (+bolas al instante si es el bonus)
+    _activatePower(type) {
+        if (!this.started || this.dead || this.finished) return;
+        const def = this.powers.activate(type);
+        if (!def) return;
+        if (type === 'bonus') this.shooter.addAmmo(POWER_BONUS_BALLS);
+        this.hud.showPower(def.duration ? `¡${def.name}!` : def.name, def.color);
+        this.audio.playSfx('power');
     }
 
     // El jugador chocó con vidrio sólido (un trozo de panel o un bloque que
@@ -209,6 +234,7 @@ export default class Game {
         this.dead = false;
         this.rail.pause();
         this.shooter.clear();
+        this.powers.clear();
         this.spawner.clear();
         this.hud.hide();
         this.hud.hideDamage();
@@ -224,7 +250,7 @@ export default class Game {
     }
 
     _loop(time) {
-        const delta = this.lastTime ? Math.min((time - this.lastTime) / 1000, MAX_DELTA) : 0;
+        let delta = this.lastTime ? Math.min((time - this.lastTime) / 1000, MAX_DELTA) : 0;
         this.lastTime = time;
 
         // En pausa: congela todo (física, cámara, spawn) pero sigue dibujando
@@ -233,6 +259,10 @@ export default class Game {
             requestAnimationFrame(this._loop);
             return;
         }
+
+        // Poderes: cuentan en tiempo real; la cámara lenta escala el delta del juego
+        if (this.started && !this.dead) this.powers.update(delta);
+        delta *= this.powers.timeScale;
 
         if (this.started && !this.dead) {
             this.rail.update(delta);                              // 1. avanza la cámara

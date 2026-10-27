@@ -12,6 +12,12 @@
 
     También elimina las bolas que ya no sirven (quedaron atrás o vivieron
     demasiado), para no acumular cuerpos en la física.
+
+    Poderes (systems/PowerUps.js, lo asigna el Game en `powers`):
+        triple bola     -> cada disparo lanza shotCount bolas en abanico
+                           (giradas ±POWER_SPREAD_ANGLE alrededor del "arriba"
+                           de la cámara), pero cuesta solo 1;
+        bolas infinitas -> freeShots: el disparo no gasta bolas.
 */
 
 import * as THREE from 'three';
@@ -21,6 +27,7 @@ import { getSettings } from '../settings.js';
 import {
     BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE,
     AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP, BALL_RADIUS, BALL_MAX_FLIGHT_TIME, BALL_FLIGHT_GRAVITY,
+    POWER_SPREAD_ANGLE,
 } from '../constants.js';
 
 export default class Shooter {
@@ -33,12 +40,36 @@ export default class Shooter {
         this.ammo = BALLS_AVAILABLE;
         this.onAmmoChange = null;   // callback para el HUD
         this.getAimTargets = null;  // () => objetos 3D contra los que apuntar (lo asigna el Game)
+        this.powers = null;         // PowerUps activos (triple bola, bolas infinitas); lo asigna el Game
         this.raycaster = new THREE.Raycaster();
     }
 
     shoot(direction) {
-        if (this.ammo <= 0) return false;
+        const free = this.powers ? this.powers.freeShots : false;
+        if (this.ammo <= 0 && !free) return false;
 
+        // Triple bola: la central + las laterales en abanico (un solo coste)
+        for (const dir of this._spread(direction)) this._launch(dir);
+
+        if (this.audio) this.audio.playSfx('shoot');
+        if (!free) this.setAmmo(this.ammo - 1);
+        return true;
+    }
+
+    // Direcciones de un disparo: 1, o `count` en abanico horizontal centrado
+    // en la mira (giradas alrededor del "arriba" de la cámara)
+    _spread(direction) {
+        const count = this.powers ? this.powers.shotCount : 1;
+        if (count <= 1) return [direction];
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.renderer.camera.quaternion);
+        return Array.from({ length: count }, (_, i) => {
+            const angle = (i - (count - 1) / 2) * POWER_SPREAD_ANGLE;
+            return angle === 0 ? direction : direction.clone().applyAxisAngle(up, angle);
+        });
+    }
+
+    // Crea UNA bola hacia `direction` (sin gastar munición)
+    _launch(direction) {
         const camera = this.renderer.camera;
         // Nace un poco delante de la cámara, SOBRE la línea de la mira
         // (antes nacía 0.3 m más abajo y además la gravedad la hacía caer:
@@ -55,10 +86,7 @@ export default class Shooter {
         ball.age = 0;
         ball.addTo(this.renderer, this.physics);
         this.balls.push(ball);
-
-        if (this.audio) this.audio.playSfx('shoot');
-        this.setAmmo(this.ammo - 1);
-        return true;
+        return ball;
     }
 
     /*

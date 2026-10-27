@@ -30,6 +30,23 @@ Asteroids del repo).
 > Todo el vidrio se ROMPE según dónde se golpee (Voronoi radial alrededor del
 > impacto, ver `src/utils/fracture.js`), también el que se mueve o gira: los
 > trozos sin apoyo caen y heredan la velocidad del obstáculo.
+>
+> **Cristales con poderes:** de vez en cuando flota una GEMA de color fuera
+> del camino (más a menudo en los últimos checkpoints; nunca en el tubo de la
+> cámara: hay que dispararle). Romperla activa un poder (no da las +3 bolas):
+>
+> | Gema | Poder | Efecto |
+> |---|---|---|
+> | Rosa (tres bolitas) | Triple bola | cada disparo lanza 3 bolas en abanico y cuesta 1 (10 s) |
+> | Cian (∞) | Bolas infinitas | disparar no gasta bolas (8 s) |
+> | Violeta (reloj de arena) | Cámara lenta | todo el juego va a la mitad de velocidad (6 s) |
+> | Verde (+) | +10 bolas | instantáneo |
+>
+> Se pueden tener varios a la vez (triple + infinitas = 3 bolas gratis); coger
+> otra vez uno activo suma su tiempo (tope 20 s). El HUD muestra cada poder
+> activo con su tiempo y un cartel de su color al activarse. Se congelan en la
+> pausa y se apagan al morir, terminar o salir al menú. Ajustes en
+> `src/constants.js` (bloque `POWER_*`).
 
 ## Cómo ejecutar
 
@@ -98,6 +115,7 @@ smashhit/
     │   ├── Ball.js         # La bola de metal (funcional, se usa en la demo)
     │   ├── GlassPanel.js   # Vidrio rompible de cualquier forma, puede moverse/girar
     │   ├── Crystal.js      # Panel montado en suelo/pared/viga/bloque (rectángulo o triángulo)
+    │   ├── PowerCrystal.js # Gema de poder: vidrio frágil de color + icono + halo
     │   ├── Obstacle.js     # Base de obstáculos: vidrio + partes sólidas, en el marco del recorrido
     │   └── Tunnel.js       # Un tramo del pasillo, "barrido" a lo largo de la curva
     ├── obstacles/          # Tipos de obstáculo (uno o varios por nivel)
@@ -107,15 +125,17 @@ smashhit/
     │   ├── Gate.js         # Compuertas con botones de vidrio
     │   ├── Pendulum.js     # Péndulos en varias direcciones
     │   ├── Spinner.js      # Aspas giratorias (molino, torniquete, rodillo...)
-    │   └── Props.js        # Relleno sólido (columnas, bloques, vigas...)
+    │   ├── Props.js        # Relleno sólido (columnas, bloques, vigas...)
+    │   └── PowerUp.js      # Gema de poder flotando fuera del tubo (encima o a un lado)
     ├── systems/            # Lógica que actúa sobre las entidades
     │   ├── Track.js        # El recorrido: curva 3D con giros y rampas, frameAt(s)
-    │   ├── Shooter.js      # Lanza bolas hacia la mira
-    │   ├── Spawner.js      # Genera pasillo/obstáculos/relleno, golpes y choque de cámara
+    │   ├── Shooter.js      # Lanza bolas hacia la mira (1 o 3 en abanico con triple bola)
+    │   ├── PowerUps.js     # Poderes activos: temporizadores, triple, infinitas, cámara lenta
+    │   ├── Spawner.js      # Genera pasillo/obstáculos/relleno/gemas, golpes y choque de cámara
     │   ├── Shatter.js      # Astillas (física propia) y bloques que caen (Cannon)
     │   └── CameraRail.js   # Avance de la cámara a lo largo del recorrido
     ├── ui/
-    │   ├── HUD.js          # Puntuación / bolas restantes (andamiaje)
+    │   ├── HUD.js          # Bolas restantes, distancia, poderes activos y carteles
     │   └── Screens.js      # Menú / game over / pausa (andamiaje)
     └── utils/
         ├── sync.js         # Copiar posición/rotación body -> mesh (funcional)
