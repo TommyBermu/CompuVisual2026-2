@@ -23,6 +23,10 @@
     choque NO es vidrio (suelo, pared, metal...), o que desaparece sin tocar
     nada, avisa onMiss() una sola vez. Con triple bola se juzga el DISPARO
     entero (la "ráfaga"): solo es fallo si ninguna de sus bolas tocó vidrio.
+
+    Sonido: 'shoot' al disparar y 'clank' (metálico) cuando una bola choca
+    con algo sólido (suelo, paredes, columnas...). El vidrio no suena aquí:
+    la bola lo atraviesa y su rotura la anuncia el Shatter.
 */
 
 import * as THREE from 'three';
@@ -34,6 +38,9 @@ import {
     AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP, BALL_RADIUS, BALL_MAX_FLIGHT_TIME, BALL_FLIGHT_GRAVITY,
     POWER_SPREAD_ANGLE,
 } from '../constants.js';
+
+// Rapidez mínima del choque (a lo largo de la normal) para que suene el 'clank'
+const CLANK_MIN_SPEED = 1.5;
 
 export default class Shooter {
     constructor(renderer, physics, rail, audio = null) {
@@ -95,6 +102,7 @@ export default class Shooter {
         ball.age = 0;
         ball.addTo(this.renderer, this.physics);
         this.balls.push(ball);
+        this._listenImpacts(ball);
         return ball;
     }
 
@@ -191,7 +199,24 @@ export default class Shooter {
             ball.age = 0;
             ball.addTo(this.renderer, this.physics);
             this.balls.push(ball);
+            this._listenImpacts(ball);
         }
+    }
+
+    // 'clank' cuando la bola golpea algo sólido. Cannon solo emite 'collide'
+    // en el PRIMER contacto con cada cuerpo, así que rodar no lo repite.
+    _listenImpacts(ball) {
+        if (!this.audio) return;
+        ball.body.addEventListener('collide', (e) => {
+            const type = e.body.userData?.type;
+            if (type === 'crystal' || type === 'chunk' || type === 'ball') return;
+            const speed = Math.abs(e.contact.getImpactVelocityAlongNormal());
+            if (speed < CLANK_MIN_SPEED) return;
+            this.audio.playSfx('clank', {
+                position: ball.body.position,
+                intensity: Math.min(1, speed / 18),
+            });
+        });
     }
 
     // Llamar después de physics.step(): sincroniza y limpia bolas viejas

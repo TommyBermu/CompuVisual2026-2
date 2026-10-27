@@ -25,6 +25,11 @@
     uno activa triple bola, bolas infinitas, cámara lenta o +bolas. Los
     poderes cuentan en tiempo real, se congelan en la pausa y se apagan al
     morir, terminar o salir al menú. La cámara lenta escala el delta del juego.
+
+    Sonido (AudioManager): música procedural con un tema por checkpoint
+    (crossfade al cruzarlo), más baja y filtrada en pausa; vidrio que se rompe
+    (eventos del Shatter, paneados según dónde está), choque, campanas de
+    checkpoint, game over y recorrido completado.
 */
 
 import Renderer from './Renderer.js';
@@ -51,6 +56,10 @@ export default class Game {
         this.track = new Track();
         this.rail = new CameraRail(this.renderer.camera, this.track);
         this.spawner = new Spawner(this.renderer, this.physics, this.track);
+        // Sonidos del vidrio: el Shatter avisa de cada rotura y de las astillas que caen
+        this.audio.setListener(this.renderer.camera);
+        this.spawner.shatter.onBreak = (b) => this.audio.playSfx('glass', b);
+        this.spawner.shatter.onShardHit = (b) => this.audio.playSfx('shard', b);
         this.hud = new HUD(document.getElementById('hud'));
 
         // Puntuación: el Score lleva la cuenta y el HUD la pinta
@@ -124,6 +133,7 @@ export default class Game {
         this.renderer.setTheme(amb.colors, amb.sunIntensity, 0);
         this.spawner.update(this._view());
         this.screens.showMenu();
+        this.audio.startMusic('menu'); // suena en cuanto el navegador deje (primer clic)
         requestAnimationFrame(this._loop);
     }
 
@@ -155,7 +165,8 @@ export default class Game {
         this.started = true;
         this.startCheckpoint = startCheckpoint;
         this.score.start(startDistance); // puntuación y combo a cero
-        this.audio.startMusic();
+        this.audio.setPaused(false);
+        this.audio.startMusic(startCheckpoint); // tema del checkpoint (crossfade desde el menú)
         this.hud.show();
         this.spawner.update(this._view()); // generar el primer tramo
         this._setAmbience(startCheckpoint);
@@ -172,6 +183,9 @@ export default class Game {
         this.hud.setLevel(checkpoint, 9); // muestra "Checkpoint N/9"
         this.hud.showBanner(amb.name);
         if (!first) this.score.addCheckpoint(); // bono por llegar (no por el de salida)
+        // Música del nuevo checkpoint (crossfade) + campanas en su tonalidad
+        this.audio.setLevel(checkpoint);
+        if (!first) this.audio.playSfx('checkpoint', { level: checkpoint });
     }
 
     _finish() {
@@ -183,7 +197,8 @@ export default class Game {
         this.score.addFinish(this.shooter.ammo); // bono final + bolas que quedan
         const result = this._saveRun('¡Recorrido completado!');
         this.hud.showBanner('¡Recorrido completado!', 4000);
-        this.audio.stopMusic();
+        this.audio.playSfx('complete');
+        this.audio.stopMusic(3.5);
         setTimeout(() => this._showResults(result), 4200);
     }
 
@@ -198,8 +213,8 @@ export default class Game {
         this.hud.showDamage();
         this.hud.showBanner('¡Sin bolas!', 2500);
         this.shooter.scatter();        // lluvia de bolas
-        this.audio.playSfx('shoot');
-        this.audio.stopMusic();
+        this.audio.playSfx('gameover');
+        this.audio.stopMusic(2.5);     // la música se apaga mientras cae la lluvia
         setTimeout(() => this._showResults(result), 2800);
     }
 
@@ -228,7 +243,7 @@ export default class Game {
         if (type === 'bonus') this.shooter.addAmmo(POWER_BONUS_BALLS);
         this.score.addPowerUp();       // puntos extra (x combo)
         this.hud.showPower(def.duration ? `¡${def.name}!` : def.name, def.color);
-        this.audio.playSfx('power');
+        this.audio.playSfx('powerup');
     }
 
     // El jugador chocó con vidrio sólido (un trozo de panel o un bloque que
@@ -241,7 +256,7 @@ export default class Game {
         this.shooter.addAmmo(-penalty);
         this.hud.showBanner(`-${penalty}`, 900);
         this.hud.flashDamage();        // destello rojo breve
-        this.audio.playSfx('shoot');
+        this.audio.playSfx('crash');
         this.spawner.breakByCamera(hit, this.rail.velocity);
         this.crashCooldown = CRASH_COOLDOWN;
     }
@@ -256,10 +271,10 @@ export default class Game {
         this.paused = paused;
         if (paused) {
             this.screens.showPause(); // overlay con Reanudar / Salir al menú
-            this.audio.stopMusic();
+            this.audio.setPaused(true); // música lejana (filtrada y más baja)
         } else {
             this.screens.hide();
-            this.audio.startMusic();
+            this.audio.setPaused(false);
             this.lastTime = 0; // reinicia el delta para no "saltar" tras la pausa
         }
     }
@@ -277,7 +292,8 @@ export default class Game {
         this.spawner.clear();
         this.hud.hide();
         this.hud.hideDamage();
-        this.audio.stopMusic();
+        this.audio.setPaused(false);
+        this.audio.startMusic('menu'); // vuelve la música tranquila del menú
         // Devolver el fondo al preview del checkpoint 0
         this.track.reset();
         this.rail.place(0);

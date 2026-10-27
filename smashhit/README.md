@@ -88,6 +88,54 @@ Para enganchar otros eventos basta una línea en el `Game`:
 `this.score.addHit()`, `addPowerUp()`, `addCheckpoint()`, `addFinish(bolas)`,
 `onCrash()`, `onMiss()`.
 
+## Audio y música (100 % procedural)
+
+No hay archivos de sonido: todo se sintetiza en vivo con la **Web Audio API**
+(`src/audio/` + `src/core/AudioManager.js`). Respeta los volúmenes de música y
+efectos y el "Silenciar todo" de Configuración (en vivo).
+
+**Efectos** (`src/audio/sfx.js`, uno por evento del juego):
+
+| Sonido | Cuándo | Cómo está hecho |
+|---|---|---|
+| `shoot` | disparar | golpe grave (seno que cae) + "whoosh" de ruido con filtro que sube |
+| `glass` | se rompe vidrio | crack agudo + cuerpo de ruido filtrado + tintineos agudos desordenados; tamaño y fuerza según cuánto vidrio se soltó y la velocidad del golpe; tono y tiempos al azar en cada rotura; **paneado** izquierda/derecha y más bajo cuanto más lejos |
+| `shard` | astillas que caen al suelo | "pings" agudísimos y suaves |
+| `clank` | la bola choca con algo sólido | modos inarmónicos de una barra metálica + clic |
+| `crash` | la cámara choca con vidrio | rotura al máximo + golpe sordo grave |
+| `checkpoint` | cruzar un checkpoint | arpegio de campanas FM en la tonalidad del nuevo nivel |
+| `gameover` / `complete` | fin de partida | acorde que cae y se apaga / arpegio ascendente |
+| `powerup`, `ui` | cristales especiales, botones del menú | arpegio brillante / tic corto |
+
+Un nombre desconocido en `audio.playSfx('lo-que-sea')` suena como un "blip"
+genérico (no lanza error).
+
+**Música** (`src/audio/themes.js` + `src/audio/music.js`): un tema generativo
+por checkpoint con su propia tonalidad, modo, tempo y timbres (p. ej. *Tarde
+dorada* = Re mayor a 70 BPM; *Desierto rojo* = Mi frigio a 84 BPM con pulso;
+*Cénit* = Do lidio a 116 BPM con todas las capas). Capas: colchón de acordes,
+bajo, arpegio con eco a tempo, campanas sueltas y percusión suave en los niveles
+altos. Las capas entran poco a poco, el arpegio muta cada 4 compases y cada 16
+hay 2 de "respiro", así no cansa en bucle. Al cruzar un checkpoint hay
+**crossfade** al tema nuevo; en **pausa** la música sigue pero filtrada y más
+baja; en **game over** se desvanece; el menú tiene su propio tema tranquilo.
+
+Las notas se programan con un *lookahead scheduler* sobre `ctx.currentTime`
+(un `setInterval` solo despierta al programador; el ritmo lo marca el reloj de
+audio).
+
+**Rendimiento / robustez:**
+- Cada sonido es una `Voice` que desconecta sus nodos al terminar (sin fugas).
+- Límite de voces por tipo + intervalo mínimo (`LIMITS` en `AudioManager.js`)
+  y las roturas de un mismo frame se agrupan en un solo sonido (`Shatter.js`):
+  romper un panel con decenas de trozos no dispara decenas de sonidos.
+- Limitador en la salida para que muchas roturas a la vez no saturen.
+- El `AudioContext` se crea en el primer clic/tecla (política de autoplay) y
+  mientras no suena no se crea ningún nodo. Silenciado = no se generan notas.
+
+API: `playSfx(name, opts)`, `startMusic(level|'menu')`, `setLevel(n)`,
+`stopMusic(fade)`, `setPaused(bool)`, `setListener(camera)`.
+
 ## Cómo ejecutar
 
 Necesita un servidor local porque usa módulos ES (abrir el `index.html` con
@@ -139,17 +187,23 @@ smashhit/
 ├── css/
 │   └── style.css           # Canvas a pantalla completa + HUD encima
 ├── assets/
-│   ├── audio/              # sonidos (rotura, disparo, ambiente)
+│   ├── audio/              # vacío: todo el audio se sintetiza (ver src/audio)
 │   └── textures/           # texturas/skybox (opcional)
 └── src/
     ├── main.js             # Crea Game y lo arranca
     ├── constants.js        # Números de ajuste (gravedad, rebote, bola, puntos...)
     ├── settings.js         # Ajustes del jugador (localStorage)
     ├── records.js          # Récords: mejor puntuación/distancia (localStorage)
+    ├── audio/              # Sonido procedural (Web Audio, sin archivos)
+    │   ├── synth.js        # Ruido, reverb, timbres, Voice (limpieza de nodos), envolventes
+    │   ├── sfx.js          # Recetas de efectos: disparo, vidrio, clank, choque, campanas...
+    │   ├── themes.js       # Un tema musical por checkpoint (tonalidad, tempo, capas)
+    │   └── music.js        # Motor de música generativa (lookahead scheduler + crossfade)
     ├── core/               # El "motor": piezas base
     │   ├── Game.js         # Orquestador + bucle principal (DEMO funcional)
     │   ├── Renderer.js     # Three.js: escena, cámara, luces, render (funcional)
     │   ├── Physics.js      # Cannon-es: mundo, gravedad, step (funcional)
+    │   ├── AudioManager.js # Volúmenes, reverb, límites de voces, API playSfx/música
     │   ├── InputManager.js # Input -> intención de disparo (andamiaje)
     │   └── Loop.js         # rAF + delta separado (opcional, andamiaje)
     ├── entities/           # Objetos: mesh (Three) + body (Cannon) juntos

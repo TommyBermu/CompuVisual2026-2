@@ -175,6 +175,11 @@ export default class Screens {
                 const key = input.dataset.setting;
                 const val = parseFloat(input.value);
                 saveSettings({ [key]: val });
+                // Probar el volumen de efectos con un vidrio (como mucho ~6 por segundo)
+                if (key === 'sfxVolume' && performance.now() - (this._preview || 0) > 150) {
+                    this._preview = performance.now();
+                    this.audio?.playSfx('glass', { size: 0.3, intensity: 0.6 });
+                }
                 const out = this.el.querySelector(`[data-value-for="${key}"]`);
                 if (out) {
                     out.textContent = key === 'fov'

@@ -22,6 +22,13 @@
 
     update(delta, view) recibe la vista de la cámara { position, forward,
     floorY } para borrar lo que quedó DETRÁS (o se cayó muy abajo).
+
+    SONIDO (ganchos opcionales, los asigna el Game):
+        onBreak({ position, size, intensity }) -> una rotura. Todas las roturas
+            de un mismo frame que caen cerca (< BREAK_MERGE m) se juntan en UN
+            evento (un panel suelta astillas + varios bloques a la vez).
+        onShardHit({ position, intensity }) -> una astilla golpeó el suelo
+            con fuerza (como mucho uno por frame, el más fuerte).
 */
 
 import * as THREE from 'three';
@@ -42,6 +49,8 @@ const tmpAxis = new THREE.Vector3();
 const tmpL = new THREE.Vector3();
 const tmpV = new THREE.Vector3();
 const WALL_X = TUNNEL_WIDTH / 2 - 0.05;
+const BREAK_MERGE = 2.5;     // m: roturas más cercanas que esto (mismo frame) = un solo sonido
+const SHARD_HIT_SPEED = 2.5; // m/s: velocidad mínima de una astilla contra el suelo para sonar
 
 // Un bloque de vidrio cayéndose (cuerpo dinámico compuesto)
 class GlassChunk {
@@ -80,6 +89,33 @@ export default class Shatter {
         this.physics = physics;
         this.debris = [];
         this.chunks = [];
+        this.onBreak = null;     // callback de sonido (ver cabecera)
+        this.onShardHit = null;
+        this._breaks = [];       // roturas de este frame (se agrupan antes de avisar)
+    }
+
+    // Anota una rotura para el sonido: área de vidrio suelta + rapidez del golpe
+    _noteBreak(pos, area, speed) {
+        if (!this.onBreak) return;
+        for (const b of this._breaks) {
+            if (Math.hypot(b.x - pos.x, b.y - pos.y, b.z - pos.z) < BREAK_MERGE) {
+                b.area += area;
+                b.speed = Math.max(b.speed, speed);
+                return;
+            }
+        }
+        this._breaks.push({ x: pos.x, y: pos.y, z: pos.z, area, speed });
+    }
+
+    _flushBreaks() {
+        for (const b of this._breaks) {
+            this.onBreak({
+                position: { x: b.x, y: b.y, z: b.z },
+                size: Math.min(1, Math.sqrt(b.area / 6)),     // ~0.4 un agujero de bola, ~0.8 un panel entero
+                intensity: Math.min(1, 0.25 + b.speed / 20),  // ~0.65 un disparo, 1 un choque rápido
+            });
+        }
+        this._breaks.length = 0;
     }
 
     // Astillas del agujero. pieces: trozos del panel (coords del panel),
@@ -90,6 +126,7 @@ export default class Shatter {
     spawnDebris(pieces, frame, impact, launch, ground = null) {
         const q = frame.quaternion;
         const impactW = frame.pointToWorldFrame(new CANNON.Vec3(impact.x, impact.y, 0));
+        this._noteBreak(impactW, pieces.reduce((a, p) => a + p.area, 0), launch.push.length());
         for (const p of pieces) {
             const mesh = p.mesh;
             const w = frame.pointToWorldFrame(new CANNON.Vec3(p.cx, p.cy, 0));
@@ -159,6 +196,7 @@ export default class Shatter {
         body.velocity.set(push.x + rnd(0.3), push.y, push.z + rnd(0.3));
         body.angularVelocity.set(rnd(1.5), rnd(0.8), rnd(1.5));
 
+        this._noteBreak(body.position, area, push.length());
         const chunk = new GlassChunk(group, body, parts, area, ground);
         this.renderer.add(group);
         this.physics.add(body);
@@ -171,6 +209,7 @@ export default class Shatter {
     // Revienta un bloque en astillas (golpe de bola o de cámara)
     shatterChunk(chunk, push = new CANNON.Vec3()) {
         const body = chunk.body;
+        this._noteBreak(body.position, chunk.area, body.velocity.length() + push.length());
         for (const part of chunk.parts) {
             for (const cell of shatterPolygon(part.poly)) {
                 const [ccx, ccy] = polygonCentroid(cell);
@@ -236,6 +275,7 @@ export default class Shatter {
         }
 
         // Astillas: física mínima propia
+        let shard = null; // la astilla que golpeó el suelo más fuerte este frame (sonido)
         this.debris = this.debris.filter((d) => {
             d.age += delta;
             const m = d.mesh;
@@ -253,6 +293,7 @@ export default class Shatter {
             // suelo: rebote amortiguado + rozamiento
             if (l.y < 0.04) {
                 l.y = 0.04;
+                if (-v.y > SHARD_HIT_SPEED && (!shard || -v.y > shard.speed)) shard = { mesh: m, speed: -v.y };
                 if (v.y < 0) v.y *= -0.3;
                 v.x *= 0.7; v.z *= 0.7;
                 d.angVel.multiplyScalar(0.6);
@@ -280,6 +321,11 @@ export default class Shatter {
             }
             return true;
         });
+
+        if (shard && this.onShardHit) {
+            this.onShardHit({ position: shard.mesh.position, intensity: Math.min(1, shard.speed / 8) });
+        }
+        if (this._breaks.length) this._flushBreaks();
     }
 
     clear() {
@@ -287,5 +333,6 @@ export default class Shatter {
         this.chunks.forEach((c) => this._removeChunk(c));
         this.debris = [];
         this.chunks = [];
+        this._breaks.length = 0;
     }
 }
