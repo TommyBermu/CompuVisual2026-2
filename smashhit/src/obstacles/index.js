@@ -3,19 +3,24 @@
     ------------------
     Catálogo de obstáculos. Cada nivel (levels.js -> `obstacles`) dice qué tipos
     usa; el Spawner elige uno al azar de esa lista en cada tramo y llama a
-    createObstacles, que devuelve uno o varios obstáculos para ese tramo.
+    createObstacles. Cada tipo tiene a su vez varias VARIANTES (ver cada
+    archivo), así nunca sale siempre lo mismo:
 
-        panels     paneles rectangulares que salen del suelo (el clásico)
-        triangles  formaciones de triángulos de vidrio
-        gates      compuertas que se abren rompiendo su botón
-        pendulums  placas de vidrio colgando que oscilan
-        spinners   aspas de vidrio que giran
+        panels     paneles rectangulares (sueltos, en fila, muro, sobre bloques, colgados...)
+        triangles  triángulos (suelo, paredes, techo, zigzag, sobre bloques...)
+        gates      compuertas (dos hojas, guillotina, deslizante, doble botón, rítmica)
+        pendulums  péndulos (laterales, frontales, diagonales, en ola, en pareja...)
+        spinners   aspas (molino, gemelos, hélice, torniquete, rodillo)
+
+    Además está el RELLENO sólido (Props: columnas, bloques, vigas...), que el
+    Spawner reparte aparte según `props` del nivel.
 */
 
 import GlassWall from './GlassWall.js';
 import Pendulum from './Pendulum.js';
 import Spinner from './Spinner.js';
 import Gate from './Gate.js';
+import Props from './Props.js';
 
 export const OBSTACLE_NAMES = {
     panels: 'Paneles',
@@ -25,22 +30,25 @@ export const OBSTACLE_NAMES = {
     spinners: 'Aspas giratorias',
 };
 
-// z: centro del tramo. Devuelve un array de obstáculos.
-export function createObstacles(type, z, levelIndex) {
+// s: punto del recorrido (centro del tramo). Devuelve un array de obstáculos.
+export function createObstacles(type, track, s, levelIndex) {
+    const frame = track.frameAt(s);
     switch (type) {
         case 'triangles':
-            return [GlassWall.triangles(z, levelIndex)];
+            return [GlassWall.triangles(frame, levelIndex)];
         case 'gates':
-            return [new Gate(z, levelIndex)];
+            return [new Gate(frame, levelIndex)];
         case 'pendulums':
-            // a veces dos seguidos, desacompasados
-            return Math.random() < 0.4
-                ? [new Pendulum(z + 4, levelIndex), new Pendulum(z - 4, levelIndex)]
-                : [new Pendulum(z, levelIndex)];
+            return [new Pendulum(frame, levelIndex)];
         case 'spinners':
-            return [new Spinner(z, levelIndex)];
+            return [new Spinner(frame, levelIndex)];
         case 'panels':
         default:
-            return [GlassWall.panels(z, levelIndex)];
+            return [GlassWall.panels(frame, levelIndex)];
     }
+}
+
+// Relleno sólido en el punto s
+export function createProps(track, s, levelIndex) {
+    return new Props(track.frameAt(s), levelIndex);
 }

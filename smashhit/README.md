@@ -4,19 +4,29 @@ Juego 3D inspirado en Smash Hit hecho con **Three.js** (gráficos) y **Cannon-es
 (físicas), cargados desde CDN como módulos ES (sin instalar nada, igual que el
 Asteroids del repo).
 
-> **Estado actual (paso 4):** recorrido lineal con 10 checkpoints; cada uno
-> tiene su ambiente Y sus propios obstáculos (ver `src/obstacles/` y el campo
-> `obstacles` de `src/levels.js`):
+> **Estado actual (paso 5):** recorrido de 10 checkpoints que ya NO es una
+> recta: gira a izquierda/derecha y sube/baja en rampas (`src/systems/Track.js`).
+> Siempre hay un giro al cambiar de checkpoint y, dentro de cada nivel, curvas
+> y rampas según su campo `track` en `src/levels.js`. Cada partida genera un
+> recorrido distinto.
 >
-> | Obstáculo | Qué es |
+> Cada checkpoint tiene su ambiente y sus obstáculos (campo `obstacles`; los
+> checkpoints 0-4 enseñan un tipo cada uno y del 5 en adelante se mezclan), y
+> cada tipo tiene muchas VARIANTES para que no se repita:
+>
+> | Obstáculo | Variantes |
 > |---|---|
-> | Paneles | rectángulos de vidrio que salen del suelo |
-> | Triángulos | pirámides planas de vidrio (una grande, pareja o fila de tres) |
-> | Compuertas | puertas metálicas que se abren al romper su botón de vidrio brillante |
-> | Péndulos | placas de vidrio colgando que oscilan de lado a lado |
-> | Aspas giratorias | 2-4 hojas de vidrio girando alrededor de un eje |
+> | Paneles | sueltos, fila, muro de pared a pared, escalonados, sobre bloques, colgando de una viga |
+> | Triángulos | grande, pareja cruzada, fila, desde las paredes, zigzag, colgando del techo, sobre bloques, "estrella" |
+> | Compuertas | dos hojas, guillotina, deslizante, doble botón, rítmica (se abre y cierra sola) |
+> | Péndulos | lateral, frontal, diagonal, ola de tres, pareja, pareja frontal |
+> | Aspas giratorias | molino, molinos gemelos, hélice, torniquete (eje vertical), rodillo (eje horizontal) |
 >
-> Los checkpoints 0-4 enseñan un tipo cada uno y del 5 en adelante se mezclan.
+> Además hay RELLENO sólido que no se rompe (`src/obstacles/Props.js`, campo
+> `props`): columnas, bloques apilados, muretes, vigas, aletas, marcos de
+> puerta, escalones y cubos flotantes. Nunca invade el "tubo" por donde pasa
+> la cámara (solo las puertas cerradas pueden bloquearlo).
+>
 > Todo el vidrio se ROMPE según dónde se golpee (Voronoi radial alrededor del
 > impacto, ver `src/utils/fracture.js`), también el que se mueve o gira: los
 > trozos sin apoyo caen y heredan la velocidad del obstáculo.
@@ -87,20 +97,23 @@ smashhit/
     │   ├── Entity.js       # Base: sync() body->mesh, destroy() (funcional)
     │   ├── Ball.js         # La bola de metal (funcional, se usa en la demo)
     │   ├── GlassPanel.js   # Vidrio rompible de cualquier forma, puede moverse/girar
-    │   ├── Crystal.js      # Panel que sale del suelo (rectángulo o triángulo)
-    │   ├── Obstacle.js     # Base de obstáculos: paneles de vidrio + partes metálicas
-    │   └── Tunnel.js       # El corredor
+    │   ├── Crystal.js      # Panel montado en suelo/pared/viga/bloque (rectángulo o triángulo)
+    │   ├── Obstacle.js     # Base de obstáculos: vidrio + partes sólidas, en el marco del recorrido
+    │   └── Tunnel.js       # Un tramo del pasillo, "barrido" a lo largo de la curva
     ├── obstacles/          # Tipos de obstáculo (uno o varios por nivel)
-    │   ├── index.js        # Catálogo + createObstacles(tipo, z, nivel)
-    │   ├── GlassWall.js    # Paneles y triángulos que salen del suelo
-    │   ├── Gate.js         # Compuerta con botón de vidrio
-    │   ├── Pendulum.js     # Péndulo con placa de vidrio
-    │   └── Spinner.js      # Aspas giratorias de vidrio
+    │   ├── index.js        # Catálogo + createObstacles(tipo, track, s, nivel)
+    │   ├── shared.js       # Azar, medidas y el "tubo" de la cámara
+    │   ├── GlassWall.js    # Paneles y triángulos (muchas formaciones)
+    │   ├── Gate.js         # Compuertas con botones de vidrio
+    │   ├── Pendulum.js     # Péndulos en varias direcciones
+    │   ├── Spinner.js      # Aspas giratorias (molino, torniquete, rodillo...)
+    │   └── Props.js        # Relleno sólido (columnas, bloques, vigas...)
     ├── systems/            # Lógica que actúa sobre las entidades
+    │   ├── Track.js        # El recorrido: curva 3D con giros y rampas, frameAt(s)
     │   ├── Shooter.js      # Lanza bolas hacia la mira
-    │   ├── Spawner.js      # Genera pasillo/obstáculos, golpes y choque de cámara
+    │   ├── Spawner.js      # Genera pasillo/obstáculos/relleno, golpes y choque de cámara
     │   ├── Shatter.js      # Astillas (física propia) y bloques que caen (Cannon)
-    │   └── CameraRail.js   # Avance de la cámara por el túnel
+    │   └── CameraRail.js   # Avance de la cámara a lo largo del recorrido
     ├── ui/
     │   ├── HUD.js          # Puntuación / bolas restantes (andamiaje)
     │   └── Screens.js      # Menú / game over / pausa (andamiaje)
@@ -108,6 +121,7 @@ smashhit/
         ├── sync.js         # Copiar posición/rotación body -> mesh (funcional)
         ├── fracture.js     # Geometría 2D: Voronoi, rotura y conectividad
         ├── glass.js        # Polígono -> geometría Three + forma Cannon
+        ├── frame.js        # Coords locales del recorrido <-> mundo
         └── loaders.js      # Carga de audio/texturas (andamiaje)
 ```
 

@@ -9,8 +9,10 @@
     MENÚ (ui/Screens.js): jugar, elegir checkpoint y configuración.
     El recorrido real empieza al pulsar jugar / elegir checkpoint -> _begin(cp).
 
-    Recorrido LINEAL y continuo, dividido en checkpoints de 500 m (0..9). Al
-    cruzar cada checkpoint cambia el ambiente (paleta + velocidad). Las bolas son
+    Recorrido continuo con curvas y rampas (systems/Track.js), dividido en
+    checkpoints de 500 m (0..9). Todo se mide en s = metros a lo largo del
+    recorrido. Al cruzar cada checkpoint cambia el ambiente (paleta +
+    velocidad) y el pasillo gira. Las bolas son
     munición Y vida: disparar cuesta 1; romper un cristal con un disparo da +3;
     chocar contra vidrio sólido resta (5 + N) bolas (N = checkpoint) y lo rompe
     donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
@@ -23,6 +25,7 @@ import Physics from './Physics.js';
 import InputManager from './InputManager.js';
 import AudioManager from './AudioManager.js';
 import CameraRail from '../systems/CameraRail.js';
+import Track from '../systems/Track.js';
 import Spawner from '../systems/Spawner.js';
 import Shooter from '../systems/Shooter.js';
 import HUD from '../ui/HUD.js';
@@ -35,8 +38,9 @@ export default class Game {
         this.renderer = new Renderer(container);
         this.physics = new Physics();
         this.audio = new AudioManager();
-        this.rail = new CameraRail(this.renderer.camera);
-        this.spawner = new Spawner(this.renderer, this.physics);
+        this.track = new Track();
+        this.rail = new CameraRail(this.renderer.camera, this.track);
+        this.spawner = new Spawner(this.renderer, this.physics, this.track);
         this.hud = new HUD(document.getElementById('hud'));
 
         this.shooter = new Shooter(this.renderer, this.physics, this.rail, this.audio);
@@ -91,23 +95,32 @@ export default class Game {
     // Mostramos el menú y dejamos el render corriendo de fondo
     start() {
         // Preview de fondo del menú: ambiente del checkpoint 0, cámara quieta
-        this.renderer.camera.position.z = 0;
+        this.rail.place(0);
         const amb = ambienceFor(0);
         this.renderer.setTheme(amb.colors, amb.sunIntensity, 0);
-        this.spawner.update(this.renderer.camera.position.z);
+        this.spawner.update(this._view());
         this.screens.showMenu();
         requestAnimationFrame(this._loop);
     }
 
-    // Empezar el recorrido lineal desde el checkpoint elegido en el menú.
+    // Vista de la cámara para los systems: dónde está en el recorrido y hacia dónde mira
+    _view() {
+        return {
+            s: this.rail.s,
+            position: this.renderer.camera.position,
+            forward: this.rail.forward,
+            floorY: this.rail.frame.position.y,
+        };
+    }
+
+    // Empezar el recorrido desde el checkpoint elegido en el menú.
     _begin(startCheckpoint) {
         const startDistance = checkpointStart(startCheckpoint);
-        this.renderer.camera.position.z = -startDistance;
-        this.spawner.clear(-startDistance); // empezar con pasillo limpio desde ahí
+        this.spawner.clear(startDistance); // empezar con pasillo limpio desde ahí
+        this.track.reset();                // cada partida tiene curvas distintas
+        this.rail.place(startDistance);
         this.shooter.clear();
         this.rail.resume();             // reactivar el avance (si veníamos de morir/pausa)
-        this.rail.resetDistance();      // el contador arranca; la distancia se calcula con offset
-        this.startDistance = startDistance;
         this.hud.setBalls(this.shooter.ammo);
         this.hud.hideDamage();
         this.checkpoint = -1;
@@ -117,7 +130,7 @@ export default class Game {
         this.started = true;
         this.audio.startMusic();
         this.hud.show();
-        this.spawner.update(this.renderer.camera.position.z); // generar el primer tramo
+        this.spawner.update(this._view()); // generar el primer tramo
         this._setAmbience(startCheckpoint);
     }
 
@@ -201,11 +214,12 @@ export default class Game {
         this.hud.hideDamage();
         this.audio.stopMusic();
         // Devolver el fondo al preview del checkpoint 0
-        this.renderer.camera.position.z = 0;
+        this.track.reset();
+        this.rail.place(0);
         this.checkpoint = -1;
         const amb = ambienceFor(0);
         this.renderer.setTheme(amb.colors, amb.sunIntensity, 0);
-        this.spawner.update(this.renderer.camera.position.z);
+        this.spawner.update(this._view());
         this.screens.showMenu();
     }
 
@@ -226,13 +240,14 @@ export default class Game {
         this.renderer.followCamera();                         //    (el sol la sigue)
         this.renderer.update(delta);                          //    (transición de colores)
         this.physics.step(delta);                             // 2. avanza la física
-        this.spawner.update(this.renderer.camera.position.z, delta); // 3. genera/borra pasillo, rompe vidrio
-        this.shooter.update(delta);                           // 4. body -> mesh de bolas + limpieza
+        const view = this._view();
+        this.spawner.update(view, delta);                     // 3. genera/borra pasillo, rompe vidrio
+        this.shooter.update(delta, view);                     // 4. body -> mesh de bolas + limpieza
         this.entities.forEach((e) => e.sync());               //    (y del resto de entidades)
 
-        // 5. distancia total en el recorrido = base del checkpoint inicial + avance
+        // 5. distancia recorrida = s de la cámara en el recorrido
         if (this.started && !this.dead && !this.finished) {
-            const distance = (this.startDistance || 0) + this.rail.distance;
+            const distance = this.rail.distance;
 
             // ¿cruzamos a un nuevo checkpoint? -> nuevo ambiente
             const cp = checkpointAt(distance);
@@ -242,7 +257,7 @@ export default class Game {
             if (this.crashCooldown > 0) {
                 this.crashCooldown -= delta;
             } else {
-                const hit = this.spawner.cameraCollision(this.renderer.camera);
+                const hit = this.spawner.cameraCollision(view);
                 if (hit) this._crashInto(hit);
             }
 

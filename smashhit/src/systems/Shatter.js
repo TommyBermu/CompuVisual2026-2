@@ -14,12 +14,21 @@
        trozo) que ruedan por el suelo. Si un bloque grande (>= CHUNK_HARMFUL_AREA)
        acaba atravesado en el camino, la cámara choca con él (Spawner ->
        cameraCollision). Si una bola o la cámara lo golpean, revienta en astillas.
+
+    Las astillas rebotan contra el suelo y las paredes del MARCO del recorrido
+    donde se soltaron (`ground`, ver utils/frame.js): así funcionan igual en
+    una curva o en una rampa. Duran poco, no se alejan lo bastante como para
+    que importe que el pasillo siga girando.
+
+    update(delta, view) recibe la vista de la cámara { position, forward,
+    floorY } para borrar lo que quedó DETRÁS (o se cayó muy abajo).
 */
 
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { shatterPolygon, polygonCentroid } from '../utils/fracture.js';
 import { prismGeometry, ensureShape, distanceToPrism, centerPolygon } from '../utils/glass.js';
+import { pointToLocal, pointToWorld, dirToLocal, dirToWorld } from '../utils/frame.js';
 import {
     GRAVITY, TUNNEL_WIDTH, DESPAWN_BEHIND, CRYSTAL_THICKNESS,
     DEBRIS_LIFETIME, MAX_DEBRIS, CHUNK_LIFETIME, CHUNK_HARMFUL_AREA, GLASS_CHUNK_DENSITY,
@@ -30,12 +39,15 @@ const CT = CRYSTAL_THICKNESS;
 const rnd = (a = 1) => (Math.random() - 0.5) * 2 * a;
 const tmpQ = new THREE.Quaternion();
 const tmpAxis = new THREE.Vector3();
+const tmpL = new THREE.Vector3();
+const tmpV = new THREE.Vector3();
 const WALL_X = TUNNEL_WIDTH / 2 - 0.05;
 
 // Un bloque de vidrio cayéndose (cuerpo dinámico compuesto)
 class GlassChunk {
-    constructor(mesh, body, parts, area) {
+    constructor(mesh, body, parts, area, ground) {
         this.mesh = mesh;
+        this.ground = ground;    // marco del recorrido (para sus astillas)
         this.body = body;
         this.parts = parts;      // [{ poly, ox, oy, material }] poly centrado en (ox, oy) del body
         this.area = area;
@@ -74,7 +86,8 @@ export default class Shatter {
     // frame: body del panel (posición + orientación en mundo),
     // impact: { x, y } punto de impacto en coords del panel,
     // launch: { push: Vec3, spread: m/s hacia fuera del impacto }
-    spawnDebris(pieces, frame, impact, launch) {
+    // ground: marco del recorrido para rebotar (o null = suelo plano y=0)
+    spawnDebris(pieces, frame, impact, launch, ground = null) {
         const q = frame.quaternion;
         const impactW = frame.pointToWorldFrame(new CANNON.Vec3(impact.x, impact.y, 0));
         for (const p of pieces) {
@@ -93,16 +106,17 @@ export default class Shatter {
                 launch.push.y + (ry / r) * out + rnd(0.6) + 1,
                 launch.push.z + (rz / r) * out + rnd(1),
             );
-            this._addDebris(mesh, vel);
+            this._addDebris(mesh, vel, ground);
         }
     }
 
-    _addDebris(mesh, vel) {
+    _addDebris(mesh, vel, ground) {
         this.renderer.add(mesh);
         this.debris.push({
             mesh,
             vel,
             angVel: new THREE.Vector3(rnd(8), rnd(8), rnd(8)),
+            ground,
             age: 0,
             life: DEBRIS_LIFETIME * (0.7 + Math.random() * 0.6),
         });
@@ -117,7 +131,7 @@ export default class Shatter {
 
     // Bloque sin apoyo: un cuerpo dinámico con todos sus trozos.
     // frame: body del panel del que se suelta (posición + orientación en mundo).
-    spawnChunk(pieces, frame, push) {
+    spawnChunk(pieces, frame, push, ground = null) {
         // Centro de masas (ponderado por área) en coords del panel
         let area = 0, cx = 0, cy = 0;
         pieces.forEach((p) => { area += p.area; cx += p.cx * p.area; cy += p.cy * p.area; });
@@ -145,7 +159,7 @@ export default class Shatter {
         body.velocity.set(push.x + rnd(0.3), push.y, push.z + rnd(0.3));
         body.angularVelocity.set(rnd(1.5), rnd(0.8), rnd(1.5));
 
-        const chunk = new GlassChunk(group, body, parts, area);
+        const chunk = new GlassChunk(group, body, parts, area, ground);
         this.renderer.add(group);
         this.physics.add(body);
         group.position.copy(body.position);
@@ -169,7 +183,7 @@ export default class Shatter {
                     body.velocity.y + push.y + rnd(1) + 1.5,
                     body.velocity.z + push.z + rnd(2),
                 );
-                this._addDebris(mesh, vel);
+                this._addDebris(mesh, vel, chunk.ground);
             }
         }
         this._removeChunk(chunk);
@@ -196,7 +210,15 @@ export default class Shatter {
     }
 
     // Llamar DESPUÉS de physics.step()
-    update(delta, cameraZ) {
+    // ¿El punto p quedó detrás de la cámara (o se cayó del recorrido)?
+    static gone(p, view) {
+        const back = (p.x - view.position.x) * view.forward.x
+            + (p.y - view.position.y) * view.forward.y
+            + (p.z - view.position.z) * view.forward.z;
+        return back < -DESPAWN_BEHIND || p.y < view.floorY - 15;
+    }
+
+    update(delta, view) {
         // Bloques: golpes de bola pendientes, sync, limpieza
         for (const c of [...this.chunks]) {
             if (c.pendingShatter) {
@@ -207,7 +229,7 @@ export default class Shatter {
             c.mesh.position.copy(c.body.position);
             c.mesh.quaternion.copy(c.body.quaternion);
             const p = c.body.position;
-            if (c.age > CHUNK_LIFETIME || p.z > cameraZ + DESPAWN_BEHIND || p.y < -10) {
+            if (c.age > CHUNK_LIFETIME || Shatter.gone(p, view)) {
                 this._removeChunk(c);
                 this.chunks = this.chunks.filter((x) => x !== c);
             }
@@ -217,23 +239,39 @@ export default class Shatter {
         this.debris = this.debris.filter((d) => {
             d.age += delta;
             const m = d.mesh;
-            if (d.age > d.life || m.position.z > cameraZ + DESPAWN_BEHIND) {
+            if (d.age > d.life || Shatter.gone(m.position, view)) {
                 this._removeDebris(d);
                 return false;
             }
             d.vel.y += GRAVITY * delta;
             m.position.addScaledVector(d.vel, delta);
+            // Suelo y paredes en coords del marco del recorrido (x lateral, y normal al suelo)
+            const g = d.ground;
+            const l = g ? pointToLocal(g, m.position, tmpL) : tmpL.copy(m.position);
+            const v = g ? dirToLocal(g, d.vel, tmpV) : tmpV.copy(d.vel);
+            let hit = false;
             // suelo: rebote amortiguado + rozamiento
-            if (m.position.y < 0.04) {
-                m.position.y = 0.04;
-                if (d.vel.y < 0) d.vel.y *= -0.3;
-                d.vel.x *= 0.7; d.vel.z *= 0.7;
+            if (l.y < 0.04) {
+                l.y = 0.04;
+                if (v.y < 0) v.y *= -0.3;
+                v.x *= 0.7; v.z *= 0.7;
                 d.angVel.multiplyScalar(0.6);
+                hit = true;
             }
             // paredes del pasillo
-            if (Math.abs(m.position.x) > WALL_X) {
-                m.position.x = Math.sign(m.position.x) * WALL_X;
-                d.vel.x *= -0.4;
+            if (Math.abs(l.x) > WALL_X) {
+                l.x = Math.sign(l.x) * WALL_X;
+                v.x *= -0.4;
+                hit = true;
+            }
+            if (hit) {
+                if (g) {
+                    pointToWorld(g, l.x, l.y, l.z, m.position);
+                    dirToWorld(g, v, d.vel);
+                } else {
+                    m.position.copy(l);
+                    d.vel.copy(v);
+                }
             }
             const speed = d.angVel.length();
             if (speed > 1e-3) {

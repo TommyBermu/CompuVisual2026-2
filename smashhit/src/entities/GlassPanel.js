@@ -21,7 +21,11 @@
     El panel puede MOVERSE y GIRAR (setPose): todo se calcula en coordenadas
     locales del panel (body.pointToLocalFrame), así la rotura, el choque con la
     cámara y los trozos que salen funcionan igual en un péndulo que en un panel
-    quieto. `velocity` (la pone el obstáculo) se suma a los trozos que se sueltan.
+    quieto. `velocity` (se calcula en moveTo) se suma a los trozos que se sueltan.
+
+    `frame` es el marco del recorrido donde está su obstáculo (lo pone
+    Obstacle.addPanel): setPose/moveTo reciben coords LOCALES de ese marco, y
+    las astillas lo usan como suelo/paredes para rebotar.
 
     Física: UN body cinemático con una forma (ConvexPolyhedron) por trozo, con
     collisionResponse = false: Cannon detecta el contacto con la bola (evento
@@ -40,17 +44,20 @@ import {
 } from '../constants.js';
 import { polygonCentroid, polygonArea, fracturePanel, bbox } from '../utils/fracture.js';
 import { glassMaterial, prismGeometry, ensureShape, distanceToPrism, centerPolygon } from '../utils/glass.js';
+import { pointToWorld, quatToWorld } from '../utils/frame.js';
 
 const CT = CRYSTAL_THICKNESS;
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const EPS = 1e-3;
+const tmpP = new THREE.Vector3();
+const tmpQ = new THREE.Quaternion();
 
 export default class GlassPanel extends Entity {
     /*
         outline:    polígono convexo CCW en coords del panel
         levelIndex: paleta del nivel (color del vidrio)
         options:
-            anchor:  'bottom' | 'top'  borde que sostiene el panel
+            anchor:  'bottom' | 'top' | 'left' | 'right'  borde que sostiene el panel
             fragile: true -> cualquier golpe lo rompe entero
             material: material propio (si no, el vidrio del nivel)
     */
@@ -77,12 +84,15 @@ export default class GlassPanel extends Entity {
         this.anchor = anchor;
         this.fragile = fragile;
         // ¿Un trozo (su bbox) toca el soporte?
-        this.anchorFn = anchor === 'top'
-            ? (b) => b.maxY >= box.maxY - EPS
-            : (b) => b.minY <= box.minY + EPS;
+        this.anchorFn = {
+            top: (b) => b.maxY >= box.maxY - EPS,
+            left: (b) => b.minX <= box.minX + EPS,
+            right: (b) => b.maxX >= box.maxX - EPS,
+        }[anchor] || ((b) => b.minY <= box.minY + EPS);
 
         this.material = material || glassMaterial(levelIndex);
-        this.velocity = new CANNON.Vec3(); // velocidad del panel (la fija el obstáculo que lo mueve)
+        this.velocity = new CANNON.Vec3(); // velocidad del panel (moveTo)
+        this.frame = null;                 // marco del recorrido (coords locales de setPose)
         this.broken = false;               // ya lo rompió una bola (el premio se da una vez)
         this.pieces = [];                  // trozos que siguen en el panel
         this.pendingHits = [];             // golpes de bola aún sin procesar
@@ -90,10 +100,13 @@ export default class GlassPanel extends Entity {
         this._setPieces([outline]);
     }
 
-    // Coloca el panel en el mundo. quaternion (opcional): orientación (CANNON o THREE).
+    // Coloca el panel. (x, y, z) y quaternion (THREE, opcional) en coords
+    // locales de `frame` (o de mundo si no tiene).
     setPose(x, y, z, quaternion = null) {
-        this.body.position.set(x, y, z);
-        if (quaternion) this.body.quaternion.set(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+        const p = this.frame ? pointToWorld(this.frame, x, y, z, tmpP) : tmpP.set(x, y, z);
+        const q = this.frame ? quatToWorld(this.frame, quaternion, tmpQ) : quaternion;
+        this.body.position.set(p.x, p.y, p.z);
+        if (q) this.body.quaternion.set(q.x, q.y, q.z, q.w);
         this.body.aabbNeedsUpdate = true;
         this.sync();
     }
@@ -101,11 +114,9 @@ export default class GlassPanel extends Entity {
     // Como setPose, pero además calcula la velocidad del panel a partir de
     // dónde estaba (los trozos que se suelten la heredan).
     moveTo(x, y, z, quaternion, delta) {
-        if (delta > 0) {
-            const p = this.body.position;
-            this.velocity.set((x - p.x) / delta, (y - p.y) / delta, (z - p.z) / delta);
-        }
+        const old = this.body.position.clone();
         this.setPose(x, y, z, quaternion);
+        if (delta > 0) this.velocity.copy(this.body.position.vsub(old).scale(1 / delta));
     }
 
     // ¿Queda algo del panel?
@@ -169,9 +180,17 @@ export default class GlassPanel extends Entity {
     _breakRadius(lx, ly, speed) {
         const speedFactor = Math.max(0.7, Math.min(1.3, speed / BALL_SPEED));
         const R0 = GLASS_HOLE_RADIUS * speedFactor;
-        const fromSupport = this.anchor === 'top' ? this.box.maxY - ly : ly - this.box.minY;
-        const h = clamp01(fromSupport / this.height);                       // 0 en el soporte, 1 en el otro extremo
-        const side = this.halfWidth - Math.abs(lx - this.centerX);          // distancia al borde lateral
+        // Distancia al soporte (normalizada) y al borde "lateral" (perpendicular al soporte)
+        const b = this.box;
+        const vertical = this.anchor === 'top' || this.anchor === 'bottom';
+        const fromSupport = {
+            top: b.maxY - ly, left: lx - b.minX, right: b.maxX - lx,
+        }[this.anchor] ?? ly - b.minY;
+        const span = vertical ? this.height : this.width;
+        const h = clamp01(fromSupport / span);                               // 0 en el soporte, 1 en el otro extremo
+        const side = vertical
+            ? this.halfWidth - Math.abs(lx - this.centerX)
+            : this.height / 2 - Math.abs(ly - (b.minY + b.maxY) / 2);       // distancia al borde lateral
         const heightFactor = 1 + GLASS_HEIGHT_WEAKNESS * h * h;
         const edgeFactor = 1 + GLASS_EDGE_WEAKNESS * clamp01(1 - side / (1.5 * R0));
         return R0 * heightFactor * edgeFactor;
@@ -224,8 +243,8 @@ export default class GlassPanel extends Entity {
         // panel (un péndulo los lanza en la dirección en que se movía).
         const push = launch.push.vadd(this.velocity);
         const fallPush = launch.fallPush.vadd(this.velocity);
-        if (debris.length) shatter.spawnDebris(debris, this.body, { x: lx, y: ly }, { ...launch, push });
-        for (const group of fallingGroups) shatter.spawnChunk(group, this.body, fallPush);
+        if (debris.length) shatter.spawnDebris(debris, this.body, { x: lx, y: ly }, { ...launch, push }, this.frame);
+        for (const group of fallingGroups) shatter.spawnChunk(group, this.body, fallPush, this.frame);
     }
 
     // --- Trozos -----------------------------------------------------------------

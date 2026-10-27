@@ -16,9 +16,10 @@
 
 import * as THREE from 'three';
 import Ball from '../entities/Ball.js';
+import Shatter from './Shatter.js';
 import { getSettings } from '../settings.js';
 import {
-    BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE, DESPAWN_BEHIND,
+    BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE,
     AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP, BALL_RADIUS, BALL_MAX_FLIGHT_TIME, BALL_FLIGHT_GRAVITY,
 } from '../constants.js';
 
@@ -138,7 +139,7 @@ export default class Shooter {
         for (let i = 0; i < count; i++) {
             const origin = camera.position.clone();
             origin.y -= 0.5;
-            origin.z -= 1; // justo delante
+            origin.addScaledVector(this.rail.forward, 1); // justo delante
             // pequeña dispersión en la posición para que no nazcan todas en el mismo punto
             origin.x += (Math.random() - 0.5) * 1.2;
             origin.y += (Math.random() - 0.5) * 0.6;
@@ -157,12 +158,12 @@ export default class Shooter {
     }
 
     // Llamar después de physics.step(): sincroniza y limpia bolas viejas
-    update(delta) {
-        const cameraZ = this.renderer.camera.position.z;
+    // (las que vivieron mucho, quedaron detrás de la cámara o se cayeron).
+    // view = { position, forward, floorY } de la cámara.
+    update(delta, view) {
         this.balls = this.balls.filter((ball) => {
             ball.age += delta;
-            const p = ball.body.position;
-            const dead = ball.age > BALL_LIFETIME || p.z > cameraZ + DESPAWN_BEHIND || p.y < -20;
+            const dead = ball.age > BALL_LIFETIME || Shatter.gone(ball.body.position, view);
             if (dead) {
                 ball.destroy(this.renderer, this.physics);
                 return false;

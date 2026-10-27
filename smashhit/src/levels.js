@@ -9,6 +9,10 @@
         - obstacles: tipos de obstáculo del nivel (ver src/obstacles/index.js).
           Los primeros niveles tienen UN tipo cada uno (para aprenderlo) y los
           últimos los mezclan.
+        - track:  probabilidad de que el pasillo haga una curva (turns) o una
+          rampa (ramps) dentro del nivel (ver systems/Track.js). Al CAMBIAR de
+          checkpoint siempre hay un giro.
+        - props:  probabilidad de relleno sólido (bloques, columnas...) por tramo.
 
     El largo de cada nivel se calcula para que dure ~LEVEL_DURATION segundos
     (largo = velocidad * tiempo), redondeado a tramos enteros de pasillo para
@@ -19,6 +23,8 @@ export const LEVELS = [
     {
         name: 'Tarde dorada',
         speed: 6,
+        track: { turns: 0, ramps: 0 },
+        props: 0.35,
         obstacles: ['panels'],
         sunIntensity: 2.4,
         colors: {
@@ -30,6 +36,8 @@ export const LEVELS = [
     {
         name: 'Atardecer',
         speed: 7,
+        track: { turns: 0.25, ramps: 0 },
+        props: 0.45,
         obstacles: ['triangles'],
         sunIntensity: 2.2,
         colors: {
@@ -41,6 +49,8 @@ export const LEVELS = [
     {
         name: 'Cielo rosa',
         speed: 8,
+        track: { turns: 0.1, ramps: 0.25 },
+        props: 0.5,
         obstacles: ['gates'],
         sunIntensity: 2.0,
         colors: {
@@ -52,6 +62,8 @@ export const LEVELS = [
     {
         name: 'Desierto rojo',
         speed: 9,
+        track: { turns: 0.3, ramps: 0.15 },
+        props: 0.5,
         obstacles: ['pendulums'],
         sunIntensity: 2.2,
         colors: {
@@ -63,6 +75,8 @@ export const LEVELS = [
     {
         name: 'Lavanda',
         speed: 10,
+        track: { turns: 0.3, ramps: 0.25 },
+        props: 0.55,
         obstacles: ['spinners'],
         sunIntensity: 1.8,
         colors: {
@@ -74,6 +88,8 @@ export const LEVELS = [
     {
         name: 'Mar al ocaso',
         speed: 11,
+        track: { turns: 0.35, ramps: 0.2 },
+        props: 0.6,
         obstacles: ['triangles', 'pendulums'],
         sunIntensity: 1.8,
         colors: {
@@ -85,6 +101,8 @@ export const LEVELS = [
     {
         name: 'Noche azul',
         speed: 12,
+        track: { turns: 0.35, ramps: 0.25 },
+        props: 0.6,
         obstacles: ['gates', 'spinners'],
         sunIntensity: 1.2,
         colors: {
@@ -96,6 +114,8 @@ export const LEVELS = [
     {
         name: 'Aurora',
         speed: 13.5,
+        track: { turns: 0.4, ramps: 0.25 },
+        props: 0.65,
         obstacles: ['pendulums', 'spinners', 'triangles'],
         sunIntensity: 1.2,
         colors: {
@@ -107,6 +127,8 @@ export const LEVELS = [
     {
         name: 'Amanecer',
         speed: 15,
+        track: { turns: 0.4, ramps: 0.3 },
+        props: 0.7,
         obstacles: ['gates', 'pendulums', 'triangles'],
         sunIntensity: 2.6,
         colors: {
@@ -118,6 +140,8 @@ export const LEVELS = [
     {
         name: 'Cénit',
         speed: 16.5,
+        track: { turns: 0.45, ramps: 0.3 },
+        props: 0.7,
         obstacles: ['panels', 'triangles', 'gates', 'pendulums', 'spinners'],
         sunIntensity: 3.0,
         colors: {

@@ -23,6 +23,7 @@ import { CAMERA_FOV, CAMERA_HEIGHT } from '../constants.js';
 
 // Colores de la paleta que maneja el Renderer (los del pasillo los usa Tunnel.js)
 const THEME_KEYS = ['skyTop', 'skyMid', 'skyHorizon', 'skyBottom', 'fog', 'sun', 'hemiSky', 'hemiGround'];
+const tmpDir = new THREE.Vector3();
 
 export default class Renderer {
     constructor(container) {
@@ -158,13 +159,17 @@ export default class Renderer {
         this.scene.environment = this._canvasToSkyTexture(canvas);
     }
 
-    // El sol se queda en la misma posición RELATIVA a la cámara (bajo, delante y a un lado).
-    // El target apunta más adelante (-Z) para que el área de sombra, ahora más
-    // grande, cubra el tramo que el jugador tiene por delante.
+    // El sol se queda en la misma posición RELATIVA a la cámara (alto, delante y a un lado).
+    // El target apunta hacia DONDE MIRA la cámara (el pasillo gira) para que el
+    // área de sombra cubra el tramo que el jugador tiene por delante.
     followCamera() {
         const c = this.camera.position;
-        this.sun.position.set(c.x + 10, c.y + 20, c.z - 45);
-        this.sun.target.position.set(c.x, 0, c.z - 35);
+        const f = this.camera.getWorldDirection(tmpDir);
+        f.y = 0;
+        if (f.lengthSq() < 1e-6) f.set(0, 0, -1);
+        f.normalize();
+        this.sun.position.set(c.x + f.x * 45 + 10, c.y + 20, c.z + f.z * 45);
+        this.sun.target.position.set(c.x + f.x * 35, c.y - CAMERA_HEIGHT, c.z + f.z * 35);
     }
 
     add(mesh) {
