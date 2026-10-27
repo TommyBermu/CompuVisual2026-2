@@ -15,6 +15,7 @@ import Entity from './Entity.js';
 import {
     BALL_RADIUS, BALL_MASS, GROUP_BALL, GROUP_WORLD, GROUP_CRYSTAL, GROUP_CHUNK,
     GRAVITY, BALL_FLIGHT_GRAVITY, BALL_VISUAL_ARC, BALL_ARC_FADE,
+    GLASS_BREAK_SPEED,
 } from '../constants.js';
 
 // Compartidos por todas las bolas (se dispara mucho, no recrearlos cada vez)
@@ -45,10 +46,10 @@ export default class Ball extends Entity {
         super(mesh, body);
 
         // Etiqueta + detección de choque contra el vidrio.
-        // Solo se ENCOLA el golpe (registerBallHit); romper el panel lo hace el
-        // Spawner fuera del step de física (modificar el mundo dentro del
-        // callback de colisión es arriesgado). Los paneles tienen
-        // collisionResponse = false: la bola no rebota, los atraviesa.
+        // El vidrio tiene collisionResponse = true, así que Cannon hace REBOTAR
+        // la bola por defecto. Solo si el impacto es FUERTE (>= GLASS_BREAK_SPEED)
+        // encolamos la rotura: entonces el panel se rompe y, al procesar el golpe
+        // (processHits, fuera del step), la bola PERFORA en vez de rebotar.
         body.userData = { type: 'ball', entity: this };
         this.hitCrystals = new Set(); // paneles que esta bola ya rompió (uno por pasada)
         body.addEventListener('collide', (e) => {
@@ -60,8 +61,14 @@ export default class Ball extends Entity {
             }
             if (this.inert) return; // las bolas de la animación de muerte no rompen nada
             const other = e.body.userData;
-            if (other && (other.type === 'crystal' || other.type === 'chunk')) {
+            if (!other) return;
+            if (other.type === 'chunk') {
                 other.entity.registerBallHit(this);
+            } else if (other.type === 'crystal') {
+                // Solo rompe/perfora si viene con suficiente velocidad; si no, rebota.
+                if (this.body.velocity.length() >= GLASS_BREAK_SPEED) {
+                    other.entity.registerBallHit(this);
+                }
             }
         });
 
