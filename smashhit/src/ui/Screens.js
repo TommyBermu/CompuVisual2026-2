@@ -20,6 +20,7 @@
 */
 
 import { ambienceFor } from '../levels.js';
+import { OBSTACLE_NAMES } from '../obstacles/index.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { CHECKPOINT_COUNT } from '../constants.js';
 
@@ -89,6 +90,7 @@ export default class Screens {
                 <span class="level-num">${i}</span>
                 <span class="level-name">${level.name}</span>
                 <span class="level-speed">${i * 500} m</span>
+                <span class="level-obstacles">${level.obstacles.map((t) => OBSTACLE_NAMES[t]).join(' · ')}</span>
             </button>
         `;
     }

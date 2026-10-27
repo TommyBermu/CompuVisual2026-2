@@ -1,23 +1,25 @@
 /*
     levels.js
     ---------
-    Los 9 niveles fijos del recorrido. Cada nivel tiene:
+    Los 10 niveles fijos del recorrido (uno por checkpoint). Cada nivel tiene:
         - name:   nombre que aparece en el cartel al entrar.
         - speed:  velocidad de la cámara (m/s). Sube con el nivel = más difícil.
         - colors: paleta del nivel (cielo, niebla, luces, pasillo).
         - sunIntensity: fuerza del sol (más bajo en los niveles de noche).
+        - obstacles: tipos de obstáculo del nivel (ver src/obstacles/index.js).
+          Los primeros niveles tienen UN tipo cada uno (para aprenderlo) y los
+          últimos los mezclan.
 
     El largo de cada nivel se calcula para que dure ~LEVEL_DURATION segundos
     (largo = velocidad * tiempo), redondeado a tramos enteros de pasillo para
     que el cambio de colores coincida con un arco.
-
-    Más adelante: aquí también irán los patrones de cristales/obstáculos de cada nivel.
 */
 
 export const LEVELS = [
     {
         name: 'Tarde dorada',
         speed: 6,
+        obstacles: ['panels'],
         sunIntensity: 2.4,
         colors: {
             skyTop: '#5b7fbf', skyMid: '#f6b26b', skyHorizon: '#ffe0a3', skyBottom: '#6b4a3a',
@@ -28,6 +30,7 @@ export const LEVELS = [
     {
         name: 'Atardecer',
         speed: 7,
+        obstacles: ['triangles'],
         sunIntensity: 2.2,
         colors: {
             skyTop: '#3b2a5a', skyMid: '#f2766b', skyHorizon: '#ffc979', skyBottom: '#4a2c45',
@@ -38,6 +41,7 @@ export const LEVELS = [
     {
         name: 'Cielo rosa',
         speed: 8,
+        obstacles: ['gates'],
         sunIntensity: 2.0,
         colors: {
             skyTop: '#4a2b6b', skyMid: '#e86a9a', skyHorizon: '#ffb3a7', skyBottom: '#3d2245',
@@ -48,6 +52,7 @@ export const LEVELS = [
     {
         name: 'Desierto rojo',
         speed: 9,
+        obstacles: ['pendulums'],
         sunIntensity: 2.2,
         colors: {
             skyTop: '#5a1f2e', skyMid: '#d9482b', skyHorizon: '#ff9a4d', skyBottom: '#3a1a1a',
@@ -58,6 +63,7 @@ export const LEVELS = [
     {
         name: 'Lavanda',
         speed: 10,
+        obstacles: ['spinners'],
         sunIntensity: 1.8,
         colors: {
             skyTop: '#2a2350', skyMid: '#8d6bc9', skyHorizon: '#f2b8d0', skyBottom: '#251c3d',
@@ -68,6 +74,7 @@ export const LEVELS = [
     {
         name: 'Mar al ocaso',
         speed: 11,
+        obstacles: ['triangles', 'pendulums'],
         sunIntensity: 1.8,
         colors: {
             skyTop: '#173a5e', skyMid: '#3f8fa6', skyHorizon: '#ffc48a', skyBottom: '#14283a',
@@ -78,6 +85,7 @@ export const LEVELS = [
     {
         name: 'Noche azul',
         speed: 12,
+        obstacles: ['gates', 'spinners'],
         sunIntensity: 1.2,
         colors: {
             skyTop: '#0b1030', skyMid: '#23306b', skyHorizon: '#5a6fb0', skyBottom: '#080b1e',
@@ -88,6 +96,7 @@ export const LEVELS = [
     {
         name: 'Aurora',
         speed: 13.5,
+        obstacles: ['pendulums', 'spinners', 'triangles'],
         sunIntensity: 1.2,
         colors: {
             skyTop: '#06141f', skyMid: '#1f6b5a', skyHorizon: '#6ff0b0', skyBottom: '#05101a',
@@ -98,6 +107,7 @@ export const LEVELS = [
     {
         name: 'Amanecer',
         speed: 15,
+        obstacles: ['gates', 'pendulums', 'triangles'],
         sunIntensity: 2.6,
         colors: {
             skyTop: '#4f6fb0', skyMid: '#ffb08a', skyHorizon: '#fff0c0', skyBottom: '#5a4a5a',
@@ -108,6 +118,7 @@ export const LEVELS = [
     {
         name: 'Cénit',
         speed: 16.5,
+        obstacles: ['panels', 'triangles', 'gates', 'pendulums', 'spinners'],
         sunIntensity: 3.0,
         colors: {
             skyTop: '#c8d4ff', skyMid: '#e6e1ff', skyHorizon: '#ffffff', skyBottom: '#d8e4f0',

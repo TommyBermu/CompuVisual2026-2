@@ -8,20 +8,27 @@
     Cada tramo se pinta con los colores del nivel al que pertenece, así el
     pasillo del siguiente nivel ya se ve "distinto" desde lejos.
 
-    Además, cada tramo puede tener 1-2 paneles de vidrio (Crystal) que salen del
-    suelo al acercarse la cámara. Los golpes de bola se procesan aquí (fuera
-    del step de física) y los trozos sueltos los gestiona el Shatter.
+    Además, cada tramo puede tener un OBSTÁCULO (src/obstacles/) de uno de los
+    tipos que usa su nivel (levels.js -> obstacles): paneles, triángulos,
+    compuertas, péndulos o aspas. Los golpes de bola a sus paneles de vidrio se
+    procesan aquí (fuera del step de física) y los trozos sueltos los gestiona
+    el Shatter.
 */
 
 import * as CANNON from 'cannon-es';
 import Tunnel from '../entities/Tunnel.js';
-import Crystal from '../entities/Crystal.js';
 import Shatter from './Shatter.js';
+import { createObstacles } from '../obstacles/index.js';
 import { checkpointAt, LEVELS } from '../levels.js';
 import {
     SEGMENT_LENGTH, SPAWN_AHEAD, DESPAWN_BEHIND, CRYSTAL_WALL_CHANCE,
-    CRYSTAL_RISE_AHEAD, CAMERA_RADIUS, CRASH_BREAK_RADIUS,
+    CAMERA_RADIUS, CRASH_BREAK_RADIUS,
 } from '../constants.js';
+
+// Ningún obstáculo se extiende más de esto en Z desde su centro (descarte rápido)
+const OBSTACLE_REACH_Z = 6;
+// Metros sin obstáculos delante de la cámara al empezar
+const FREE_START = 40;
 
 export default class Spawner {
     constructor(renderer, physics) {
@@ -29,11 +36,18 @@ export default class Spawner {
         this.physics = physics;
         this.shatter = new Shatter(renderer, physics);
         this.segments = [];
-        this.crystals = [];
-        this.onCrystalBroken = null; // callback(crystal) cuando una bola rompe un cristal
-        // Primer tramo empieza un tramo detrás de la cámara (z=0), así los
-        // arcos caen justo en múltiplos de SEGMENT_LENGTH = inicios de nivel.
-        this.nextZ = SEGMENT_LENGTH;
+        this.obstacles = [];
+        this.onCrystalBroken = null; // callback(panel) cuando una bola rompe un cristal
+        this._startAt(0);
+    }
+
+    // El primer tramo empieza un tramo detrás de la cámara (alineado a
+    // múltiplos de SEGMENT_LENGTH, así los arcos caen en los inicios de
+    // checkpoint) y los primeros FREE_START metros quedan sin obstáculos, para
+    // no aparecer encima de uno al empezar (también desde un checkpoint).
+    _startAt(cameraZ) {
+        this.nextZ = Math.ceil(cameraZ / SEGMENT_LENGTH) * SEGMENT_LENGTH + SEGMENT_LENGTH;
+        this.freeUntilZ = cameraZ - FREE_START;
         this.count = 0;
     }
 
@@ -47,32 +61,36 @@ export default class Spawner {
             seg.addTo(this.renderer, this.physics);
             this.segments.push(seg);
 
-            // No ponemos muros en los primeros tramos (para no aparecer encima
-            // del jugador nada más empezar) y luego, al azar, 1 o 2 por tramo.
-            if (this.count > 2 && Math.random() < CRYSTAL_WALL_CHANCE) {
-                const wallZ = this.nextZ - SEGMENT_LENGTH / 2;        // centro del tramo
-                const howMany = Math.random() < 0.4 ? 2 : 1;         // a veces dos muros
-                for (let k = 0; k < howMany; k++) {
-                    const crystal = new Crystal(this.physics, wallZ, level);
-                    crystal.addTo(this.renderer, this.physics);
-                    this.crystals.push(crystal);
+            // Al azar, uno de los tipos del nivel en el centro del tramo
+            // (salvo en el tramo libre del inicio).
+            const centerZ = this.nextZ - SEGMENT_LENGTH / 2;
+            if (centerZ < this.freeUntilZ && Math.random() < CRYSTAL_WALL_CHANCE) {
+                const types = LEVELS[level].obstacles;
+                const type = types[Math.floor(Math.random() * types.length)];
+                for (const ob of createObstacles(type, centerZ, level)) {
+                    ob.addTo(this.renderer, this.physics);
+                    this.obstacles.push(ob);
                 }
             }
 
             this.nextZ -= SEGMENT_LENGTH;
         }
 
-        // Animar los paneles y procesar los golpes de bola de este frame (rompen
-        // el vidrio). La primera vez que una bola rompe un panel se avisa
-        // (recompensa +bolas). Los paneles que ya no tienen trozos se borran.
-        this.crystals.forEach((c) => {
-            const hits = c.processHits(this.shatter);
-            if (hits > 0 && !c.broken) {
-                c.broken = true;
-                if (this.onCrystalBroken) this.onCrystalBroken(c);
+        // Procesar los golpes de bola de este frame (rompen el vidrio) y
+        // animar los obstáculos. La primera vez que una bola rompe un panel se
+        // avisa (recompensa +bolas) y el obstáculo reacciona (p.ej. una
+        // compuerta se abre). Los paneles que ya no tienen trozos se borran.
+        this.obstacles.forEach((ob) => {
+            for (const panel of ob.panels) {
+                const hits = panel.processHits(this.shatter);
+                if (hits > 0 && !panel.broken) {
+                    panel.broken = true;
+                    ob.onPanelBroken(panel);
+                    if (this.onCrystalBroken) this.onCrystalBroken(panel);
+                }
             }
-            if (!c.rising && c.z > cameraZ - CRYSTAL_RISE_AHEAD) c.startRising();
-            c.update(delta);
+            ob.prunePanels();
+            ob.update(delta, cameraZ);
         });
         this.shatter.update(delta, cameraZ);
 
@@ -81,27 +99,31 @@ export default class Spawner {
             this.segments.shift().destroy(this.renderer, this.physics);
         }
 
-        // Borrar los paneles que quedaron detrás o que ya se rompieron del todo.
-        this.crystals = this.crystals.filter((c) => {
-            if (c.z > cameraZ + DESPAWN_BEHIND || c.empty) {
-                c.destroy(this.renderer, this.physics);
+        // Borrar los obstáculos que quedaron detrás
+        this.obstacles = this.obstacles.filter((ob) => {
+            if (ob.z - OBSTACLE_REACH_Z > cameraZ + DESPAWN_BEHIND) {
+                ob.destroy(this.renderer, this.physics);
                 return false;
             }
             return true;
         });
     }
 
-    // ¿La cámara (una esfera de radio CAMERA_RADIUS) toca vidrio sólido?
-    // Se mira cada TROZO que sigue en pie (un panel roto a medias sigue
-    // golpeando por su parte sana) y los bloques grandes que se están cayendo.
-    // Devuelve { crystal, x, y } | { chunk } | null. El Game aplica la
-    // penalización y el tiempo de gracia entre golpes.
+    // ¿La cámara (una esfera de radio CAMERA_RADIUS) toca algo sólido?
+    // Se mira cada TROZO de vidrio que sigue en pie (un panel roto a medias
+    // sigue golpeando por su parte sana), las partes metálicas que pueden
+    // cerrar el paso (compuertas) y los bloques grandes que se están cayendo.
+    // Devuelve { panel, x, y } | { obstacle } | { chunk } | null. El Game
+    // aplica la penalización y el tiempo de gracia entre golpes.
     cameraCollision(camera) {
         const p = camera.position;
-        for (const c of this.crystals) {
-            if (Math.abs(c.z - p.z) > CAMERA_RADIUS + 1) continue; // descarte rápido
-            const hit = c.closestSolid(p);
-            if (hit && hit.dist <= CAMERA_RADIUS) return { crystal: c, x: hit.x, y: hit.y };
+        for (const ob of this.obstacles) {
+            if (Math.abs(ob.z - p.z) > OBSTACLE_REACH_Z + CAMERA_RADIUS) continue; // descarte rápido
+            for (const panel of ob.panels) {
+                const hit = panel.closestSolid(p);
+                if (hit && hit.dist <= CAMERA_RADIUS) return { panel, x: hit.x, y: hit.y };
+            }
+            if (ob.cameraHit(p, CAMERA_RADIUS)) return { obstacle: ob };
         }
         const chunk = this.shatter.chunkTouching(p, CAMERA_RADIUS);
         return chunk ? { chunk } : null;
@@ -112,30 +134,33 @@ export default class Spawner {
         // Los trozos salen hacia delante, algo más rápido que la cámara, para
         // no "arrastrarlos" con ella.
         const ahead = new CANNON.Vec3(cameraVelocity.x, cameraVelocity.y, cameraVelocity.z).scale(1.3);
-        if (hit.crystal) {
-            hit.crystal.breakAt(hit.x, hit.y, CRASH_BREAK_RADIUS, CAMERA_RADIUS * 1.15, this.shatter, {
+        if (hit.panel) {
+            const launch = {
                 push: ahead.vadd(new CANNON.Vec3(0, 0, -2)),
                 spread: 2,
                 fallPush: ahead.scale(0.5),
-            });
+            };
+            if (hit.panel.fragile) hit.panel.shatterAll(hit.x, hit.y, this.shatter, launch);
+            else hit.panel.breakAt(hit.x, hit.y, CRASH_BREAK_RADIUS, CAMERA_RADIUS * 1.15, this.shatter, launch);
+        } else if (hit.obstacle) {
+            hit.obstacle.smashByCamera(this.shatter, ahead);
         } else if (hit.chunk) {
             this.shatter.shatterChunk(hit.chunk, ahead);
         }
     }
 
-    // Objetos contra los que se apunta (InputManager/Shooter): pasillo + paneles
+    // Objetos contra los que se apunta (InputManager/Shooter): pasillo + obstáculos
     aimTargets() {
-        return [...this.segments.map((s) => s.mesh), ...this.crystals.map((c) => c.mesh)];
+        return [...this.segments.map((s) => s.mesh), ...this.obstacles.flatMap((ob) => ob.aimMeshes())];
     }
 
-    // Para reiniciar partida
-    clear() {
+    // Para reiniciar partida (cameraZ = donde arranca la cámara)
+    clear(cameraZ = 0) {
         this.segments.forEach((s) => s.destroy(this.renderer, this.physics));
-        this.crystals.forEach((c) => c.destroy(this.renderer, this.physics));
+        this.obstacles.forEach((ob) => ob.destroy(this.renderer, this.physics));
         this.shatter.clear();
         this.segments = [];
-        this.crystals = [];
-        this.nextZ = SEGMENT_LENGTH;
-        this.count = 0;
+        this.obstacles = [];
+        this._startAt(cameraZ);
     }
 }

@@ -70,23 +70,28 @@ export default class Shatter {
         this.chunks = [];
     }
 
-    // Astillas del agujero. pieces: trozos del Crystal (coords del panel),
-    // origin: centro del panel en mundo, impact: punto de impacto en mundo,
+    // Astillas del agujero. pieces: trozos del panel (coords del panel),
+    // frame: body del panel (posición + orientación en mundo),
+    // impact: { x, y } punto de impacto en coords del panel,
     // launch: { push: Vec3, spread: m/s hacia fuera del impacto }
-    spawnDebris(pieces, origin, impact, launch) {
+    spawnDebris(pieces, frame, impact, launch) {
+        const q = frame.quaternion;
+        const impactW = frame.pointToWorldFrame(new CANNON.Vec3(impact.x, impact.y, 0));
         for (const p of pieces) {
             const mesh = p.mesh;
-            mesh.position.set(origin.x + p.cx, origin.y + p.cy, origin.z);
-            mesh.quaternion.identity();
+            const w = frame.pointToWorldFrame(new CANNON.Vec3(p.cx, p.cy, 0));
+            mesh.position.set(w.x, w.y, w.z);
+            mesh.quaternion.set(q.x, q.y, q.z, q.w);
             // hacia fuera del punto de impacto (en el plano del panel)
-            const rx = mesh.position.x - impact.x;
-            const ry = mesh.position.y - impact.y;
-            const r = Math.hypot(rx, ry) || 1;
+            const rx = w.x - impactW.x;
+            const ry = w.y - impactW.y;
+            const rz = w.z - impactW.z;
+            const r = Math.hypot(rx, ry, rz) || 1;
             const out = launch.spread * (0.4 + Math.random() * 0.8);
             const vel = new THREE.Vector3(
                 launch.push.x + (rx / r) * out + rnd(0.6),
                 launch.push.y + (ry / r) * out + rnd(0.6) + 1,
-                launch.push.z + rnd(1),
+                launch.push.z + (rz / r) * out + rnd(1),
             );
             this._addDebris(mesh, vel);
         }
@@ -111,7 +116,8 @@ export default class Shatter {
     }
 
     // Bloque sin apoyo: un cuerpo dinámico con todos sus trozos.
-    spawnChunk(pieces, origin, push) {
+    // frame: body del panel del que se suelta (posición + orientación en mundo).
+    spawnChunk(pieces, frame, push) {
         // Centro de masas (ponderado por área) en coords del panel
         let area = 0, cx = 0, cy = 0;
         pieces.forEach((p) => { area += p.area; cx += p.cx * p.area; cy += p.cy * p.area; });
@@ -133,7 +139,8 @@ export default class Shatter {
             group.add(p.mesh);
             parts.push({ poly: p.poly, ox, oy, material: p.material, mesh: p.mesh });
         }
-        body.position.set(origin.x + cx, origin.y + cy, origin.z);
+        body.position.copy(frame.pointToWorldFrame(new CANNON.Vec3(cx, cy, 0)));
+        body.quaternion.copy(frame.quaternion);
         // Empujoncito en la dirección del golpe + giro para que se tumbe
         body.velocity.set(push.x + rnd(0.3), push.y, push.z + rnd(0.3));
         body.angularVelocity.set(rnd(1.5), rnd(0.8), rnd(1.5));
@@ -142,6 +149,7 @@ export default class Shatter {
         this.renderer.add(group);
         this.physics.add(body);
         group.position.copy(body.position);
+        group.quaternion.copy(body.quaternion);
         this.chunks.push(chunk);
         return chunk;
     }

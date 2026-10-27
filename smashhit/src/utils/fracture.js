@@ -251,6 +251,9 @@ function randomSeeds(poly, count, rand) {
         R:      radio de rotura (el "agujero")
         options:
             bottomY:     y del borde que sostiene el panel (el de abajo)
+            anchor:      alternativa a bottomY: función (bbox de un trozo) ->
+                         true si ese trozo está pegado al soporte (p.ej. el
+                         borde de ARRIBA en un péndulo)
             holeRadius:  todo lo que esté a menos de esto del impacto se rompe
                          sí o sí (al menos el tamaño de la bola)
             minArea:     celdas más pequeñas se descartan (astillas)
@@ -266,6 +269,7 @@ function randomSeeds(poly, count, rand) {
 export function fracturePanel(polys, impact, R, options = {}) {
     const {
         bottomY = -Infinity,
+        anchor = null,
         holeRadius = 0,
         minArea = 0.003,
         rand = Math.random,
@@ -299,14 +303,16 @@ export function fracturePanel(polys, impact, R, options = {}) {
         (breaks ? detached : staticItems).push(it);
     }
 
-    // 3. Conectividad: lo que no esté unido al borde inferior se cae
-    const { anchored, components } = splitByAnchor(staticItems, bottomY);
+    // 3. Conectividad: lo que no esté unido al soporte se cae
+    const { anchored, components } = splitByAnchor(staticItems, anchor || bottomY);
     return { staticItems: anchored, detached, falling: components };
 }
 
-// Separa los items en: unidos (directa o indirectamente) al borde inferior,
-// y componentes sueltas.
-export function splitByAnchor(items, bottomY, eps = 1e-3) {
+// Separa los items en: unidos (directa o indirectamente) al soporte, y
+// componentes sueltas. `anchor` es la y del borde inferior que sostiene o una
+// función (bbox) -> boolean.
+export function splitByAnchor(items, anchor, eps = 1e-3) {
+    const touchesSupport = typeof anchor === 'function' ? anchor : (box) => box.minY <= anchor + eps;
     const n = items.length;
     const boxes = items.map((it) => bbox(it.poly));
     const adj = Array.from({ length: n }, () => []);
@@ -343,7 +349,7 @@ export function splitByAnchor(items, bottomY, eps = 1e-3) {
     const anchored = [];
     const components = [];
     for (const members of groups) {
-        const isAnchored = members.some((k) => boxes[k].minY <= bottomY + eps);
+        const isAnchored = members.some((k) => touchesSupport(boxes[k]));
         if (isAnchored) members.forEach((k) => anchored.push(items[k]));
         else components.push(members.map((k) => items[k]));
     }

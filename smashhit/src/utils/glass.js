@@ -42,6 +42,24 @@ export function glassMaterial(levelIndex) {
     return materialsByLevel.get(levelIndex);
 }
 
+// Vidrio de los BOTONES (compuertas): brilla para que se vea que hay que darle.
+let buttonMat = null;
+
+export function buttonMaterial() {
+    if (!buttonMat) {
+        buttonMat = new THREE.MeshPhysicalMaterial({
+            color: '#fff6c8',
+            emissive: '#ffd84a',
+            emissiveIntensity: 1.2,
+            transparent: true,
+            opacity: 0.9,
+            roughness: 0.1,
+            side: THREE.DoubleSide,
+        });
+    }
+    return buttonMat;
+}
+
 // Encoge el polígono un poquito hacia su centro (0,0) para que se vean las grietas
 function insetPolygon(poly, gap) {
     return poly.map(([x, y]) => {

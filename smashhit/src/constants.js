@@ -32,6 +32,19 @@ export const CRYSTAL_MAX_HEIGHT = 4.5;   // alto máximo del muro (Y)
 export const CRYSTAL_RISE_TIME = 0.6;    // segundos que tarda en salir del suelo
 export const CRYSTAL_RISE_AHEAD = 45;    // a cuántos metros de la cámara empieza a subir
 
+// --- Obstáculos por nivel (ver src/obstacles/ y el campo `obstacles` de levels.js) ---
+// Péndulo: una placa de vidrio colgada de una barra que oscila de lado a lado.
+export const PENDULUM_PIVOT_Y = 7.4;          // altura del eje (m)
+export const PENDULUM_ROD_LENGTH = 3.2;       // eje -> borde de arriba de la placa
+export const PENDULUM_AMPLITUDE = [0.55, 0.75]; // rad (min, max)
+export const PENDULUM_PERIOD = [2.0, 2.8];    // s por oscilación completa (min, max)
+// Aspas giratorias: hojas de vidrio alrededor de un eje (sobre la cámara).
+export const SPINNER_HUB_Y = [4.3, 4.9];      // altura del eje (min, max)
+export const SPINNER_SPEED = [1.1, 1.9];      // rad/s (min, max)
+// Compuerta: dos puertas metálicas que se abren al romper el botón de vidrio.
+export const GATE_HEIGHT = 6;                 // alto de las puertas (m)
+export const GATE_OPEN_TIME = 0.45;           // s que tardan en abrirse
+
 // --- Choque cámara-vidrio ---
 // La cámara se trata como una ESFERA (tiene "volumen", no es un punto). Se
 // comprueba contra cada trozo de vidrio que siga en pie (y bloques grandes que

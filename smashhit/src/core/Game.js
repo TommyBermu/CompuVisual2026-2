@@ -103,7 +103,7 @@ export default class Game {
     _begin(startCheckpoint) {
         const startDistance = checkpointStart(startCheckpoint);
         this.renderer.camera.position.z = -startDistance;
-        this.spawner.clear();           // empezar con pasillo limpio
+        this.spawner.clear(-startDistance); // empezar con pasillo limpio desde ahí
         this.shooter.clear();
         this.rail.resume();             // reactivar el avance (si veníamos de morir/pausa)
         this.rail.resetDistance();      // el contador arranca; la distancia se calcula con offset
