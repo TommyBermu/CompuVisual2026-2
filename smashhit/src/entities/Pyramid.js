@@ -5,9 +5,9 @@
     Dos tipos según dónde estén:
 
         pyramid  APOYADA sobre algo que no es cristal (suelo, base, pedestal,
-                 bloque): pirámide 3D de base cuadrada, gira despacio.  +3 bolas
+                 bloque): pirámide 3D de base cuadrada, quieta.          +3 bolas
         diamond  FLOTANDO en el aire: rombo (octaedro alargado) que gira y
-                 sube y baja.                                          +5 bolas
+                 sube y baja. Mucho más raro que la pirámide.           +5 bolas
 
     El color es el COMPLEMENTARIO (opuesto en el círculo cromático) del tono
     del nivel, para que destaque siempre.
@@ -36,26 +36,34 @@ const pyramidGeo = new THREE.ConeGeometry(P_HALF * Math.SQRT2, P_H, 4, 1).rotate
 const diamondGeo = new THREE.OctahedronGeometry(1).scale(D_W, D_H, D_W);
 const shardGeo = new THREE.TetrahedronGeometry(0.22);
 
-// Color complementario del tono del nivel (tomado del cielo, que es lo que domina)
+// Color COMPLEMENTARIO (opuesto en el círculo cromático) del tono del nivel.
+// El tono del nivel se toma del cielo (skyMid), que es lo que domina la
+// pantalla junto con la niebla (tienen casi el mismo tono).
+// Para que el color se vea de verdad y no se "contamine" con el del nivel:
+//   - opaco (sin transmisión: no deja ver el cielo a través),
+//   - casi sin reflejos del entorno (el reflejo del cielo lo teñiría),
+//   - sin niebla (la niebla lo volvería del color del nivel a distancia),
+//   - sin tone mapping (ACES desatura los colores muy vivos).
 const materials = new Map();
+export function bonusColor(levelIndex) {
+    const hsl = {};
+    // en sRGB (el espacio de los colores que vemos), no en el lineal interno de Three
+    new THREE.Color(LEVELS[levelIndex].colors.skyMid).getHSL(hsl, THREE.SRGBColorSpace);
+    return new THREE.Color().setHSL((hsl.h + 0.5) % 1, 1, 0.5, THREE.SRGBColorSpace);
+}
 function materialFor(levelIndex) {
     if (!materials.has(levelIndex)) {
-        const c = LEVELS[levelIndex].colors;
-        const hsl = {};
-        new THREE.Color(c.skyMid).getHSL(hsl);
-        const comp = new THREE.Color().setHSL((hsl.h + 0.5) % 1, 0.85, 0.55);
-        materials.set(levelIndex, new THREE.MeshPhysicalMaterial({
+        const comp = bonusColor(levelIndex);
+        materials.set(levelIndex, new THREE.MeshStandardMaterial({
             color: comp,
             emissive: comp,
-            emissiveIntensity: 0.6,
-            roughness: 0.05,
+            emissiveIntensity: 0.45, // brilla un poco; las caras siguen sombreadas (facetas)
+            roughness: 0.35,
             metalness: 0,
-            transmission: 0.35,
-            thickness: 0.8,
-            transparent: true,
-            opacity: 0.92,
+            envMapIntensity: 0.15,
             flatShading: true,
-            envMapIntensity: 1.5,
+            fog: false,
+            toneMapped: false,
         }));
     }
     return materials.get(levelIndex);
@@ -102,6 +110,7 @@ export default class Pyramid extends Entity {
         this.base = pointToWorld(frame, x, sitting ? y + P_H / 2 : y, z, new THREE.Vector3());
         this.baseQ = new THREE.Quaternion().copy(frame.quaternion);
         this.time = Math.random() * 10;
+        this.spin0 = Math.random() * Math.PI / 2; // orientación fija de la pirámide
         this.hitBy = null;    // velocidad de la bola que la tocó (pendiente de procesar)
         this.broken = false;
         this._pose();
@@ -116,8 +125,10 @@ export default class Pyramid extends Entity {
         const p = this.base;
         const bob = this.kind === 'diamond' ? Math.sin(this.time * 1.6) * 0.18 : 0;
         this.body.position.set(p.x + this.up.x * bob, p.y + this.up.y * bob, p.z + this.up.z * bob);
-        // gira alrededor de la normal del sitio donde está (en una rampa, inclinada con ella)
-        const spin = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.time * SPIN);
+        // Solo el rombo gira; la pirámide se queda quieta, apoyada (en una rampa,
+        // inclinada con ella)
+        const angle = this.kind === 'diamond' ? this.time * SPIN : this.spin0;
+        const spin = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
         const q = this.baseQ.clone().multiply(spin);
         this.body.quaternion.set(q.x, q.y, q.z, q.w);
         this.body.aabbNeedsUpdate = true;

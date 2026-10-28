@@ -55,6 +55,8 @@ const PROPS_AT = 3;
 const POWER_GAP_AT = 17.5;
 // Probabilidad de pirámides (bonus) en cada tramo
 const PYRAMID_CHANCE = 0.75;
+// Fracción de los rombos flotantes (+5) que se generan de verdad (1/4: son raros)
+const DIAMOND_KEEP = 0.25;
 
 export default class Spawner {
     constructor(renderer, physics, track) {
@@ -214,14 +216,13 @@ export default class Spawner {
                 const frame = this.track.frameAt(s);
                 const side = Math.random() < 0.5 ? -1 : 1;
                 const x = side * (2.3 + Math.random() * 2.4);
-                let bonus;
                 if (!noFloor && Math.random() < 0.45) {
-                    bonus = new Pyramid(frame, level, x, 0, { kind: 'pyramid' });
-                } else {
+                    this._addBonus(new Pyramid(frame, level, x, 0, { kind: 'pyramid' }));
+                } else if (Math.random() < DIAMOND_KEEP) {
+                    // Los rombos (+5) son raros: solo sale una parte de los candidatos
                     const y = noFloor && Math.random() < 0.6 ? -2.5 + Math.random() * 3 : 1.2 + Math.random() * 3.6;
-                    bonus = new Pyramid(frame, level, x, y, { kind: 'diamond' });
+                    this._addBonus(new Pyramid(frame, level, x, y, { kind: 'diamond' }));
                 }
-                this._addBonus(bonus);
             }
         }
     }
