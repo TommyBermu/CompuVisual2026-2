@@ -12,7 +12,8 @@
         - HemisphereLight: luz ambiente (color del cielo arriba, del suelo abajo).
         - DirectionalLight: el "sol" bajo, delante del jugador, con sombras.
             Como la cámara avanza, el sol y su sombra la siguen (followCamera).
-        - Fog: niebla del color del horizonte para esconder dónde se genera el pasillo.
+        - Fog: niebla exponencial del color del horizonte: no se ve dónde empieza
+            ni dónde termina nada (y esconde dónde se genera el recorrido).
 
     Cada nivel tiene su paleta (levels.js). setTheme() inicia una transición y
     update() va mezclando (lerp) los colores viejos con los nuevos frame a frame.
@@ -24,6 +25,8 @@ import { CAMERA_FOV, CAMERA_HEIGHT } from '../constants.js';
 // Colores de la paleta que maneja el Renderer (los del pasillo los usa Tunnel.js)
 const THEME_KEYS = ['skyTop', 'skyMid', 'skyHorizon', 'skyBottom', 'fog', 'sun', 'hemiSky', 'hemiGround'];
 const tmpDir = new THREE.Vector3();
+const tmpColor = new THREE.Color();
+const WHITE = new THREE.Color(0xffffff);
 
 export default class Renderer {
     constructor(container) {
@@ -36,7 +39,9 @@ export default class Renderer {
         this.skyCanvas.height = 256;
         this.sky = this._canvasToSkyTexture(this.skyCanvas);
         this.scene.background = this.sky;
-        this.scene.fog = new THREE.Fog(0xffffff, 40, 130);
+        // Niebla EXPONENCIAL (como el original): lo cercano se ve nítido y a
+        // partir de unas decenas de metros todo se funde en una bruma clara.
+        this.scene.fog = new THREE.FogExp2(0xffffff, 0.02);
 
         // Cámara: mira hacia -Z
         const aspect = window.innerWidth / window.innerHeight;
@@ -71,6 +76,8 @@ export default class Renderer {
         this.theme = {};
         THEME_KEYS.forEach((k) => { this.theme[k] = new THREE.Color(); });
         this.sunIntensity = 2;
+        this.fogDensity = 0.02;
+        this.flat = 0;
         this.transition = null;
 
         // Redimensionado
@@ -78,13 +85,21 @@ export default class Renderer {
     }
 
     // Cambiar a la paleta de un nivel. duration = 0 -> cambio instantáneo.
-    setTheme(colors, sunIntensity, duration = 0) {
+    // env (environments.js): densidad de la niebla y flatSky (cielo del color de la niebla).
+    setTheme(colors, sunIntensity, duration = 0, env = null) {
         const to = {};
         THEME_KEYS.forEach((k) => { to[k] = new THREE.Color(colors[k]); });
+        // Niebla: el color del nivel aclarado hacia el blanco (como en el original,
+        // una bruma luminosa del tono del nivel)
+        to.fog.lerp(WHITE, env?.fogWhite ?? 0.3);
+        const toDensity = env?.fogDensity ?? 0.02;
+        const toFlat = env?.flatSky ? 1 : 0;
 
         if (duration <= 0) {
             THEME_KEYS.forEach((k) => this.theme[k].copy(to[k]));
             this.sunIntensity = sunIntensity;
+            this.fogDensity = toDensity;
+            this.flat = toFlat;
             this._applyTheme();
             this._updateEnvironment();
             this.transition = null;
@@ -96,6 +111,8 @@ export default class Renderer {
         this.transition = {
             from, to, duration, t: 0,
             fromIntensity: this.sunIntensity, toIntensity: sunIntensity,
+            fromDensity: this.fogDensity, toDensity,
+            fromFlat: this.flat, toFlat,
         };
     }
 
@@ -106,8 +123,11 @@ export default class Renderer {
 
         tr.t = Math.min(tr.t + delta / tr.duration, 1);
         const k = tr.t * tr.t * (3 - 2 * tr.t); // smoothstep: arranca y termina suave
+        const lerp = THREE.MathUtils.lerp;
         THEME_KEYS.forEach((key) => this.theme[key].lerpColors(tr.from[key], tr.to[key], k));
-        this.sunIntensity = THREE.MathUtils.lerp(tr.fromIntensity, tr.toIntensity, k);
+        this.sunIntensity = lerp(tr.fromIntensity, tr.toIntensity, k);
+        this.fogDensity = lerp(tr.fromDensity, tr.toDensity, k);
+        this.flat = lerp(tr.fromFlat, tr.toFlat, k);
         this._applyTheme();
 
         if (tr.t >= 1) {
@@ -120,6 +140,7 @@ export default class Renderer {
     _applyTheme() {
         const t = this.theme;
         this.scene.fog.color.copy(t.fog);
+        this.scene.fog.density = this.fogDensity;
         this.hemi.color.copy(t.hemiSky);
         this.hemi.groundColor.copy(t.hemiGround);
         this.sun.color.copy(t.sun);
@@ -128,15 +149,22 @@ export default class Renderer {
         this.sky.needsUpdate = true;
     }
 
-    // Degradado vertical: la mitad de la imagen es el horizonte (textura equirectangular)
+    // Degradado vertical: la mitad de la imagen es el horizonte (textura equirectangular).
+    // El horizonte y todo lo de abajo son EXACTAMENTE el color de la niebla: así lo
+    // que se aleja se funde con el cielo y no se ve dónde termina nada (espacio
+    // infinito). Arriba el cielo conserva algo del color del nivel.
+    // Con `flat` el cielo entero es niebla (sala sin horizonte).
     _drawSky(canvas) {
         const t = this.theme;
         const ctx = canvas.getContext('2d');
         const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        g.addColorStop(0.0, '#' + t.skyTop.getHexString());
-        g.addColorStop(0.35, '#' + t.skyMid.getHexString());
-        g.addColorStop(0.5, '#' + t.skyHorizon.getHexString());
-        g.addColorStop(1.0, '#' + t.skyBottom.getHexString());
+        const f = this.flat || 0;
+        const stop = (c, k) => '#' + tmpColor.copy(c).lerp(t.fog, k + (1 - k) * f).getHexString();
+        g.addColorStop(0.0, stop(t.skyTop, 0.5));
+        g.addColorStop(0.3, stop(t.skyMid, 0.78));
+        g.addColorStop(0.45, stop(t.skyHorizon, 0.95));
+        g.addColorStop(0.5, stop(t.fog, 1));
+        g.addColorStop(1.0, stop(t.fog, 1));
         ctx.fillStyle = g;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }

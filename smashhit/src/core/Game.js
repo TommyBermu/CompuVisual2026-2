@@ -13,7 +13,8 @@
     checkpoints de 500 m (0..9). Todo se mide en s = metros a lo largo del
     recorrido. Al cruzar cada checkpoint cambia el ambiente (paleta +
     velocidad) y el pasillo gira. Las bolas son
-    munición Y vida: disparar cuesta 1; romper un cristal con un disparo da +3;
+    munición Y vida: disparar cuesta 1; reventar un bonus con una bola da
+    bolas: pirámide apoyada +3, rombo flotante +5 (los cristales normales no dan);
     chocar contra vidrio sólido resta (5 + N) bolas (N = checkpoint) y lo rompe
     donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
     (TOTAL_LENGTH) completa el recorrido.
@@ -45,6 +46,7 @@ import Score from '../systems/Score.js';
 import HUD from '../ui/HUD.js';
 import Screens from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
+import { environmentFor } from '../environments.js';
 import { getSettings, onSettingsChange } from '../settings.js';
 import { submitRun } from '../records.js';
 import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS } from '../constants.js';
@@ -77,10 +79,13 @@ export default class Game {
         };
         this.shooter.onMiss = () => this.score.onMiss(); // tiro que no tocó vidrio: pierde el combo
 
-        // Romper un cristal con un disparo premia con bolas (+CRYSTAL_BREAK_REWARD)
-        this.spawner.onCrystalBroken = () => {
-            this.shooter.addAmmo(CRYSTAL_BREAK_REWARD);
-            this.hud.showBanner(`+${CRYSTAL_BREAK_REWARD}`, 700);
+        // Romper un cristal normal suma a la puntuación (pero NO da bolas)
+        this.spawner.onCrystalBroken = () => this.score.addHit();
+        // Reventar un bonus da bolas: pirámide apoyada +3, rombo flotante +5
+        this.spawner.onBonusBroken = (bonus) => {
+            const n = bonus?.reward ?? CRYSTAL_BREAK_REWARD;
+            this.shooter.addAmmo(n);
+            this.hud.showBanner(`+${n}`, 700);
             this.score.addHit();
         };
 
@@ -130,7 +135,7 @@ export default class Game {
         // Preview de fondo del menú: ambiente del checkpoint 0, cámara quieta
         this.rail.place(0);
         const amb = ambienceFor(0);
-        this.renderer.setTheme(amb.colors, amb.sunIntensity, 0);
+        this.renderer.setTheme(amb.colors, amb.sunIntensity, 0, environmentFor(amb));
         this.spawner.update(this._view());
         this.screens.showMenu();
         this.audio.startMusic('menu'); // suena en cuanto el navegador deje (primer clic)
@@ -179,7 +184,8 @@ export default class Game {
         const amb = ambienceFor(checkpoint);
         this.checkpoint = checkpoint;
         this.rail.setSpeed(amb.speed);
-        this.renderer.setTheme(amb.colors, amb.sunIntensity, first ? 0 : 2);
+        this.rail.setFx(environmentFor(amb).camera, first); // boca abajo / dar vueltas
+        this.renderer.setTheme(amb.colors, amb.sunIntensity, first ? 0 : 2, environmentFor(amb));
         this.hud.setLevel(checkpoint, 9); // muestra "Checkpoint N/9"
         this.hud.showBanner(amb.name);
         if (!first) this.score.addCheckpoint(); // bono por llegar (no por el de salida)
@@ -296,10 +302,11 @@ export default class Game {
         this.audio.startMusic('menu'); // vuelve la música tranquila del menú
         // Devolver el fondo al preview del checkpoint 0
         this.track.reset();
+        this.rail.setFx(null, true);
         this.rail.place(0);
         this.checkpoint = -1;
         const amb = ambienceFor(0);
-        this.renderer.setTheme(amb.colors, amb.sunIntensity, 0);
+        this.renderer.setTheme(amb.colors, amb.sunIntensity, 0, environmentFor(amb));
         this.spawner.update(this._view());
         this.screens.showMenu();
     }

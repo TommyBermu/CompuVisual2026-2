@@ -25,17 +25,12 @@ import {
     CRYSTAL_MIN_WIDTH, CRYSTAL_MAX_WIDTH, CRYSTAL_MIN_HEIGHT, CRYSTAL_MAX_HEIGHT,
     CRYSTAL_RISE_TIME, TUNNEL_WIDTH,
 } from '../constants.js';
-import { rectPolygon } from '../utils/fracture.js';
+import { outline, pickShape, STANDING } from '../utils/shapes.js';
 
 const rand = (min, max) => min + Math.random() * (max - min);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const HALF_W = TUNNEL_WIDTH / 2;
 
-// Contorno (CCW, centrado en su caja) de cada forma
-function outlineFor(shape, w, h) {
-    if (shape === 'triangle') return [[-w / 2, -h / 2], [w / 2, -h / 2], [0, h / 2]];
-    return rectPolygon(w / 2, h / 2);
-}
 
 // Giro del panel y dirección en la que "sale" de su soporte, por montaje
 const MOUNTS = {
@@ -49,7 +44,8 @@ const MOUNTS = {
 export default class Crystal extends GlassPanel {
     /*
         options (todas opcionales, si faltan se eligen al azar):
-            shape:  'rect' | 'triangle'
+            shape:  cualquiera de utils/shapes.js (rect, triangle, trapezoid, house,
+                    arch, hexagon, octagon, diamond, pentagon...). Si falta, una al azar.
             mount:  'floor' | 'left' | 'right' | 'top' | 'block'
             width:  a lo largo del soporte
             height: cuánto sale del soporte
@@ -60,11 +56,11 @@ export default class Crystal extends GlassPanel {
             z:      posición a lo largo del pasillo (local)
     */
     constructor(levelIndex = 0, options = {}) {
-        const shape = options.shape || 'rect';
+        const shape = options.shape || pickShape(STANDING);
         const mount = options.mount || 'floor';
         const width = options.width ?? rand(CRYSTAL_MIN_WIDTH, CRYSTAL_MAX_WIDTH);
         const height = options.height ?? rand(CRYSTAL_MIN_HEIGHT, CRYSTAL_MAX_HEIGHT);
-        super(outlineFor(shape, width, height), levelIndex, { anchor: 'bottom' });
+        super(outline(shape, width, height), levelIndex, { anchor: 'bottom' });
 
         const m = MOUNTS[mount] || MOUNTS.floor;
         this.z = options.z ?? 0;

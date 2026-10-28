@@ -91,7 +91,9 @@ export default class Shooter {
         // (antes nacía 0.3 m más abajo y además la gravedad la hacía caer:
         // por eso pegaba por debajo de la cruz).
         const origin = camera.position.clone().addScaledVector(direction, BALL_SPAWN_OFFSET);
-        origin.y -= BALL_SPAWN_DROP; // un poco por debajo de la mira (el tiro igual llega al punto apuntado)
+        // un poco por debajo de la mira (en el "abajo" de la pantalla: con la
+        // cámara girada o boca abajo también sale de abajo de la cruz)
+        origin.addScaledVector(this.rail.up, -BALL_SPAWN_DROP);
 
         const ball = new Ball(this.physics, origin);
         // La sensibilidad (ajuste del jugador) escala la fuerza del lanzamiento
@@ -183,7 +185,7 @@ export default class Shooter {
         const camera = this.renderer.camera;
         for (let i = 0; i < count; i++) {
             const origin = camera.position.clone();
-            origin.y -= 0.5;
+            origin.addScaledVector(this.rail.up, -0.5);
             origin.addScaledVector(this.rail.forward, 1); // justo delante
             // pequeña dispersión en la posición para que no nazcan todas en el mismo punto
             origin.x += (Math.random() - 0.5) * 1.2;

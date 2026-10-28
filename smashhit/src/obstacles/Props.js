@@ -61,6 +61,7 @@ export default class Props extends Obstacle {
                 if (chance(0.5)) this.box(-HALF_W, HALF_W, 0, h * 0.6, rand(1.8, 2.4), rand(0.5, 0.8)); // escalón previo
             },
             beams: () => {
+                this.needsSupport = true; // vigas de pared a pared
                 const n = randInt(1, 3);
                 for (let i = 0; i < n; i++) {
                     const y = rand(TUBE_Y1 + 0.3, 6.5);

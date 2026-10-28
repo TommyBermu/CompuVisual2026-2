@@ -10,7 +10,7 @@
 */
 
 import * as CANNON from 'cannon-es';
-import { GRAVITY, RESTITUTION } from '../constants.js';
+import { GRAVITY, RESTITUTION, GLASS_RESTITUTION } from '../constants.js';
 
 export default class Physics {
     constructor() {
@@ -26,6 +26,16 @@ export default class Physics {
         );
         this.world.addContactMaterial(contact);
         this.world.defaultContactMaterial = contact;
+
+        // Material del vidrio: la bola rebota contra el vidrio intacto con su
+        // propia restitución (más apagada que el rebote general). Cannon calcula
+        // la dirección de salida según la cara golpeada, sea panel o pirámide.
+        this.glassMaterial = new CANNON.Material('glass');
+        this.world.addContactMaterial(new CANNON.ContactMaterial(
+            this.defaultMaterial,
+            this.glassMaterial,
+            { friction: 0.1, restitution: GLASS_RESTITUTION }
+        ));
     }
 
     add(body) {

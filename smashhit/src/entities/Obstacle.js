@@ -30,8 +30,11 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Entity from './Entity.js';
 import { LEVELS } from '../levels.js';
-import { GROUP_WORLD, GROUP_BALL, GROUP_CHUNK } from '../constants.js';
+import { GROUP_WORLD, GROUP_BALL, GROUP_CHUNK, TUNNEL_WIDTH } from '../constants.js';
 import { pointToWorld, quatToWorld, pointToLocal } from '../utils/frame.js';
+
+const HALF_LANE = TUNNEL_WIDTH / 2;
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 // Material metálico por nivel (color del arco del nivel), reutilizado.
 const metalByLevel = new Map();
@@ -74,6 +77,11 @@ export default class Obstacle extends Entity {
         this.panels = [];  // GlassPanel
         this.solids = [];  // { mesh, body, blocking, box }
         this.time = 0;
+        this.needsSupport = false; // cuelga piezas de paredes/vigas (ver addPortal / addSupports)
+        this.needsBase = false;    // se apoya en el suelo (ver addBase, niveles sin suelo)
+        this.baseDepth = 3;
+        // Sitios (coords locales, y = superficie) donde puede posarse una pirámide de bolas
+        this.perches = [];
         this.renderer = null;
         this.physics = null;
     }
@@ -129,6 +137,145 @@ export default class Obstacle extends Entity {
         const solid = this.addBox(maxX - minX, maxY - minY, depth, { material: this.stone, ...options });
         this.placeSolid(solid, (minX + maxX) / 2, (minY + maxY) / 2, z);
         return solid;
+    }
+
+    // Pórtico de soporte: dos muros cortos a los lados del carril (y un dintel
+    // si no hay techo). Lo pide el Spawner en los entornos sin paredes (o con
+    // paredes bajas/rotas) para que las vigas, péndulos y triángulos "de pared"
+    // de este obstáculo no queden flotando.
+    addPortal(height, depth = 11.5, withLintel = true, bottom = 0) {
+        const t = 0.7;
+        for (const side of [-1, 1]) {
+            const x0 = side * HALF_LANE;
+            const x1 = side * (HALF_LANE + t);
+            this.addStaticBox(Math.min(x0, x1), Math.max(x0, x1), Math.max(bottom, -1), height, 0, depth);
+            // Sobre el vacío el poste sigue bajando, en VERTICAL de mundo (en una
+            // rampa no se inclina), hasta perderse en la niebla
+            if (bottom < -1) this._addHangingBox(side * (HALF_LANE + t / 2), -1, t, -1 - bottom, depth);
+        }
+        if (withLintel) {
+            this.addStaticBox(-HALF_LANE - t, HALF_LANE + t, height, height + 0.6, 0, depth * 0.6, { material: this.metal });
+        }
+    }
+
+    // Caja vertical (de mundo) que cuelga del punto local (x, top, z) y baja h metros.
+    // yaw: giro extra alrededor de la vertical (pilares "en rombo").
+    _addHangingBox(x, top, w, h, depth, { z = 0, yaw = 0, material = this.stone } = {}) {
+        const solid = this.addBox(w, h, depth, { material });
+        const p = pointToWorld(this.frame, x, top, z, tmpP);
+        p.y -= h / 2;
+        const q = tmpQ.setFromAxisAngle(WORLD_UP, (this.frame.yaw ?? 0) + yaw);
+        solid.body.position.set(p.x, p.y, p.z);
+        solid.body.quaternion.set(q.x, q.y, q.z, q.w);
+        solid.body.aabbNeedsUpdate = true;
+        solid.mesh.position.copy(p);
+        solid.mesh.quaternion.copy(q);
+        return solid;
+    }
+
+    /*
+        Apoyo de las piezas colgadas en los niveles SIN SUELO (env.supports):
+            pillars  pilares que salen del fondo (ver addPillars)
+            sky      cables que suben hasta perderse en la niebla de arriba
+            float    trozos de columna flotando a los lados (lógica de sueño)
+        wide: paneles montados "en pared" -> el apoyo es una losa larga en z.
+    */
+    addSupports(style, beamTop, bottom, { wide = false } = {}) {
+        const rand = (a, b) => a + Math.random() * (b - a);
+        if (style === 'pillars') {
+            this.addPillars(beamTop, bottom, { wide });
+            return;
+        }
+        for (const side of [-1, 1]) {
+            if (style === 'sky') {
+                // Desde un poco por debajo de la viga más baja hasta 300 m hacia arriba
+                const from = wide ? -0.5 : 3.2;
+                const w = wide ? 0.7 : 0.22;
+                this._addHangingBox(side * (HALF_LANE + w / 2), from + 300, w, 300, wide ? 11.5 : 0.22,
+                    { material: wide ? this.stone : this.metal });
+            } else {
+                // float: un trozo de columna suspendido justo donde acaban las vigas
+                const w = rand(1, 1.8);
+                const from = wide ? -1 : rand(2.4, 3.2);
+                const top = beamTop + rand(0.3, 2.5);
+                this._addHangingBox(side * (HALF_LANE + w / 2), top, w, top - from, wide ? 11.5 : w);
+            }
+        }
+    }
+
+    /*
+        BASE flotante bajo lo que se apoya en el suelo (paneles que salen del
+        suelo, puertas, postes) en los niveles SIN SUELO. Las bolas rebotan en
+        ella y luego caen al vacío.
+            slab  losa de piedra gruesa
+            disc  disco (dos discos apilados, el de abajo más pequeño)
+            raft  balsa: tablones finos
+    */
+    addBase(style, depth = 3) {
+        const rand = (a, b) => a + Math.random() * (b - a);
+        // En los bordes de la base, fuera del paso de la cámara, cabe una pirámide
+        for (const side of [-1, 1]) this.perches.push({ x: side * rand(3.6, 4.8), y: 0, z: rand(-depth / 2 + 0.6, depth / 2 - 0.6) * 0.5 });
+        if (style === 'disc') {
+            const r = Math.max(HALF_LANE + 0.6, depth / 2 + 0.5);
+            const top = this.addCylinder(r, 1.2, { material: this.stone });
+            this.placeSolid(top, 0, -0.6, 0);
+            const under = this.addCylinder(r * 0.6, 1.4, { material: this.metal });
+            this.placeSolid(under, 0, -1.9, 0);
+        } else if (style === 'raft') {
+            const n = Math.max(2, Math.round(depth / 1.1));
+            for (let k = 0; k < n; k++) {
+                const z = (k - (n - 1) / 2) * 1.1;
+                this.addStaticBox(-HALF_LANE - rand(0, 0.6), HALF_LANE + rand(0, 0.6), -0.35, 0, z, 0.95);
+            }
+        } else {
+            const h = rand(1.6, 3);
+            this.addStaticBox(-HALF_LANE, HALF_LANE, -h, 0, 0, depth);
+            this.addStaticBox(-HALF_LANE * 0.6, HALF_LANE * 0.7, -h - rand(1, 2.5), -h, rand(-0.5, 0.5), depth * 0.7);
+        }
+    }
+
+    /*
+        SOPORTES SIN PASILLO: en vez de paredes, a cada lado del carril sale del
+        vacío un pilar (o una forma rara) que llega como mínimo a `beamTop` (la
+        altura de las vigas) y baja hasta `bottom` (se pierde en la niebla). Su
+        cara interior queda justo en el borde del carril, donde acaban las vigas.
+        Estilos al azar por lado:
+            tower    pilar cuadrado que sigue subiendo bastante por encima
+            diamond  pilar girado 45° (de canto hacia el camino)
+            stack    pilar con "collares": bloques más anchos a distintas alturas
+            twin     dos pilares delgados juntos, uno más alto que el otro
+        wide: los paneles montados "en pared" necesitan un apoyo largo en z.
+    */
+    addPillars(beamTop, bottom, { wide = false } = {}) {
+        const rand = (a, b) => a + Math.random() * (b - a);
+        const styles = wide ? ['tower', 'stack'] : ['tower', 'diamond', 'stack', 'twin'];
+        for (const side of [-1, 1]) {
+            const style = styles[Math.floor(Math.random() * styles.length)];
+            const top = beamTop + (Math.random() < 0.3 ? rand(0.3, 1.5) : rand(4, 45));
+            const h = top - bottom;
+            const d = wide ? 11.5 : rand(1.4, 3.2);
+            if (style === 'diamond') {
+                const w = rand(1.6, 3);
+                this._addHangingBox(side * (HALF_LANE + w * Math.SQRT1_2), top, w, h, w, { yaw: Math.PI / 4 });
+            } else if (style === 'twin') {
+                const w = rand(0.9, 1.4);
+                this._addHangingBox(side * (HALF_LANE + w / 2), top, w, h, w);
+                this._addHangingBox(side * (HALF_LANE + w * 1.6), top + rand(-6, 10), w, h + 10, w, { z: rand(-1.2, 1.2) });
+            } else {
+                const w = rand(1.4, 3.6);
+                const x = side * (HALF_LANE + w / 2);
+                this._addHangingBox(x, top, w, h, d);
+                if (style === 'stack') {
+                    for (let k = 0; k < 2; k++) {
+                        const cw = w + rand(0.8, 2);
+                        const ch = rand(1, 3);
+                        const cy = Math.min(top, rand(-30, beamTop + 4));
+                        const cx = side * (HALF_LANE + cw / 2 + 0.05); // sin invadir el carril
+                        this._addHangingBox(cx, cy, cw, ch, d + rand(0.5, 2));
+                    }
+                }
+            }
+        }
     }
 
     // Coloca una parte sólida en coords LOCALES (quaternion local, THREE u omitido)

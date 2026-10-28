@@ -147,6 +147,12 @@ export default class Shatter {
         }
     }
 
+    // Esquirla suelta (p.ej. de una pirámide): mesh ya colocado, su velocidad y
+    // el marco del recorrido donde se soltó (para rebotar/caer)
+    addShard(mesh, vel, ground = null) {
+        this._addDebris(mesh, vel, ground);
+    }
+
     _addDebris(mesh, vel, ground) {
         this.renderer.add(mesh);
         this.debris.push({
@@ -254,7 +260,7 @@ export default class Shatter {
         const back = (p.x - view.position.x) * view.forward.x
             + (p.y - view.position.y) * view.forward.y
             + (p.z - view.position.z) * view.forward.z;
-        return back < -DESPAWN_BEHIND || p.y < view.floorY - 15;
+        return back < -DESPAWN_BEHIND || p.y < view.floorY - 60; // lo que cae al vacío se pierde en la niebla
     }
 
     update(delta, view) {
@@ -290,8 +296,21 @@ export default class Shatter {
             const l = g ? pointToLocal(g, m.position, tmpL) : tmpL.copy(m.position);
             const v = g ? dirToLocal(g, d.vel, tmpV) : tmpV.copy(d.vel);
             let hit = false;
+            // Límites del sitio donde se soltó (sin paredes = no hay rebote lateral;
+            // fuera del suelo = cae al vacío)
+            const bounds = g?.bounds;
+            const wallX = bounds ? bounds.wallX : WALL_X;
+            const inZ = !bounds?.floorZ || (l.z >= bounds.floorZ[0] && l.z <= bounds.floorZ[1]);
+            const onFloor = !bounds || (Math.abs(l.x) <= bounds.floorX && inZ);
+            // suelo lejano (arena del desierto) para lo que cae por el vacío
+            if (!onFloor && bounds?.groundY != null && l.y < bounds.groundY + 0.04) {
+                l.y = bounds.groundY + 0.04;
+                if (v.y < 0) v.y *= -0.25;
+                v.x *= 0.6; v.z *= 0.6;
+                hit = true;
+            }
             // suelo: rebote amortiguado + rozamiento
-            if (l.y < 0.04) {
+            if (onFloor && l.y < 0.04 && l.y > -0.6) {
                 l.y = 0.04;
                 if (-v.y > SHARD_HIT_SPEED && (!shard || -v.y > shard.speed)) shard = { mesh: m, speed: -v.y };
                 if (v.y < 0) v.y *= -0.3;
@@ -300,8 +319,8 @@ export default class Shatter {
                 hit = true;
             }
             // paredes del pasillo
-            if (Math.abs(l.x) > WALL_X) {
-                l.x = Math.sign(l.x) * WALL_X;
+            if (wallX !== null && Math.abs(l.x) > wallX) {
+                l.x = Math.sign(l.x) * wallX;
                 v.x *= -0.4;
                 hit = true;
             }

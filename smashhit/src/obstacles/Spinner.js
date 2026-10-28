@@ -21,6 +21,7 @@ import * as THREE from 'three';
 import Obstacle from '../entities/Obstacle.js';
 import GlassPanel from '../entities/GlassPanel.js';
 import { rectPolygon } from '../utils/fracture.js';
+import { outline, pickShape } from '../utils/shapes.js';
 import { SPINNER_HUB_Y, SPINNER_SPEED } from '../constants.js';
 import { HALF_W, rand, pick, sign, pickVariant } from './shared.js';
 
@@ -65,8 +66,10 @@ export default class Spinner extends Obstacle {
     _blades(levelIndex, n, width, len, anchor) {
         const blades = [];
         for (let k = 0; k < n; k++) {
-            const outline = anchor === 'left' ? rectPolygon(len / 2, width / 2) : rectPolygon(width / 2, len / 2);
-            const panel = this.addPanel(new GlassPanel(outline, this.levelIndex, { anchor }));
+            // Hojas que salen del eje hacia fuera: rectángulo, trapecio, casita, arco o cometa
+            const shape = pickShape(['rect', 'trapezoid', 'house', 'arch', 'kite']);
+            const poly = anchor === 'left' ? rectPolygon(len / 2, width / 2) : outline(shape, width, len);
+            const panel = this.addPanel(new GlassPanel(poly, this.levelIndex, { anchor }));
             blades.push({ panel, offset: (k * 2 * Math.PI) / n });
         }
         return blades;
@@ -81,6 +84,7 @@ export default class Spinner extends Obstacle {
 
         // Viga fija detrás, a la altura del eje (por encima de la cámara); una sola si hay dos molinos
         if (!this.beam) {
+            this.needsSupport = true;
             this.beam = this.addBox(HALF_W * 2, 0.3, 0.3);
             this.placeSolid(this.beam, 0, hubY, -HUB_DEPTH / 2 - 0.15);
         }
@@ -107,6 +111,8 @@ export default class Spinner extends Obstacle {
         const h = rand(3.6, 4.2);
         const n = pick([3, 4]);
 
+        this.needsBase = true; // el poste se apoya en el suelo
+        this.baseDepth = 2.5;
         const pole = this.addCylinder(0.2, 6.5);
         this.placeSolid(pole, axisX, 3.25, 0);
         const cap = this.addBox(0.8, 0.3, 0.8);
@@ -131,6 +137,7 @@ export default class Spinner extends Obstacle {
         const width = rand(3, 4.4);
 
         const bar = this.addCylinder(0.22, HALF_W * 2);
+        this.needsSupport = true; // la barra va de pared a pared
         this.placeSolid(bar, 0, hubY, 0, new THREE.Quaternion().setFromAxisAngle(Z_AXIS, Math.PI / 2));
 
         this._addRotor({

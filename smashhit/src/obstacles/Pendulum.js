@@ -25,7 +25,7 @@
 import * as THREE from 'three';
 import Obstacle from '../entities/Obstacle.js';
 import GlassPanel from '../entities/GlassPanel.js';
-import { rectPolygon } from '../utils/fracture.js';
+import { outline, flipY, pickShape } from '../utils/shapes.js';
 import {
     CRYSTAL_THICKNESS,
     PENDULUM_PIVOT_Y, PENDULUM_ROD_LENGTH, PENDULUM_AMPLITUDE, PENDULUM_PERIOD,
@@ -33,6 +33,7 @@ import {
 import { HALF_W, rand, sign, pickVariant } from './shared.js';
 
 const L = PENDULUM_ROD_LENGTH;
+const PLATE_SHAPES = ['rect', 'trapezoid', 'house', 'arch', 'pentagon', 'hexagon', 'octagon'];
 const X_AXIS = new THREE.Vector3(1, 0, 0);
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
 const tmp = new THREE.Vector3();
@@ -40,6 +41,7 @@ const tmp = new THREE.Vector3();
 export default class Pendulum extends Obstacle {
     constructor(frame, levelIndex) {
         super(frame, levelIndex);
+        this.needsSupport = true; // las vigas de los pivotes van de pared a pared
         const omega = (2 * Math.PI) / rand(...PENDULUM_PERIOD);
         const amp = () => rand(...PENDULUM_AMPLITUDE) * sign();
         const phase = Math.random() * 2 * Math.PI;
@@ -72,7 +74,8 @@ export default class Pendulum extends Obstacle {
                 halfH: h / 2,
                 rod: this.addBox(0.14, L, 0.14),
                 clamp: this.addBox(w + 0.1, 0.18, CRYSTAL_THICKNESS + 0.12),
-                plate: this.addPanel(new GlassPanel(rectPolygon(w / 2, h / 2), levelIndex, { anchor: 'top' })),
+                // Placa de forma al azar, con el lado plano arriba (cuelga de la barra)
+                plate: this.addPanel(new GlassPanel(flipY(outline(pickShape(PLATE_SHAPES), w, h)), levelIndex, { anchor: 'top' })),
                 q: new THREE.Quaternion(),
             };
         });
