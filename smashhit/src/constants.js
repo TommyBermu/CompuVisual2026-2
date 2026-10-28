@@ -67,7 +67,8 @@ export const CHECKPOINT_LENGTH = 500; // metros por checkpoint
 export const CHECKPOINT_COUNT = 10;   // checkpoints 0..9 (fin del recorrido en el 9)
 
 // --- Economía de bolas (las bolas son munición Y vida) ---
-export const CRYSTAL_BREAK_REWARD = 3; // +bolas al romper un cristal con un disparo
+export const CRYSTAL_BREAK_REWARD = 3; // +bolas al reventar una PIRÁMIDE apoyada (los cristales normales no dan)
+export const DIAMOND_REWARD = 5;       // +bolas al reventar un ROMBO flotante
 export const CRASH_PENALTY_BASE = 5;   // -bolas base al chocar de frente con un cristal
 // penalización total al chocar = CRASH_PENALTY_BASE + checkpoint actual (N)
 

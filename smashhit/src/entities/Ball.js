@@ -62,7 +62,8 @@ export default class Ball extends Entity {
             if (this.inert) return; // las bolas de la animación de muerte no rompen nada
             const other = e.body.userData;
             if (!other) return;
-            if (other.type === 'chunk') {
+            if (other.type === 'chunk' || other.type === 'pyramid') {
+                // bloques que caen y pirámides (bonus): cualquier toque cuenta
                 other.entity.registerBallHit(this);
             } else if (other.type === 'crystal') {
                 // Solo rompe/perfora si viene con suficiente velocidad; si no, rebota.
