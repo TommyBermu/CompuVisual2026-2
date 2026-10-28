@@ -27,6 +27,7 @@ import Obstacle from '../entities/Obstacle.js';
 import Crystal from '../entities/Crystal.js';
 import { CRYSTAL_RISE_AHEAD } from '../constants.js';
 import { HALF_W, rand, pick, sign, pickVariant } from './shared.js';
+import { pickShape, LOOSE } from '../utils/shapes.js';
 
 export default class GlassWall extends Obstacle {
     // layout: [opciones de Crystal] (shape, mount, width, height, x, y, z...)
@@ -34,7 +35,23 @@ export default class GlassWall extends Obstacle {
         super(frame, levelIndex);
         if (build) build(this);   // partes sólidas (bloques, vigas) antes del vidrio
         layout.forEach((o) => this.addPanel(new Crystal(levelIndex, o)));
+        // Paneles de pared o colgados de una viga: sin paredes necesitan pórtico
+        this.needsSupport = layout.some((o) => ['left', 'right', 'top'].includes(o.mount));
+        this.needsWall = layout.some((o) => ['left', 'right'].includes(o.mount)); // apoyo largo en z
+        // Paneles que salen del suelo (o de bloques): sin suelo necesitan una base flotante
+        const onFloor = layout.filter((o) => !o.mount || o.mount === 'floor' || o.mount === 'block');
+        this.needsBase = onFloor.length > 0 || !!build;
+        this.baseDepth = 2.5 + 2 * Math.max(0, ...onFloor.map((o) => Math.abs(o.z ?? 0)));
         this.rising = false;
+    }
+
+    // Sin suelo del que salir: los paneles ya aparecen fuera del todo
+    skipRise() {
+        this.rising = true;
+        this.panels.forEach((p) => {
+            p.rise = 1;
+            if (p.placeInFrame) p.placeInFrame();
+        });
     }
 
     update(delta, view) {
@@ -58,7 +75,7 @@ export default class GlassWall extends Obstacle {
             wall: () => {
                 const h = rand(3.2, 4.5);
                 const w = (2 * HALF_W) / 3 - 0.05;
-                return [[-1, 0, 1].map((k) => ({ width: w, height: h, x: k * (w + 0.05) }))];
+                return [[-1, 0, 1].map((k) => ({ shape: 'rect', width: w, height: h, x: k * (w + 0.05) }))];
             },
             stagger: () => {
                 const s0 = sign();
@@ -88,6 +105,41 @@ export default class GlassWall extends Obstacle {
         };
         const [layout, build] = pickVariant(variants)();
         return new GlassWall(frame, levelIndex, layout, build);
+    }
+
+    // --- Flotantes (niveles sin suelo) -----------------------------------------
+    // Vidrios de formas variadas, cada uno sobre su PEDESTAL pequeño flotando a
+    // distintas alturas, sobre todo POR DEBAJO de la vista: llenan la parte de
+    // abajo del vacío. Algunos pedestales se quedan vacíos (ahí se posan
+    // pirámides de bolas, ver perches).
+    static floaters(frame, levelIndex) {
+        const layout = [];
+        const plinths = [];
+        const n = 3 + Math.floor(Math.random() * 3);
+        const xs = [-4.2, -2.1, 0, 2.1, 4.2].sort(() => Math.random() - 0.5).slice(0, n);
+        xs.forEach((x, i) => {
+            const w = rand(1.2, 2.2);
+            const z = rand(-4, 4);
+            // Bajo la cámara, o (si el vidrio cabe) a la altura de la vista
+            const base = Math.abs(x) < 1.6 ? rand(-3.5, -0.3) : rand(-4, 1);
+            plinths.push({ x, z, w, base });
+            if (i < n - 1 || Math.random() < 0.5) {
+                layout.push({ shape: pickShape(LOOSE), mount: 'block', base, x, z, width: w, height: rand(1.4, 2.8) });
+            }
+        });
+        const ob = new GlassWall(frame, levelIndex, layout, (o) => {
+            for (const p of plinths) {
+                const t = rand(0.5, 1.1);
+                o.addStaticBox(p.x - p.w / 2 - 0.25, p.x + p.w / 2 + 0.25, p.base - t, p.base, p.z, 1.1);
+                // un trocito más pequeño colgando debajo (como una isla rota)
+                o.addStaticBox(p.x - p.w * 0.3, p.x + p.w * 0.25, p.base - t - rand(0.4, 1.2), p.base - t, p.z, 0.8);
+            }
+        });
+        // Los pedestales que quedaron sin vidrio son buenos sitios para una pirámide
+        const used = new Set(layout.map((o) => o.x));
+        ob.perches.push(...plinths.filter((p) => !used.has(p.x)).map((p) => ({ x: p.x, y: p.base, z: p.z })));
+        ob.needsBase = false; // cada uno trae su pedestal
+        return ob;
     }
 
     // --- Triángulos ----------------------------------------------------------

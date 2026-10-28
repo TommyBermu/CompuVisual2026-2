@@ -11,6 +11,7 @@
         gates      compuertas (dos hojas, guillotina, deslizante, doble botón, rítmica)
         pendulums  péndulos (laterales, frontales, diagonales, en ola, en pareja...)
         spinners   aspas (molino, gemelos, hélice, torniquete, rodillo)
+        floaters   vidrios de formas variadas sobre pedestales flotantes (niveles sin suelo)
 
     Además está el RELLENO sólido (Props: columnas, bloques, vigas...), que el
     Spawner reparte aparte según `props` del nivel.
@@ -36,6 +37,8 @@ export function createObstacles(type, track, s, levelIndex) {
     switch (type) {
         case 'triangles':
             return [GlassWall.triangles(frame, levelIndex)];
+        case 'floaters':
+            return [GlassWall.floaters(frame, levelIndex)];
         case 'gates':
             return [new Gate(frame, levelIndex)];
         case 'pendulums':

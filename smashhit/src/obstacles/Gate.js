@@ -35,6 +35,9 @@ export default class Gate extends Obstacle {
     constructor(frame, levelIndex, kind = pick(KINDS)) {
         super(frame, levelIndex);
         this.kind = kind;
+        this.needsSupport = true; // las puertas se esconden en las paredes
+        this.needsBase = true;    // y se apoyan en el suelo
+        this.baseDepth = 2.5;
 
         // Dintel fijo sobre las puertas (salvo la guillotina, que sale por arriba)
         if (kind !== 'guillotine') {
@@ -56,7 +59,8 @@ export default class Gate extends Obstacle {
         for (let i = 0; i < count; i++) {
             const s = BUTTON_SIZE;
             const diamond = [[0, -s], [s, 0], [0, s], [-s, 0]];
-            const b = this.addPanel(new GlassPanel(diamond, levelIndex, { fragile: true, material: buttonMaterial() }));
+            // reward: false -> los botones abren la puerta pero NO dan bolas
+            const b = this.addPanel(new GlassPanel(diamond, levelIndex, { fragile: true, reward: false, material: buttonMaterial() }));
             const x = count === 2 ? (i ? 1 : -1) * rand(1.5, 4) : rand(-3, 3);
             if (kind === 'rhythm') {
                 // Las puertas se mueven solas: el botón va en el dintel (fijo)
