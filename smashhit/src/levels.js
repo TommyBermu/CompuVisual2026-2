@@ -13,6 +13,8 @@
           rampa (ramps) dentro del nivel (ver systems/Track.js). Al CAMBIAR de
           checkpoint siempre hay un giro.
         - props:  probabilidad de relleno sólido (bloques, columnas...) por tramo.
+        - env:    entorno / geometría de la sala (ver environments.js): galería
+          cerrada, pasillo abierto, salón infinito, cañón, puente, muelle...
 
     El largo de cada nivel se calcula para que dure ~LEVEL_DURATION segundos
     (largo = velocidad * tiempo), redondeado a tramos enteros de pasillo para
@@ -22,6 +24,7 @@
 export const LEVELS = [
     {
         name: 'Tarde dorada',
+        env: 'gallery',
         speed: 6,
         track: { turns: 0, ramps: 0 },
         props: 0.35,
@@ -35,6 +38,7 @@ export const LEVELS = [
     },
     {
         name: 'Atardecer',
+        env: 'openCorridor',
         speed: 7,
         track: { turns: 0.25, ramps: 0 },
         props: 0.45,
@@ -48,8 +52,9 @@ export const LEVELS = [
     },
     {
         name: 'Cielo rosa',
+        env: 'hall',
         speed: 8,
-        track: { turns: 0.1, ramps: 0.25 },
+        track: { turns: 0, ramps: 0.25 },
         props: 0.5,
         obstacles: ['gates'],
         sunIntensity: 2.0,
@@ -61,6 +66,7 @@ export const LEVELS = [
     },
     {
         name: 'Desierto rojo',
+        env: 'desert',
         speed: 9,
         track: { turns: 0.3, ramps: 0.15 },
         props: 0.5,
@@ -74,6 +80,7 @@ export const LEVELS = [
     },
     {
         name: 'Lavanda',
+        env: 'floatingBridge',
         speed: 10,
         track: { turns: 0.3, ramps: 0.25 },
         props: 0.55,
@@ -87,6 +94,7 @@ export const LEVELS = [
     },
     {
         name: 'Mar al ocaso',
+        env: 'pier',
         speed: 11,
         track: { turns: 0.35, ramps: 0.2 },
         props: 0.6,
@@ -100,6 +108,7 @@ export const LEVELS = [
     },
     {
         name: 'Noche azul',
+        env: 'cathedral',
         speed: 12,
         track: { turns: 0.35, ramps: 0.25 },
         props: 0.6,
@@ -113,6 +122,7 @@ export const LEVELS = [
     },
     {
         name: 'Aurora',
+        env: 'auroraWalk',
         speed: 13.5,
         track: { turns: 0.4, ramps: 0.25 },
         props: 0.65,
@@ -126,6 +136,7 @@ export const LEVELS = [
     },
     {
         name: 'Amanecer',
+        env: 'ruins',
         speed: 15,
         track: { turns: 0.4, ramps: 0.3 },
         props: 0.7,
@@ -139,6 +150,7 @@ export const LEVELS = [
     },
     {
         name: 'Cénit',
+        env: 'zenith',
         speed: 16.5,
         track: { turns: 0.45, ramps: 0.3 },
         props: 0.7,
