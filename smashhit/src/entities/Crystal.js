@@ -74,10 +74,12 @@ export default class Crystal extends GlassPanel {
             this.cx = side * (HALF_W - height / 2);
             this.cy = options.y ?? rand(1.5, 4);
         } else if (mount === 'top') {
-            this.cx = options.x ?? rand(-maxX, maxX);
+            this.cx = options.x ?? Math.max(-maxX, Math.min(maxX, rand(-1.6, 1.6)));
             this.cy = (options.top ?? 6) - height / 2;
         } else {
-            this.cx = options.x ?? rand(-maxX, maxX);
+            // Sin x fija: cerca del centro, para que tape el camino de la cámara
+            // (x = 0) y haya que romperlo o chocar con él
+            this.cx = options.x ?? Math.max(-maxX, Math.min(maxX, rand(-1.6, 1.6)));
             this.cy = (mount === 'block' ? options.base ?? 1 : 0) + height / 2;
         }
 

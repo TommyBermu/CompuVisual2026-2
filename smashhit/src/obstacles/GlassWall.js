@@ -67,7 +67,8 @@ export default class GlassWall extends Obstacle {
     // --- Rectángulos ---------------------------------------------------------
     static panels(frame, levelIndex) {
         const variants = {
-            classic: () => [Math.random() < 0.4 ? [{}, {}] : [{}]],
+            // Uno en el camino de la cámara (y a veces otro a un lado, un poco detrás)
+            classic: () => [Math.random() < 0.4 ? [{}, { x: sign() * rand(2.6, 3.6), z: -2.5 }] : [{}]],
             row: () => {
                 const h = rand(2.6, 3.6);
                 return [[-3.4, 0, 3.4].map((x) => ({ width: rand(1.6, 2.2), height: h, x }))];
@@ -116,15 +117,25 @@ export default class GlassWall extends Obstacle {
         const layout = [];
         const plinths = [];
         const n = 3 + Math.floor(Math.random() * 3);
-        const xs = [-4.2, -2.1, 0, 2.1, 4.2].sort(() => Math.random() - 0.5).slice(0, n);
-        xs.forEach((x, i) => {
+        // El primero va SIEMPRE en el camino de la cámara (x cerca de 0); el resto, al azar
+        const center = pick([-1, 0, 1]) * rand(0, 1);
+        const others = [-4.2, -2.4, 2.4, 4.2].sort(() => Math.random() - 0.5).slice(0, n - 1);
+        [center, ...others].forEach((x, i) => {
             const w = rand(1.2, 2.2);
-            const z = rand(-4, 4);
-            // Bajo la cámara, o (si el vidrio cabe) a la altura de la vista
-            const base = Math.abs(x) < 1.6 ? rand(-3.5, -0.3) : rand(-4, 1);
+            const z = i === 0 ? rand(-1.5, 1.5) : rand(-4, 4);
+            let base, height;
+            if (Math.abs(x) < 1.6) {
+                // En el camino: el pedestal queda por debajo de la vista y el
+                // vidrio sube hasta taparla (la cámara va a 2.2 m)
+                base = rand(-1.2, 0.6);
+                height = rand(3.2 - base, 4.2 - base);
+            } else {
+                base = rand(-4, 1);
+                height = rand(1.4, 2.8);
+            }
             plinths.push({ x, z, w, base });
             if (i < n - 1 || Math.random() < 0.5) {
-                layout.push({ shape: pickShape(LOOSE), mount: 'block', base, x, z, width: w, height: rand(1.4, 2.8) });
+                layout.push({ shape: pickShape(LOOSE), mount: 'block', base, x, z, width: w, height });
             }
         });
         const ob = new GlassWall(frame, levelIndex, layout, (o) => {
