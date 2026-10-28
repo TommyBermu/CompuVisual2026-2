@@ -27,11 +27,13 @@
     Obstacle.addPanel): setPose/moveTo reciben coords LOCALES de ese marco, y
     las astillas lo usan como suelo/paredes para rebotar.
 
-    Física: UN body cinemático con una forma (ConvexPolyhedron) por trozo, con
-    collisionResponse = false: Cannon detecta el contacto con la bola (evento
-    'collide') pero NO la hace rebotar; la bola atraviesa el vidrio rompiéndolo.
-    Los golpes se encolan (registerBallHit) y se procesan fuera del step de
-    física (processHits), porque modificar formas dentro del callback es arriesgado.
+    Física: UN body cinemático con una forma (ConvexPolyhedron) por trozo y
+    material de vidrio (rebote GLASS_RESTITUTION). Con collisionResponse activo,
+    la bola REBOTA contra el vidrio intacto (Cannon calcula la dirección según
+    la cara golpeada). Si el impacto supera GLASS_BREAK_SPEED, el panel se rompe
+    y la bola PERFORA: los golpes se encolan (registerBallHit) y se procesan
+    fuera del step (processHits), porque modificar formas dentro del callback es
+    arriesgado.
 */
 
 import * as THREE from 'three';
@@ -59,14 +61,20 @@ export default class GlassPanel extends Entity {
         options:
             anchor:  'bottom' | 'top' | 'left' | 'right'  borde que sostiene el panel
             fragile: true -> cualquier golpe lo rompe entero
+            reward:  false -> romperlo NO da bolas (botones de las compuertas)
             material: material propio (si no, el vidrio del nivel)
     */
-    constructor(outline, levelIndex = 0, { anchor = 'bottom', fragile = false, material = null } = {}) {
+    constructor(outline, levelIndex = 0, { anchor = 'bottom', fragile = false, reward = true, material = null } = {}) {
         // --- Visual: un grupo con un mesh por trozo ---
         const group = new THREE.Group();
 
-        // --- Física: body cinemático (se mueve por código), una forma por trozo, sin rebote ---
-        const body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC, collisionResponse: false });
+        // --- Física: body cinemático (se mueve por código), una forma por trozo ---
+        // collisionResponse = true: la bola REBOTA contra el vidrio intacto
+        // (Cannon calcula la dirección según la cara: sirve para rectángulos,
+        // triángulos, etc.). Si el golpe es fuerte, además rompe y la bola
+        // PERFORA (ver processHits). El material de vidrio (rebote) se asigna en
+        // addTo, cuando llega la instancia de Physics.
+        const body = new CANNON.Body({ mass: 0, type: CANNON.Body.KINEMATIC });
         // Solo le interesan las bolas normales. Las inertes (animación de muerte)
         // lo atraviesan porque su máscara no incluye CRYSTAL.
         body.collisionFilterGroup = GROUP_CRYSTAL;
@@ -83,6 +91,7 @@ export default class GlassPanel extends Entity {
         this.centerX = (box.minX + box.maxX) / 2;
         this.anchor = anchor;
         this.fragile = fragile;
+        this.reward = reward;
         // ¿Un trozo (su bbox) toca el soporte?
         this.anchorFn = {
             top: (b) => b.maxY >= box.maxY - EPS,
@@ -98,6 +107,14 @@ export default class GlassPanel extends Entity {
         this.pendingHits = [];             // golpes de bola aún sin procesar
 
         this._setPieces([outline]);
+    }
+
+    // Al entrar en el mundo, dar al body el material de vidrio (rebote 0.5
+    // contra la bola). Se hace aquí porque el material vive en la instancia
+    // de Physics, no en el panel.
+    addTo(renderer, physics) {
+        if (physics && physics.glassMaterial) this.body.material = physics.glassMaterial;
+        return super.addTo(renderer, physics);
     }
 
     // Coloca el panel. (x, y, z) y quaternion (THREE, opcional) en coords
@@ -166,8 +183,12 @@ export default class GlassPanel extends Entity {
                 const R = this._breakRadius(local.x, local.y, speed);
                 this.breakAt(local.x, local.y, R, BALL_RADIUS * 1.6, shatter, launch);
             }
-            // La bola atraviesa el vidrio perdiendo algo de velocidad
-            h.ball.body.velocity.scale(GLASS_BALL_SLOWDOWN, h.ball.body.velocity);
+            // PERFORACIÓN: la bola atraviesa el agujero. Cannon pudo haberla
+            // hecho rebotar durante el step; le devolvemos su RUMBO original de
+            // impacto (dir) perdiendo energía, para que siga de largo por el
+            // hueco en vez de rebotar contra los trozos que quedaron.
+            const through = speed * GLASS_BALL_SLOWDOWN;
+            h.ball.body.velocity.set(dir.x * through, dir.y * through, dir.z * through);
             count++;
         }
         return count;
