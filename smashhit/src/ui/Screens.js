@@ -29,7 +29,10 @@ import { ambienceFor } from '../levels.js';
 import { OBSTACLE_NAMES } from '../obstacles/index.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { getRecords } from '../records.js';
-import { CHECKPOINT_COUNT } from '../constants.js';
+import { CHECKPOINT_COUNT, FOG_DENSITY_SCALE } from '../constants.js';
+
+// Texto del deslizador de niebla: % respecto a la densidad por defecto
+const fogLabel = (v) => `${Math.round((v / FOG_DENSITY_SCALE) * 100)}%`;
 
 export default class Screens {
     constructor(menuEl, { audio, onStart, onResume, onExitToMenu }) {
@@ -83,6 +86,7 @@ export default class Screens {
                     ${this._slider('sfxVolume', 'Efectos', s.sfxVolume)}
                     ${this._slider('sensitivity', 'Sensibilidad', s.sensitivity, 0.5, 2, 0.1)}
                     ${this._sliderDeg('fov', 'Campo de visión', s.fov)}
+                    ${this._sliderFog(s.fogScale)}
                     ${this._toggle('muted', 'Silenciar todo', s.muted)}
                     ${this._toggle('shadows', 'Sombras', s.shadows)}
                 </div>
@@ -135,6 +139,17 @@ export default class Screens {
             </label>`;
     }
 
+    // Niebla: 0.3 = casi sin niebla (se ve lejos) .. 3 = muy cerrada. Se muestra
+    // como % respecto al valor por defecto (100% = como está pensado el juego).
+    _sliderFog(value) {
+        return `
+            <label class="setting">
+                <span class="setting-label">Niebla</span>
+                <input type="range" data-setting="fogScale" min="0.3" max="3" step="0.1" value="${value}">
+                <span class="setting-value" data-value-for="fogScale">${fogLabel(value)}</span>
+            </label>`;
+    }
+
     _toggle(key, label, checked) {
         return `
             <label class="setting setting-toggle">
@@ -182,9 +197,9 @@ export default class Screens {
                 }
                 const out = this.el.querySelector(`[data-value-for="${key}"]`);
                 if (out) {
-                    out.textContent = key === 'fov'
-                        ? `${Math.round(val)}°`
-                        : `${Math.round(((val - input.min) / (input.max - input.min)) * 100)}%`;
+                    if (key === 'fov') out.textContent = `${Math.round(val)}°`;
+                    else if (key === 'fogScale') out.textContent = fogLabel(val);
+                    else out.textContent = `${Math.round(((val - input.min) / (input.max - input.min)) * 100)}%`;
                 }
             });
         });

@@ -109,6 +109,9 @@ export const COMBO_RESET_ON_MISS = true;  // ¿una bola que no toca vidrio rompe
 // Los 9 niveles (velocidad + colores) están en src/levels.js.
 export const LEVEL_DURATION = 30;  // segundos aprox. que dura cada nivel
 export const THEME_TRANSITION = 2; // segundos que tarda el cielo/luces en cambiar de paleta
+// Multiplica la densidad de la niebla de TODOS los niveles (environments.js -> fogDensity).
+// Más alto = la niebla empieza más cerca. 1 = tal cual está en cada nivel.
+export const FOG_DENSITY_SCALE = 1.7;
 
 // --- Bola ---
 export const BALL_RADIUS = 0.35;

@@ -34,6 +34,7 @@
 */
 
 import Renderer from './Renderer.js';
+import { setBallEnvironment } from '../entities/Ball.js';
 import Physics from './Physics.js';
 import InputManager from './InputManager.js';
 import AudioManager from './AudioManager.js';
@@ -53,6 +54,7 @@ import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, PO
 export default class Game {
     constructor(container) {
         this.renderer = new Renderer(container);
+        setBallEnvironment(this.renderer.studioEnvironment); // reflejos del cromo de las bolas
         this.physics = new Physics();
         this.audio = new AudioManager();
         this.track = new Track();
@@ -116,7 +118,7 @@ export default class Game {
             }
         });
 
-        // Ajustes en vivo (FOV, sombras) -> al Renderer
+        // Ajustes en vivo (FOV, sombras, niebla) -> al Renderer
         this.renderer.applySettings(getSettings());
         onSettingsChange((s) => this.renderer.applySettings(s));
 

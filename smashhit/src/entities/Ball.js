@@ -5,8 +5,8 @@
     El Shooter la crea delante de la cámara y le da velocidad inicial; desde ahí
     solo la mueve la física (gravedad + rebotes).
 
-    Material muy metálico y poco rugoso: refleja el cielo del nivel
-    (scene.environment), por eso cambia de "color" según la paleta.
+    Cromo pulido con su propio entorno de reflejo (un estudio de fotografía,
+    ver abajo): se lee como metal en cualquier nivel.
 */
 
 import * as THREE from 'three';
@@ -19,12 +19,32 @@ import {
 } from '../constants.js';
 
 // Compartidos por todas las bolas (se dispara mucho, no recrearlos cada vez)
-const geometry = new THREE.SphereGeometry(BALL_RADIUS, 24, 16);
-const material = new THREE.MeshStandardMaterial({
-    color: 0xdddddd,
-    metalness: 0.95,
-    roughness: 0.15,
+const geometry = new THREE.SphereGeometry(BALL_RADIUS, 40, 28);
+/*
+    METAL SATINADO: metal puro con algo de rugosidad (los reflejos se ven
+    difuminados, menos espejo que un cromo) y un barniz suave encima. El tono
+    es un plateado algo apagado, apenas frío.
+
+    El reflejo NO es el cielo del nivel (casi todo niebla clara: con él el cromo
+    se veía como una bola blanca lisa) sino un ESTUDIO de fotografía
+    (RoomEnvironment de Three: una sala gris con paneles de luz), preparado por
+    el Renderer y asignado con setBallEnvironment(). Esos paneles brillantes
+    sobre fondo oscuro son lo que hace que se lea como metal al girar.
+*/
+const material = new THREE.MeshPhysicalMaterial({
+    color: 0xd9dde3,          // plateado un poco más apagado
+    metalness: 1,
+    roughness: 0.22,          // satinado: los reflejos se difuminan (menos espejo)
+    clearcoat: 0.35,          // barniz suave, sin el segundo brillo tan marcado
+    clearcoatRoughness: 0.25,
+    envMapIntensity: 1.0,
 });
+
+// La llama el Game cuando el Renderer tiene listo el entorno de estudio
+export function setBallEnvironment(texture) {
+    material.envMap = texture;
+    material.needsUpdate = true;
+}
 
 export default class Ball extends Entity {
     constructor(physics, position = { x: 0, y: 8, z: 0 }) {

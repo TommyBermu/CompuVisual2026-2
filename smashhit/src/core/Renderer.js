@@ -20,7 +20,8 @@
 */
 
 import * as THREE from 'three';
-import { CAMERA_FOV, CAMERA_HEIGHT } from '../constants.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { CAMERA_FOV, CAMERA_HEIGHT, FOG_DENSITY_SCALE } from '../constants.js';
 
 // Colores de la paleta que maneja el Renderer (los del pasillo los usa Tunnel.js)
 const THEME_KEYS = ['skyTop', 'skyMid', 'skyHorizon', 'skyBottom', 'fog', 'sun', 'hemiSky', 'hemiGround'];
@@ -58,6 +59,13 @@ export default class Renderer {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(this.renderer.domElement);
 
+        // Entorno de ESTUDIO para los metales (las bolas de cromo): una sala gris
+        // con paneles de luz, filtrada para reflejos nítidos y suaves (PMREM).
+        // No depende del nivel: el cromo se ve igual de bien con cualquier cielo.
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        this.studioEnvironment = pmrem.fromScene(new RoomEnvironment(this.renderer), 0.03).texture;
+        pmrem.dispose();
+
         // Luces
         this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 0.9);
         this.scene.add(this.hemi);
@@ -77,6 +85,7 @@ export default class Renderer {
         THEME_KEYS.forEach((k) => { this.theme[k] = new THREE.Color(); });
         this.sunIntensity = 2;
         this.fogDensity = 0.02;
+        this.fogScale = FOG_DENSITY_SCALE; // ajuste del jugador (menú -> Niebla)
         this.flat = 0;
         this.transition = null;
 
@@ -92,7 +101,7 @@ export default class Renderer {
         // Niebla: el color del nivel aclarado hacia el blanco (como en el original,
         // una bruma luminosa del tono del nivel)
         to.fog.lerp(WHITE, env?.fogWhite ?? 0.3);
-        const toDensity = env?.fogDensity ?? 0.02;
+        const toDensity = env?.fogDensity ?? 0.02; // la del nivel; el jugador la multiplica (fogScale)
         const toFlat = env?.flatSky ? 1 : 0;
 
         if (duration <= 0) {
@@ -140,7 +149,7 @@ export default class Renderer {
     _applyTheme() {
         const t = this.theme;
         this.scene.fog.color.copy(t.fog);
-        this.scene.fog.density = this.fogDensity;
+        this.scene.fog.density = this.fogDensity * this.fogScale;
         this.hemi.color.copy(t.hemiSky);
         this.hemi.groundColor.copy(t.hemiGround);
         this.sun.color.copy(t.sun);
@@ -204,8 +213,12 @@ export default class Renderer {
         this.scene.add(mesh);
     }
 
-    // Aplicar ajustes del jugador: FOV y sombras on/off
+    // Aplicar ajustes del jugador: FOV, sombras on/off y densidad de la niebla
     applySettings(s) {
+        if (typeof s.fogScale === 'number') {
+            this.fogScale = s.fogScale;
+            this.scene.fog.density = this.fogDensity * this.fogScale;
+        }
         if (typeof s.fov === 'number') {
             this.camera.fov = s.fov;
             this.camera.updateProjectionMatrix();

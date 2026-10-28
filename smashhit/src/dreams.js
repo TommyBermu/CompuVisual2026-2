@@ -10,8 +10,9 @@
         deco     piezas ESTÁTICAS fusionadas en una malla por material
         animate  añade una malla suelta que gira (spin) y/o sube y baja (bob)
         track    para colocar cosas en el marco del recorrido
-    Todo se coloca lejos del camino (|x| grande): nunca invade el paso de la
-    cámara ni los obstáculos. Es solo visual (no tiene física).
+    Todo se coloca a un lado del camino (|x| grande): nunca invade el paso de la
+    cámara ni los obstáculos, pero tampoco tan lejos como para que la niebla lo
+    borre del todo. Es solo visual (no tiene física, salvo los fragmentos de abajo).
 */
 
 import * as THREE from 'three';
@@ -52,7 +53,7 @@ function dreamMats(levelIndex) {
     base.getHSL(hsl);
     // Cuatro tonos pastel repartidos alrededor del tono del nivel
     const pastel = [0, 0.12, 0.5, 0.75].map((dh) => new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color().setHSL((hsl.h + dh) % 1, 0.55, 0.72),
+        color: new THREE.Color().setHSL((hsl.h + dh) % 1, 0.65, 0.6), // pastel, pero con color de verdad
         roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1,
     }));
     const m = {
@@ -69,7 +70,7 @@ function dreamMats(levelIndex) {
             roughness: 0.05, transmission: 0.7, thickness: 1, transparent: true, opacity: 0.85,
             flatShading: true, envMapIntensity: 1.2,
         }),
-        house: new THREE.MeshStandardMaterial({ color: new THREE.Color(c.wall).lerp(new THREE.Color(0xffffff), 0.3), roughness: 0.7 }),
+        house: new THREE.MeshStandardMaterial({ color: new THREE.Color(c.wall).lerp(new THREE.Color(c.arch), 0.25), roughness: 0.7 }),
         roof: new THREE.MeshStandardMaterial({ color: c.arch, roughness: 0.6 }),
         checkA: new THREE.MeshStandardMaterial({ color: 0xf6f3ee, roughness: 0.5 }),
         checkB: new THREE.MeshStandardMaterial({ color: new THREE.Color(c.arch).multiplyScalar(0.7), roughness: 0.5 }),
@@ -131,7 +132,7 @@ const DREAMS = {
         if (!chance(0.55)) return;
         const size = rand(8, 22);
         const m = meshAt(track, GEO.pyramid, mats.temple, s0 + rand(0, L),
-            sign() * rand(18 + size / 2, 65), rand(8, 30), new THREE.Vector3(size, size * 0.8, size), FLIP);
+            sign() * rand(18 + size / 2, 41.5), rand(8, 30), new THREE.Vector3(size, size * 0.8, size), FLIP);
         animate(m, { spin: { axis: new THREE.Vector3(0, 1, 0), speed: rand(0.08, 0.2) }, bob: rand(0.8, 2), bobSpeed: 0.25 });
     },
 
@@ -141,7 +142,7 @@ const DREAMS = {
         for (let n = 0; n < 2; n++) {
             const r = rand(2, 13);
             const mesh = meshAt(track, GEO.sphere, m.pastel[Math.floor(Math.random() * 4)], s0 + rand(0, L),
-                sign() * rand(9 + r, 55), rand(-35, 8), r);
+                sign() * rand(9 + r, 32), rand(-35, 8), r);
             animate(mesh, { bob: rand(1, 4), bobSpeed: rand(0.25, 0.6) });
         }
     },
@@ -150,7 +151,7 @@ const DREAMS = {
     floatingStairs({ s0, track, animate, levelIndex }) {
         if (!chance(0.45)) return;
         const m = dreamMats(levelIndex);
-        const g = groupAt(track, s0 + rand(0, L), sign() * rand(14, 40), rand(-18, 6), randomQ());
+        const g = groupAt(track, s0 + rand(0, L), sign() * rand(14, 27), rand(-18, 6), randomQ());
         const steps = 8 + Math.floor(Math.random() * 7);
         for (let i = 0; i < steps; i++) {
             part(g, GEO.box, i % 2 ? m.checkA : m.house, 0, i * 0.45, -i * 0.9, 2.4, 0.45, 0.9);
@@ -163,7 +164,7 @@ const DREAMS = {
         const m = dreamMats(levelIndex);
         for (let n = 0; n < 2; n++) {
             const tile = rand(1.5, 3.5);
-            const g = groupAt(track, s0 + rand(0, L), sign() * rand(10, 35), rand(-15, 3),
+            const g = groupAt(track, s0 + rand(0, L), sign() * rand(10, 22.5), rand(-15, 3),
                 new THREE.Quaternion().setFromEuler(tmpE.set(rand(-0.5, 0.5), rand(0, 6), rand(-0.5, 0.5))));
             for (let i = 0; i < 2; i++) {
                 for (let j = 0; j < 2; j++) {
@@ -178,7 +179,7 @@ const DREAMS = {
     doorsOnWater({ s0, deco, env }) {
         if (!chance(0.7)) return;
         const s = s0 + rand(0, L);
-        const x = sign() * rand(10, 50);
+        const x = sign() * rand(10, 30);
         const wy = env.water;
         const h = rand(5, 8);
         for (const dx of [-1.6, 1.6]) deco.box('arch', s, x + dx, wy + h / 2, 0.4, h, 0.4, { upright: true });
@@ -190,7 +191,7 @@ const DREAMS = {
     lighthouses({ s0, deco, env }) {
         if (!chance(0.3)) return;
         const s = s0 + rand(0, L);
-        const x = sign() * rand(30, 70);
+        const x = sign() * rand(30, 50);
         const h = rand(16, 28);
         deco.hanging('temple', s, x, env.water, 3, h, 3, { geo: UNIT.cylinder, rise: true });
         deco.hanging('lamp', s, x, env.water + h, 2.2, 2, 2.2, { geo: UNIT.cylinder, rise: true });
@@ -201,7 +202,7 @@ const DREAMS = {
     flyingHouses({ s0, track, animate, levelIndex }) {
         if (!chance(0.5)) return;
         const m = dreamMats(levelIndex);
-        const g = groupAt(track, s0 + rand(0, L), sign() * rand(12, 45), rand(-2, 20), FLIP.clone());
+        const g = groupAt(track, s0 + rand(0, L), sign() * rand(12, 28.5), rand(-2, 20), FLIP.clone());
         const w = rand(3, 5);
         part(g, GEO.box, m.house, 0, 0, 0, w, w * 0.75, w);
         part(g, GEO.pyramid, m.roof, 0, w * 0.375 + w * 0.3, 0, w * 1.15, w * 0.6, w * 1.15);
@@ -215,7 +216,7 @@ const DREAMS = {
         const m = dreamMats(levelIndex);
         const R = rand(8, 14);
         const s = s0 + rand(0, L);
-        const x = sign() * rand(R + 12, 60);
+        const x = sign() * rand(R + 12, 36);
         const y = rand(-15, 8);
         [1, 0.78, 0.58].forEach((k, i) => {
             const ring = meshAt(track, GEO.torus, i === 1 ? m.glowAlt : m.glow, s, x, y, R * k, randomQ());
@@ -228,7 +229,7 @@ const DREAMS = {
     stars({ s0, deco }) {
         for (let n = 0; n < 18; n++) {
             const k = rand(0.15, 0.45);
-            deco.box('lamp', s0 + rand(0, L), sign() * rand(15, 90), rand(-50, 30), k, k, k);
+            deco.box('lamp', s0 + rand(0, L), sign() * rand(15, 52.5), rand(-50, 30), k, k, k);
         }
     },
 
@@ -239,7 +240,7 @@ const DREAMS = {
             const w = rand(2, 5);
             const h = rand(8, 26);
             const top = rand(14, 30);
-            deco.shape('ring', UNIT.pyramid, s0 + rand(0, L), sign() * rand(7 + w, 40), top - h / 2, w, h, w,
+            deco.shape('ring', UNIT.pyramid, s0 + rand(0, L), sign() * rand(7 + w, 23.5), top - h / 2, w, h, w,
                 { upright: true, q: FLIP });
         }
     },
@@ -249,7 +250,7 @@ const DREAMS = {
         const m = dreamMats(levelIndex);
         for (let n = 0; n < 3; n++) {
             const mesh = meshAt(track, GEO.octa, n % 2 ? m.glowAlt : m.crystal, s0 + rand(0, L),
-                sign() * rand(8, 30), rand(-10, 6), new THREE.Vector3(rand(0.6, 1.6), rand(1.2, 3), rand(0.6, 1.6)), randomQ());
+                sign() * rand(8, 19), rand(-10, 6), new THREE.Vector3(rand(0.6, 1.6), rand(1.2, 3), rand(0.6, 1.6)), randomQ());
             animate(mesh, { spin: { axis: randomAxis(), speed: rand(0.4, 0.9) }, bob: rand(0.5, 1.5), bobSpeed: 0.5 });
         }
     },
@@ -258,7 +259,7 @@ const DREAMS = {
     floatingArches({ s0, track, animate, levelIndex, mats }) {
         if (!chance(0.45)) return;
         const m = dreamMats(levelIndex);
-        const g = groupAt(track, s0 + rand(0, L), sign() * rand(14, 45), rand(-16, 6), randomQ());
+        const g = groupAt(track, s0 + rand(0, L), sign() * rand(14, 29.5), rand(-16, 6), randomQ());
         const h = rand(5, 8);
         part(g, GEO.box, mats.stone, -3, 0, 0, 1, h, 1);
         part(g, GEO.box, mats.stone, 3, 0, 0, 1, h, 1);
@@ -270,7 +271,7 @@ const DREAMS = {
     columnChunks({ s0, track, animate, mats }) {
         for (let n = 0; n < 2; n++) {
             const r = rand(1.2, 2);
-            const mesh = meshAt(track, GEO.cylinder, mats.stone, s0 + rand(0, L), sign() * rand(8 + r, 35), rand(-14, 5),
+            const mesh = meshAt(track, GEO.cylinder, mats.stone, s0 + rand(0, L), sign() * rand(8 + r, 21.5), rand(-14, 5),
                 new THREE.Vector3(r, rand(3, 8), r), randomQ());
             animate(mesh, { spin: { axis: randomAxis(), speed: rand(0.1, 0.3) }, bob: 0.8, bobSpeed: 0.3 });
         }
@@ -284,7 +285,7 @@ const DREAMS = {
         for (let k = 0; k < n; k++) {
             const size = rand(5, 16);
             const mesh = meshAt(track, shapes[Math.floor(Math.random() * shapes.length)], m.white, s0 + rand(0, L),
-                sign() * rand(15 + size, 65), rand(-25, 10), size, randomQ());
+                sign() * rand(15 + size, 40), rand(-25, 10), size, randomQ());
             animate(mesh, { spin: { axis: randomAxis(), speed: rand(0.08, 0.2) }, bob: 2, bobSpeed: 0.2 });
         }
     },

@@ -9,6 +9,8 @@
     onSettingsChange(cb)  -> suscribirse a cambios (el AudioManager/Game reaccionan).
 */
 
+import { FOG_DENSITY_SCALE } from './constants.js';
+
 const STORAGE_KEY = 'smashhit.settings';
 
 export const DEFAULT_SETTINGS = {
@@ -18,6 +20,7 @@ export const DEFAULT_SETTINGS = {
     fov: 70,            // campo de visión de la cámara (grados)
     shadows: true,      // sombras on/off (calidad)
     sensitivity: 1.0,   // multiplicador de la fuerza de disparo
+    fogScale: FOG_DENSITY_SCALE, // densidad de la niebla (multiplica la de cada nivel)
 };
 
 let current = load();

@@ -28,7 +28,8 @@
         ground:     { y } suelo lejano bajo el recorrido (desierto: arena).
         water:      altura del agua (muelle).
         fogDensity: densidad de la niebla EXPONENCIAL (0.02: a 50 m la niebla tapa ~60%, a 90 m casi todo).
-        fogWhite:   cuánto se aclara la niebla hacia el blanco (0..1).
+        fogWhite:   cuánto se aclara la niebla hacia el blanco (0..1). Bajo = la bruma
+                    (y todo lo que se pierde en ella) conserva el tono del nivel.
         flatSky:    el cielo entero del color de la niebla (sin horizonte).
         supports:   sin paredes, de dónde cuelgan vigas/péndulos/aspas:
                     'pillars' (columnas desde el fondo), 'sky' (cables hacia arriba)
@@ -63,7 +64,7 @@ export const ENVIRONMENTS = {
         walls: null,
         ceiling: { y: 6.8, halfWidth: 24, shadow: false },
         outerFloor: 24,
-        fogDensity: 0.05,
+        fogDensity: 0.032, // ya es muy cerrada: con el multiplicador global, a 20 m tapa ~70%
         fogWhite: 0.2,
         flatSky: true,
         deco: ['columnGrid', 'ceilingLamps', 'threshold'],
@@ -85,7 +86,7 @@ export const ENVIRONMENTS = {
         base: 'slab',
         supports: 'pillars',
         fogDensity: 0.016,
-        fogWhite: 0.35,
+        fogWhite: 0.15,
         deco: ['dunes', 'temples', 'invertedPyramids'],
     },
     // 4 · Jardín de burbujas: esferas pastel gigantes que suben y bajan,
@@ -96,7 +97,7 @@ export const ENVIRONMENTS = {
         base: 'disc',
         supports: 'sky',
         fogDensity: 0.024,
-        fogWhite: 0.5,
+        fogWhite: 0.2,
         deco: ['underFragments', 'bubbles', 'floatingStairs', 'checkerTiles'],
     },
     // 5 · Mar de puertas: un mar en calma lejos abajo, marcos de puerta y faros
@@ -107,7 +108,7 @@ export const ENVIRONMENTS = {
         base: 'raft',
         supports: 'pillars',
         fogDensity: 0.02,
-        fogWhite: 0.4,
+        fogWhite: 0.15,
         deco: ['doorsOnWater', 'lighthouses', 'flyingHouses'],
     },
     // 6 · Noche de giroscopios: anillos gigantes que giran unos dentro de otros,
@@ -117,7 +118,7 @@ export const ENVIRONMENTS = {
         base: 'disc',
         supports: 'float',
         fogDensity: 0.022,
-        fogWhite: 0.2,
+        fogWhite: 0.1,
         deco: ['underFragments', 'gyroscopes', 'stars', 'stainedGlass'],
     },
     // 7 · Aurora: CÁMARA BOCA ABAJO. Estalactitas de cristal colgando de un
@@ -127,7 +128,7 @@ export const ENVIRONMENTS = {
         base: 'slab',
         supports: 'sky',
         fogDensity: 0.022,
-        fogWhite: 0.4,
+        fogWhite: 0.15,
         camera: { roll: Math.PI },
         deco: ['underFragments', 'stalactites', 'rings', 'shards'],
     },
@@ -138,7 +139,7 @@ export const ENVIRONMENTS = {
         base: 'slab',
         supports: 'pillars',
         fogDensity: 0.02,
-        fogWhite: 0.4,
+        fogWhite: 0.15,
         camera: { spin: 0.3 },
         deco: ['underFragments', 'floatingStairs', 'floatingArches', 'columnChunks'],
     },
@@ -149,7 +150,7 @@ export const ENVIRONMENTS = {
         base: 'disc',
         supports: 'float',
         fogDensity: 0.018,
-        fogWhite: 0.6,
+        fogWhite: 0.3,
         deco: ['underFragments', 'platonic', 'rings'],
     },
 };
