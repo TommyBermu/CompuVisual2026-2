@@ -37,6 +37,7 @@ import {
     SCORE_PER_METER, SCORE_CRYSTAL, SCORE_POWERUP, SCORE_CHECKPOINT,
     SCORE_FINISH, SCORE_FINISH_PER_BALL, COMBO_STEP, COMBO_MAX, COMBO_RESET_ON_MISS,
 } from '../constants.js';
+import { unlock } from '../achievements.js';
 
 export default class Score {
     constructor() {
@@ -54,8 +55,11 @@ export default class Score {
         this.streak = 0;         // aciertos seguidos
         this.bestMultiplier = 1;
         this.crystals = 0;       // cristales rotos de un disparo
+        this.gems = 0;           // cristales de poder rotos en esta partida
         this.misses = 0;
         this.crashes = 0;
+        this.powersCollected = new Set(); // IDs de poderes recogidos
+        this.hitsThisFrame = 0;
     }
 
     start(startDistance = 0) {
@@ -66,6 +70,11 @@ export default class Score {
 
     stop() {
         this.active = false;
+    }
+
+    // Llamar en cada frame para reiniciar contadores temporales
+    update() {
+        this.hitsThisFrame = 0;
     }
 
     // Puntuación total = distancia + eventos
@@ -101,16 +110,36 @@ export default class Score {
         const before = this.multiplier;
         this.streak++;
         this.crystals++;
+        this.hitsThisFrame++;
+
+        // Logro: Efecto Dominó (4 en un frame/disparo)
+        if (this.hitsThisFrame >= 4) unlock('domino');
+
+        // Logro: Francotirador (10 seguidos)
+        if (this.streak >= 10) unlock('sniper');
+
         const mult = this.multiplier;
         this.bestMultiplier = Math.max(this.bestMultiplier, mult);
+
+        // Logros de combo
+        if (mult >= 3) unlock('combo_3');
+        if (mult >= 5) unlock('combo_max');
+
         if (mult > before) this._gain(0, 'combo', mult);
         return this._gain(SCORE_CRYSTAL * mult, 'crystal', mult);
     }
 
     // Cristal de power-up: puntos EXTRA (x combo). No toca la racha: si el
     // cristal también avisa onCrystalBroken, ese acierto ya contó en addHit().
-    addPowerUp() {
+    addPowerUp(powerId) {
         if (!this.active) return 0;
+        this.gems++;
+        if (powerId) {
+            this.powersCollected.add(powerId);
+            // Logro: Poder Absoluto (los 4 en una partida)
+            // IDs: triple, infinite, slowmo, bonus (+10)
+            if (this.powersCollected.size >= 4) unlock('full_power');
+        }
         return this._gain(SCORE_POWERUP * this.multiplier, 'powerup', this.multiplier);
     }
 
@@ -121,8 +150,14 @@ export default class Score {
     }
 
     // Recorrido completado (ballsLeft = bolas que quedan)
-    addFinish(ballsLeft = 0) {
+    addFinish(ballsLeft = 0, totalBallsSpent = 0, isNoLoseMode = false) {
         if (!this.active) return 0;
+
+        // Logros de fin de juego
+        unlock('finish_game');
+        if (isNoLoseMode) unlock('survivor');
+        if (totalBallsSpent < 60) unlock('eco_shooter');
+
         return this._gain(SCORE_FINISH + SCORE_FINISH_PER_BALL * Math.max(0, ballsLeft), 'finish', 1);
     }
 
@@ -163,6 +198,7 @@ export default class Score {
             score: this.score,
             distance: Math.floor(this.travelled),
             crystals: this.crystals,
+            gems: this.gems,
             bestMultiplier: this.bestMultiplier,
         };
     }

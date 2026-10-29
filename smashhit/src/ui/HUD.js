@@ -43,6 +43,7 @@ export default class HUD {
             </div>
             <div class="hud-banner"></div>
             <div class="hud-power-banner"></div>
+            <div class="hud-achievement-banner"></div>
             <div class="hud-damage"></div>
         `;
         this.levelEl = hudElement.querySelector('.hud-level');
@@ -53,6 +54,7 @@ export default class HUD {
         this.damageEl = hudElement.querySelector('.hud-damage');
         this.powersEl = hudElement.querySelector('.hud-powers');
         this.powerBannerEl = hudElement.querySelector('.hud-power-banner');
+        this.achievementBannerEl = hudElement.querySelector('.hud-achievement-banner');
         this.scoreEl = hudElement.querySelector('.hud-score-value');
         this.comboEl = hudElement.querySelector('.hud-combo');
         this.comboMultEl = hudElement.querySelector('.hud-combo-mult');
@@ -61,6 +63,8 @@ export default class HUD {
         this._shownScore = -1;
         this._shownMult = 0;
         this._bannerTimer = null;
+        this._powerTimer = null;
+        this._achievementTimer = null;
         this.root = hudElement;
         this.hide();
     }
@@ -166,6 +170,19 @@ export default class HUD {
         this.powerBannerEl.classList.add('visible');
         clearTimeout(this._powerTimer);
         this._powerTimer = setTimeout(() => this.powerBannerEl.classList.remove('visible'), ms);
+    }
+
+    // Notificación de logro desbloqueado
+    showAchievement(achievement, ms = 3000) {
+        this.achievementBannerEl.innerHTML = `
+            <div class="achievement-text">
+                <small>Logro desbloqueado</small>
+                <strong>${achievement.title}</strong>
+            </div>
+        `;
+        this.achievementBannerEl.classList.add('visible');
+        clearTimeout(this._achievementTimer);
+        this._achievementTimer = setTimeout(() => this.achievementBannerEl.classList.remove('visible'), ms);
     }
 
     // Marco rojo de daño (animación de muerte)

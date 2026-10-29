@@ -21,6 +21,8 @@ export const DEFAULT_SETTINGS = {
     shadows: true,      // sombras on/off (calidad)
     sensitivity: 1.0,   // multiplicador de la fuerza de disparo
     fogScale: FOG_DENSITY_SCALE, // densidad de la niebla (multiplica la de cada nivel)
+    ballSkin: 'default', // skin de la bola (default, plata, oro...)
+    ballTrail: 'none',   // estela de la bola (none, neon, arcoiris...)
 };
 
 let current = load();

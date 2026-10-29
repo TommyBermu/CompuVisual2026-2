@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import Entity from './Entity.js';
+import { isUnlocked } from '../achievements.js';
 import {
     BALL_RADIUS, BALL_MASS, GROUP_BALL, GROUP_WORLD, GROUP_CRYSTAL, GROUP_CHUNK,
     GRAVITY, BALL_FLIGHT_GRAVITY, BALL_VISUAL_ARC, BALL_ARC_FADE,
@@ -20,37 +21,107 @@ import {
 
 // Compartidos por todas las bolas (se dispara mucho, no recrearlos cada vez)
 const geometry = new THREE.SphereGeometry(BALL_RADIUS, 40, 28);
-/*
-    METAL SATINADO: metal puro con algo de rugosidad (los reflejos se ven
-    difuminados, menos espejo que un cromo) y un barniz suave encima. El tono
-    es un plateado algo apagado, apenas frío.
+const TRAIL_LENGTH = 10;
+const trailPoint = new THREE.Vector3();
+const TRAIL_COLORS = [0xff4fd8, 0xa98bff, 0x38e8ff, 0x5dff8a, 0xffd9a0, 0xffffff];
+const TRAIL_STYLES = {
+    rainbow: { opacity: 0.9, size: 0.16 },
+    ghost: { opacity: 0.65, size: 0.13 },
+};
 
-    El reflejo NO es el cielo del nivel (casi todo niebla clara: con él el cromo
-    se veía como una bola blanca lisa) sino un ESTUDIO de fotografía
-    (RoomEnvironment de Three: una sala gris con paneles de luz), preparado por
-    el Renderer y asignado con setBallEnvironment(). Esos paneles brillantes
-    sobre fondo oscuro son lo que hace que se lea como metal al girar.
+function createTrail(type) {
+    if (type !== 'rainbow' && type !== 'ghost') return null;
+    const positions = new Float32Array(TRAIL_LENGTH * 3);
+    const colors = new Float32Array(TRAIL_LENGTH * 3);
+    const trailGeometry = new THREE.BufferGeometry();
+    trailGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    if (type === 'rainbow') trailGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.LineBasicMaterial({
+        color: type === 'ghost' ? 0xb9f2ff : 0xffffff,
+        vertexColors: type === 'rainbow',
+        transparent: true,
+        opacity: TRAIL_STYLES[type].opacity,
+        depthWrite: false,
+    });
+    const glow = new THREE.Points(
+        trailGeometry,
+        new THREE.PointsMaterial({
+            color: type === 'ghost' ? 0xb9f2ff : 0xffffff,
+            size: TRAIL_STYLES[type].size,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: TRAIL_STYLES[type].opacity * 0.5,
+            depthWrite: false,
+            vertexColors: type === 'rainbow',
+        }),
+    );
+    return { line: new THREE.Line(trailGeometry, material), glow, type };
+}
+
+/*
+    MATERIALES DE SKINS (Skins desbloqueables)
 */
-const material = new THREE.MeshPhysicalMaterial({
-    color: 0xd9dde3,          // plateado un poco más apagado
-    metalness: 1,
-    roughness: 0.22,          // satinado: los reflejos se difuminan (menos espejo)
-    clearcoat: 0.35,          // barniz suave, sin el segundo brillo tan marcado
-    clearcoatRoughness: 0.25,
-    envMapIntensity: 1.0,
-});
+const SKINS = {
+    default: new THREE.MeshPhysicalMaterial({
+        color: 0xd9dde3, metalness: 1, roughness: 0.22, clearcoat: 0.35, clearcoatRoughness: 0.25, envMapIntensity: 1.0,
+    }),
+    silver: new THREE.MeshPhysicalMaterial({
+        color: 0xc9d2df, metalness: 1, roughness: 0.14, clearcoat: 0.55, clearcoatRoughness: 0.08, envMapIntensity: 1.1,
+    }),
+    bronze: new THREE.MeshPhysicalMaterial({
+        color: 0xcd7f32, metalness: 0.95, roughness: 0.18, clearcoat: 0.65, clearcoatRoughness: 0.08, envMapIntensity: 1.15,
+    }),
+    gold: new THREE.MeshPhysicalMaterial({
+        color: 0xffd34d, metalness: 1, roughness: 0.13, clearcoat: 0.7, clearcoatRoughness: 0.06, envMapIntensity: 1.35,
+    }),
+    amethyst: new THREE.MeshPhysicalMaterial({
+        color: 0x9b58d1, metalness: 0.65, roughness: 0.12, transmission: 0.35, thickness: 0.65, clearcoat: 0.8, envMapIntensity: 1.1,
+    }),
+    sapphire: new THREE.MeshPhysicalMaterial({
+        color: 0x1767c8, metalness: 0.7, roughness: 0.11, transmission: 0.3, thickness: 0.7, clearcoat: 0.8, envMapIntensity: 1.15,
+    }),
+    emerald: new THREE.MeshPhysicalMaterial({
+        color: 0x40c982, metalness: 0.65, roughness: 0.12, transmission: 0.35, thickness: 0.65, clearcoat: 0.8, envMapIntensity: 1.1,
+    }),
+    diamond: new THREE.MeshPhysicalMaterial({
+        color: 0xc8f7ff, metalness: 0.2, roughness: 0.04, transmission: 0.82, thickness: 1.1, clearcoat: 1, envMapIntensity: 1.7,
+    }),
+};
+
+const SKIN_ACHIEVEMENTS = {
+    silver: 'first_steps',
+    bronze: 'checkpoint_2',
+    amethyst: 'checkpoint_5',
+    gold: 'finish_game',
+    emerald: 'survivor',
+    sapphire: 'combo_max',
+    diamond: 'eco_shooter',
+};
+
+function getValidSkin(skin) {
+    if (!skin || skin === 'default' || !SKINS[skin]) return 'default';
+    const req = SKIN_ACHIEVEMENTS[skin];
+    if (req && !isUnlocked(req)) return 'default';
+    return skin;
+}
 
 // La llama el Game cuando el Renderer tiene listo el entorno de estudio
 export function setBallEnvironment(texture) {
-    material.envMap = texture;
-    material.needsUpdate = true;
+    for (const m of Object.values(SKINS)) {
+        m.envMap = texture;
+        m.needsUpdate = true;
+    }
 }
 
 export default class Ball extends Entity {
-    constructor(physics, position = { x: 0, y: 8, z: 0 }) {
+    constructor(physics, position = { x: 0, y: 8, z: 0 }, skin = 'default', trail = 'none') {
         // Visual
+        const validSkin = getValidSkin(skin);
+        const material = SKINS[validSkin] || SKINS.default;
         const mesh = new THREE.Mesh(geometry, material);
         mesh.castShadow = true;
+        const trailVisual = createTrail(trail);
+        if (trailVisual) mesh.add(trailVisual.line, trailVisual.glow);
 
         // Física
         const body = new CANNON.Body({
@@ -64,6 +135,7 @@ export default class Ball extends Entity {
         body.collisionFilterMask = GROUP_WORLD | GROUP_CRYSTAL | GROUP_CHUNK;
 
         super(mesh, body);
+        this.trail = trailVisual;
 
         // Etiqueta + detección de choque contra el vidrio.
         // El vidrio tiene collisionResponse = true, así que Cannon hace REBOTAR
@@ -105,12 +177,37 @@ export default class Ball extends Entity {
         this.arcAtHit = 0;
         this.hitAge = 0;
         this.age = 0;
+        this.trailPositions = [];
         this.world = physics.world;
         this._antiGravity = () => {
             if (this.flying) body.force.y -= GRAVITY * (1 - BALL_FLIGHT_GRAVITY) * body.mass;
         };
         this.world.addEventListener('preStep', this._antiGravity);
         this.sync();
+    }
+
+    _updateTrail() {
+        if (!this.trail) return;
+        this.trailPositions.unshift(this.mesh.position.clone());
+        this.trailPositions.length = Math.min(this.trailPositions.length, TRAIL_LENGTH);
+        const positions = this.trail.line.geometry.attributes.position.array;
+        const colors = this.trail.line.geometry.attributes.color?.array;
+        for (let i = 0; i < TRAIL_LENGTH; i++) {
+            const point = this.trailPositions[i] || this.trailPositions[this.trailPositions.length - 1];
+            trailPoint.copy(point).sub(this.mesh.position);
+            positions[i * 3] = trailPoint.x;
+            positions[i * 3 + 1] = trailPoint.y;
+            positions[i * 3 + 2] = trailPoint.z;
+            if (colors) {
+                const color = new THREE.Color(TRAIL_COLORS[i % TRAIL_COLORS.length]);
+                colors[i * 3] = color.r;
+                colors[i * 3 + 1] = color.g;
+                colors[i * 3 + 2] = color.b;
+            }
+        }
+        this.trail.line.geometry.attributes.position.needsUpdate = true;
+        this.trail.glow.geometry.attributes.position.needsUpdate = true;
+        if (colors) this.trail.line.geometry.attributes.color.needsUpdate = true;
     }
 
     // Bola disparada: gravedad reducida hasta su primer choque (tiro más plano)
@@ -139,6 +236,7 @@ export default class Ball extends Entity {
     sync() {
         super.sync();
         this.mesh.position.y += this._arcOffset();
+        this._updateTrail();
     }
 
     destroy(renderer, physics) {

@@ -35,6 +35,7 @@ import { ambienceFor } from '../levels.js';
 import { OBSTACLE_NAMES } from '../obstacles/index.js';
 import { getSettings, saveSettings } from '../settings.js';
 import { getRecords } from '../records.js';
+import { ACHIEVEMENTS, getUnlockedIds } from '../achievements.js';
 import { CHECKPOINT_COUNT, FOG_DENSITY_SCALE } from '../constants.js';
 
 // Texto del deslizador de niebla: % respecto a la densidad por defecto
@@ -66,9 +67,18 @@ export default class Screens {
                     <button class="btn btn-primary" data-action="play">▶ Jugar</button>
                     <button class="btn" data-action="play-nolose" title="Bolas infinitas: cada bola cuesta puntos, los bonus dan puntos">∞ Sin perder</button>
                     <button class="btn" data-action="levels">Elegir checkpoint</button>
+                    <button class="btn" data-action="achievements">Logros</button>
                     <button class="btn" data-action="settings">⚙ Configuración</button>
                 </div>
                 <div class="record-card" data-record></div>
+            </div>
+
+            <div class="screen hidden" data-view="achievements">
+                <h2 class="title-sm">Logros y Desbloqueables</h2>
+                <div class="achievements-container">
+                    <div class="achievements-grid" data-achievements-list></div>
+                </div>
+                <button class="btn btn-ghost" data-action="back">← Volver</button>
             </div>
 
             <div class="screen hidden" data-view="results">
@@ -100,6 +110,9 @@ export default class Screens {
                     ${this._slider('sensitivity', 'Sensibilidad', s.sensitivity, 0.5, 2, 0.1)}
                     ${this._sliderDeg('fov', 'Campo de visión', s.fov)}
                     ${this._sliderFog(s.fogScale)}
+                    ${this._rewardSelect('ballSkin', 'Apariencia de bola', s.ballSkin, 'skin')}
+                    ${this._rewardSelect('ballTrail', 'Estela de bola', s.ballTrail, 'trail')}
+                    <button class="btn btn-ghost reward-preview-button" data-action="reward-preview">Visualizar bolas y estelas</button>
                     ${this._toggle('muted', 'Silenciar todo', s.muted)}
                     ${this._toggle('shadows', 'Sombras', s.shadows)}
                 </div>
@@ -113,6 +126,22 @@ export default class Screens {
                     <button class="btn" data-action="to-menu">Salir al menú</button>
                 </div>
                 <p class="subtitle">Pulsa ESC para reanudar</p>
+            </div>
+
+            <div class="screen hidden" data-view="reward-preview">
+                <h2 class="title-sm">Galería de bolas y estelas</h2>
+                <p class="subtitle">Aquí puedes probar visualmente todas las recompensas, aunque aún estén bloqueadas.</p>
+                <div class="reward-gallery">
+                    <div class="reward-gallery-section">
+                        <h3>Apariencias</h3>
+                        <div class="reward-cards">${this._previewCards('skin')}</div>
+                    </div>
+                    <div class="reward-gallery-section">
+                        <h3>Estelas</h3>
+                        <div class="reward-cards">${this._previewCards('trail')}</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost" data-action="settings">← Volver a configuración</button>
             </div>
         `;
 
@@ -181,7 +210,9 @@ export default class Screens {
                 if (action === 'play') this._start(0);
                 else if (action === 'play-nolose') this._showLevels('sinPerder');
                 else if (action === 'levels') this._showLevels('normal');
-                else if (action === 'settings') this._show('settings');
+                else if (action === 'achievements') this._showAchievements();
+                else if (action === 'settings') this._showSettings();
+                else if (action === 'reward-preview') this._show('reward-preview');
                 else if (action === 'back') this._show('home');
                 else if (action === 'home') this.showMenu();
                 else if (action === 'retry') this._start(this.lastStart, this.lastMode);
@@ -225,9 +256,83 @@ export default class Screens {
                 this.audio?.playSfx('ui');
             });
         });
+
+        this.el.querySelectorAll('select[data-setting]').forEach((input) => {
+            input.addEventListener('change', () => saveSettings({ [input.dataset.setting]: input.value }));
+        });
+
+        this.el.querySelectorAll('[data-preview-type]').forEach((card) => {
+            card.addEventListener('click', () => {
+                this.el.querySelectorAll('[data-preview-type]').forEach((item) => item.classList.remove('selected'));
+                card.classList.add('selected');
+                this.audio?.playSfx('ui');
+            });
+        });
+    }
+
+    _showSettings() {
+        this._refreshRewardSelects();
+        this._show('settings');
+    }
+
+    _rewardSelect(key, label, value, type) {
+        const unlocked = new Set(getUnlockedIds());
+        const options = type === 'skin'
+            ? [{ id: 'default', name: 'Predeterminada' }]
+            : [{ id: 'none', name: 'Sin estela' }];
+        for (const achievement of ACHIEVEMENTS) {
+            if (achievement.reward?.type === type && unlocked.has(achievement.id)) {
+                options.push({ id: achievement.reward.id, name: achievement.reward.name });
+            }
+        }
+        const selected = options.some((option) => option.id === value) ? value : options[0].id;
+        return `
+            <label class="setting">
+                <span class="setting-label">${label}</span>
+                <select data-setting="${key}">${options.map((option) => `
+                    <option value="${option.id}" ${option.id === selected ? 'selected' : ''}>${option.name}</option>
+                `).join('')}</select>
+            </label>`;
+    }
+
+    _previewCards(type) {
+        const items = type === 'skin'
+            ? [
+                ['default', 'Predeterminada'], ['silver', 'Plata'], ['bronze', 'Bronce'],
+                ['amethyst', 'Amatista'], ['gold', 'Oro'], ['emerald', 'Esmeralda'],
+                ['sapphire', 'Zafiro'], ['diamond', 'Diamante'],
+            ]
+            : [['none', 'Sin estela'], ['rainbow', 'Arcoíris'], ['ghost', 'Fantasma']];
+        return items.map(([id, name]) => `
+            <button class="reward-card" data-preview-type="${type}" data-preview-id="${id}">
+                <span class="preview-ball preview-${type} preview-${id}"></span>
+                <strong>${name}</strong>
+                <small>Vista previa</small>
+            </button>
+        `).join('');
+    }
+
+    _refreshRewardSelects() {
+        const settings = getSettings();
+        for (const [key, label, type] of [
+            ['ballSkin', 'Apariencia de bola', 'skin'],
+            ['ballTrail', 'Estela de bola', 'trail'],
+        ]) {
+            const old = this.el.querySelector(`select[data-setting="${key}"]`);
+            if (!old) continue;
+            const wrapper = old.closest('.setting');
+            const replacement = document.createRange().createContextualFragment(
+                this._rewardSelect(key, label, settings[key], type),
+            );
+            wrapper.replaceWith(replacement);
+        }
+        this.el.querySelectorAll('select[data-setting]').forEach((input) => {
+            input.addEventListener('change', () => saveSettings({ [input.dataset.setting]: input.value }));
+        });
     }
 
     _show(view) {
+        this.el.classList.remove('hidden');
         this.el.querySelectorAll('.screen').forEach((sc) => {
             sc.classList.toggle('hidden', sc.dataset.view !== view);
         });
@@ -240,6 +345,26 @@ export default class Screens {
             ? `${MODE_LABELS.sinPerder} · elige un checkpoint`
             : 'Elige un checkpoint';
         this._show('levels');
+    }
+
+    _showAchievements() {
+        const unlocked = getUnlockedIds();
+        const list = this.el.querySelector('[data-achievements-list]');
+        list.innerHTML = ACHIEVEMENTS.map((a) => {
+            const isDone = unlocked.includes(a.id);
+            const reward = a.reward ? `<div class="achievement-reward">Recompensa: ${a.reward.name}</div>` : '';
+            return `
+                <div class="achievement-item ${isDone ? 'unlocked' : 'locked'}">
+                    <div class="achievement-status">${isDone ? '✓' : '🔒'}</div>
+                    <div class="achievement-info">
+                        <strong>${a.title}</strong>
+                        <p>${a.desc}</p>
+                        ${isDone ? reward : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        this._show('achievements');
     }
 
     _start(levelIndex, mode = 'normal') {

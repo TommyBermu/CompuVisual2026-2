@@ -98,7 +98,8 @@ export default class Shooter {
         // cámara girada o boca abajo también sale de abajo de la cruz)
         origin.addScaledVector(this.rail.up, -BALL_SPAWN_DROP);
 
-        const ball = new Ball(this.physics, origin);
+        const settings = getSettings();
+        const ball = new Ball(this.physics, origin, settings.ballSkin, settings.ballTrail);
         // La sensibilidad (ajuste del jugador) escala la fuerza del lanzamiento
         const speed = BALL_SPEED * (getSettings().sensitivity || 1);
         const { velocity: v, time } = this._aimVelocity(origin, direction, speed);
@@ -184,8 +185,9 @@ export default class Shooter {
 
     // Explosión de bolas estilo Sonic (animación de muerte): suelta un puñado
     // de bolas delante de la cámara que se "desparraman" suave y caen por gravedad.
-    scatter(count = 14) {
+    scatter(skin = 'default') {
         const camera = this.renderer.camera;
+        const count = 14;
         for (let i = 0; i < count; i++) {
             const origin = camera.position.clone();
             origin.addScaledVector(this.rail.up, -0.5);
@@ -193,7 +195,7 @@ export default class Shooter {
             // pequeña dispersión en la posición para que no nazcan todas en el mismo punto
             origin.x += (Math.random() - 0.5) * 1.2;
             origin.y += (Math.random() - 0.5) * 0.6;
-            const ball = new Ball(this.physics, origin);
+            const ball = new Ball(this.physics, origin, skin, getSettings().ballTrail);
             ball.setInert(); // decorativa: atraviesa cristales, choca con suelo/paredes
             // velocidades suaves: se desparraman, no salen disparadas
             ball.body.velocity.set(

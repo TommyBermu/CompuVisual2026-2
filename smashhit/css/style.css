@@ -171,6 +171,51 @@ body {
     transform: scale(1);
 }
 
+/* --- Notificación de Logros --- */
+.hud-achievement-banner {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: rgba(15, 10, 25, 0.85);
+    border: 2px solid #ffd9a0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 217, 160, 0.3);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 100;
+}
+
+.hud-achievement-banner.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.achievement-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.achievement-text small {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffd9a0;
+    font-weight: 800;
+}
+
+.achievement-text strong {
+    font-size: 1rem;
+    color: #fff;
+    white-space: nowrap;
+}
+
 /* --- Puntuación + combo (arriba a la derecha, bajo la distancia) --- */
 .hud-score {
     position: absolute;
@@ -523,6 +568,70 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
+/* --- Pantalla de Logros --- */
+.achievements-container {
+    width: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.achievement-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+    transition: background 0.2s ease;
+}
+
+.achievement-item.unlocked {
+    background: rgba(255, 217, 160, 0.08);
+    border-color: rgba(255, 217, 160, 0.3);
+}
+
+.achievement-status {
+    font-size: 1.8rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.achievement-info strong {
+    display: block;
+    font-size: 1.05rem;
+    color: #fff;
+}
+
+.achievement-item.unlocked strong {
+    color: #ffd9a0;
+}
+
+.achievement-info p {
+    font-size: 0.85rem;
+    color: #b9b2cf;
+    margin-top: 2px;
+}
+
+.achievement-reward {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #9fffb0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .level-num {
     position: absolute;
     top: 8px;
@@ -581,6 +690,87 @@ body {
     accent-color: #ff7ab0;
     cursor: pointer;
 }
+
+.setting select {
+    min-width: 150px;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 6px;
+    color: #fff;
+    background: rgba(30, 20, 40, 0.8);
+}
+
+.reward-preview-button {
+    justify-self: center;
+    grid-column: 1 / -1;
+}
+
+.reward-gallery {
+    width: min(760px, 94vw);
+    max-height: 62vh;
+    overflow-y: auto;
+}
+
+.reward-gallery-section h3 {
+    margin: 14px 0 10px;
+    color: #ffd9a0;
+}
+
+.reward-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.reward-card {
+    min-height: 112px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.reward-card:hover {
+    transform: translateY(-3px);
+    border-color: #ffd9a0;
+    background: rgba(255, 217, 160, 0.14);
+}
+
+.reward-card.selected {
+    border-color: #ff7ab0;
+    background: rgba(255, 122, 176, 0.18);
+    box-shadow: 0 0 20px rgba(255, 122, 176, 0.25);
+}
+
+.reward-card small {
+    color: #b9b2cf;
+}
+
+.preview-ball {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    box-shadow: inset -7px -8px 10px rgba(0, 0, 0, 0.25), inset 8px 7px 10px rgba(255, 255, 255, 0.8), 0 0 15px rgba(255, 255, 255, 0.45);
+}
+
+.preview-default { background: linear-gradient(135deg, #f8fbff 12%, #9da8b8 48%, #e8edf5 72%); }
+.preview-silver { background: linear-gradient(135deg, #ffffff 12%, #aeb8c7 45%, #f8fbff 68%, #778394); }
+.preview-bronze { background: linear-gradient(135deg, #ffe0ad 10%, #a9501d 46%, #e6944a 70%, #743016); }
+.preview-amethyst { background: linear-gradient(135deg, #f0d7ff 8%, #8f4fc2 45%, #c783ee 70%, #4d236e); }
+.preview-gold { background: linear-gradient(135deg, #fff4ad 8%, #d89a12 45%, #ffe36b 68%, #8c5700); }
+.preview-emerald { background: linear-gradient(135deg, #d6ffe5 8%, #17945c 45%, #64e69d 68%, #075236); }
+.preview-sapphire { background: linear-gradient(135deg, #bde8ff 8%, #1267bd 45%, #52b9ff 68%, #092d78); }
+.preview-diamond { background: linear-gradient(135deg, #ffffff 8%, #80dff4 45%, #d7fbff 68%, #5da8d0); }
+.preview-trail { box-shadow: 0 0 14px #ff7ab0, 16px 0 12px #a98bff, 32px 0 10px #38e8ff; }
+.preview-rainbow { background: conic-gradient(#ff4fd8, #ffd9a0, #5dff8a, #38e8ff, #a98bff, #ff4fd8); }
+.preview-ghost { background: #dffaff; box-shadow: 0 0 8px #fff, 0 0 22px #b9f2ff; }
 
 /* toggle como interruptor */
 .setting-toggle {

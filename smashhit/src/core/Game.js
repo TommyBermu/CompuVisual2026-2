@@ -56,7 +56,8 @@ import Screens, { MODE_LABELS } from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
 import { environmentFor } from '../environments.js';
 import { getSettings, onSettingsChange } from '../settings.js';
-import { submitRun } from '../records.js';
+import { submitRun, getRecords } from '../records.js';
+import { unlock, onAchievementUnlocked } from '../achievements.js';
 import {
     MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS, CHECKPOINT_COUNT,
     NOLOSE_PYRAMID_POINTS, NOLOSE_DIAMOND_POINTS, NOLOSE_POWER_BONUS_POINTS, NOLOSE_SHOT_COST, NOLOSE_CRASH_PENALTY,
@@ -75,6 +76,12 @@ export default class Game {
         this.spawner.shatter.onBreak = (b) => this.audio.playSfx('glass', b);
         this.spawner.shatter.onShardHit = (b) => this.audio.playSfx('shard', b);
         this.hud = new HUD(document.getElementById('hud'));
+
+        // Logros: suscripción para notificaciones y sonido
+        onAchievementUnlocked((a) => {
+            this.hud.showAchievement(a);
+            this.audio.playSfx('powerup', { volume: 0.5 }); // reutilizamos el sonido brillante
+        });
 
         // Puntuación: el Score lleva la cuenta y el HUD la pinta
         this.score = new Score();
@@ -122,6 +129,7 @@ export default class Game {
             // No se dispara en pausa, tras morir ni durante el final del recorrido
             if (!this.started || this.paused || this.finished || this.dead) return;
             const fired = this.shooter.shoot(dir);
+            if (fired > 0) this.totalBallsSpent += fired;
             // "Sin perder": cada bola disparada cuesta puntos (triple bola = 3)
             if (this.noLose && fired > 0) this.score.addPenalty(fired * NOLOSE_SHOT_COST, 'shot');
         };
@@ -148,6 +156,8 @@ export default class Game {
 
         this.entities = []; // entidades dinámicas (bolas, fragmentos...) que necesitan sync()
         this.checkpoint = -1;
+        this.crashesInCheckpoint = 0; // para el logro 'clean_pass'
+        this.totalBallsSpent = 0;     // para el logro 'eco_shooter'
         this.started = false;
         this.finished = false;
         this.paused = false;
@@ -204,6 +214,8 @@ export default class Game {
         this.hud.setBalls(this.noLose ? Infinity : this.shooter.ammo);
         this.hud.hideDamage();
         this.checkpoint = -1;
+        this.crashesInCheckpoint = 0;
+        this.totalBallsSpent = 0;
         this.crashCooldown = 0;
         this.finished = false;
         this.dead = false;
@@ -221,6 +233,23 @@ export default class Game {
     // salvo en el primero de la partida (instantánea).
     _setAmbience(checkpoint) {
         const first = this.checkpoint < 0;
+
+        // Logros de checkpoint
+        if (checkpoint >= 1) unlock('first_steps');
+        if (checkpoint >= 2) unlock('checkpoint_2');
+        if (checkpoint >= 3) unlock('checkpoint_3');
+        if (checkpoint >= 4) unlock('checkpoint_4');
+        if (checkpoint >= 5) unlock('checkpoint_5');
+        if (checkpoint >= 8) unlock('checkpoint_8');
+        if (checkpoint >= 9) unlock('checkpoint_9');
+
+        // Logro: Paso Limpio (checkpoint entero sin chocar)
+        if (!first && this.crashesInCheckpoint === 0) unlock('clean_pass');
+        this.crashesInCheckpoint = 0;
+
+        // Logro: Economía de Guerra (cross cp with >= 35 balls)
+        if (!first && !this.noLose && this.shooter.ammo >= 35) unlock('war_economy');
+
         const amb = ambienceFor(checkpoint);
         this.checkpoint = checkpoint;
         this.rail.setSpeed(amb.speed);
@@ -241,7 +270,7 @@ export default class Game {
         this.powers.clear();
         this.score.setDistance(this.rail.distance); // los últimos metros, antes de cerrar
         // bono final + bolas que quedan (en "Sin perder" son infinitas: no cuentan)
-        this.score.addFinish(this.noLose ? 0 : this.shooter.ammo);
+        this.score.addFinish(this.noLose ? 0 : this.shooter.ammo, this.totalBallsSpent, this.noLose);
         const result = this._saveRun('¡Recorrido completado!');
         this.hud.showBanner('¡Recorrido completado!', 4000);
         this.audio.playSfx('complete');
@@ -259,7 +288,7 @@ export default class Game {
         const result = this._saveRun('¡Sin bolas!'); // deja de sumar ya
         this.hud.showDamage();
         this.hud.showBanner('¡Sin bolas!', 2500);
-        this.shooter.scatter();        // lluvia de bolas
+        this.shooter.scatter(getSettings().ballSkin);        // lluvia de bolas
         this.audio.playSfx('gameover');
         this.audio.stopMusic(2.5);     // la música se apaga mientras cae la lluvia
         setTimeout(() => this._showResults(result), 2800);
@@ -272,8 +301,14 @@ export default class Game {
         this.score.stop();
         const sum = this.score.summary();
         const saved = submitRun({
-            ...sum, startCheckpoint: this.startCheckpoint, checkpoint: this.checkpoint, mode: this.mode,
+            ...sum, gems: this.score.gems, startCheckpoint: this.startCheckpoint, checkpoint: this.checkpoint, mode: this.mode,
         });
+
+        // Logros acumulativos tras guardar la partida
+        const records = getRecords(this.mode);
+        if (records.cumulativeDistance >= 5000) unlock('marathon');
+        if (records.gemsBroken >= 25) unlock('gem_hunter');
+
         return { title, ...sum, checkpoint: this.checkpoint, mode: this.mode, ...saved };
     }
 
@@ -299,7 +334,7 @@ export default class Game {
                 this.shooter.addAmmo(POWER_BONUS_BALLS);
             }
         }
-        this.score.addPowerUp();       // puntos extra (x combo)
+        this.score.addPowerUp(type);       // puntos extra (x combo)
         this.hud.showPower(label, def.color);
         this.audio.playSfx('powerup');
     }
@@ -312,12 +347,19 @@ export default class Game {
     // vuelve a golpear.
     _crashInto(hit) {
         this.score.onCrash();          // el choque rompe el combo (antes de que el game over cierre la puntuación)
+        this.crashesInCheckpoint++;
+
         if (this.noLose) {
             this.score.addPenalty(NOLOSE_CRASH_PENALTY, 'penalty');
             this.hud.showBanner(`-${NOLOSE_CRASH_PENALTY}`, 900);
         } else {
             const penalty = CRASH_PENALTY_BASE;
+            const before = this.shooter.ammo;
             this.shooter.addAmmo(-penalty);
+            // Logro: Por los pelos (sobrevive con < 5 bolas)
+            if (before >= penalty && this.shooter.ammo > 0 && this.shooter.ammo < 5) {
+                unlock('close_call');
+            }
             this.hud.showBanner(`-${penalty}`, 900);
         }
         this.hud.flashDamage();        // destello rojo breve
@@ -399,6 +441,7 @@ export default class Game {
 
         // 5. distancia recorrida = s de la cámara en el recorrido
         if (this.started && !this.dead && !this.finished) {
+            this.score.update();
             const distance = this.rail.distance;
 
             // ¿cruzamos a un nuevo checkpoint? -> nuevo ambiente
