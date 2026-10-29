@@ -59,7 +59,8 @@ proporción pirámide/rombo). Si las bolas llegan a 0, se acaba la partida.
 
 ## Modo "Sin perder"
 
-Botón **∞ Sin perder** del menú principal (empieza desde el checkpoint 0). Las
+Botón **∞ Sin perder** del menú principal: abre el selector de checkpoint
+(el mismo del modo normal) y se empieza en el que elijas. Las
 bolas son infinitas (el HUD muestra ∞ y la etiqueta del modo) y la partida
 solo termina al llegar a la meta. El objetivo es la máxima puntuación:
 

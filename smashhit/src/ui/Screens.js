@@ -26,7 +26,8 @@
                                      y modo ('normal' | 'sinPerder')
 
     Modos: "▶ Jugar" y "Elegir checkpoint" son el modo normal; "∞ Sin perder"
-    arranca desde el inicio el modo de bolas infinitas (objetivo: puntos).
+    abre el mismo selector de checkpoint pero en el modo de bolas infinitas
+    (objetivo: puntos). this.pickMode guarda para qué modo se está eligiendo.
     Cada modo tiene su récord (records.js) y los resultados dicen el modo.
 */
 
@@ -51,6 +52,7 @@ export default class Screens {
         this.onExitToMenu = onExitToMenu;
         this.lastStart = 0; // checkpoint de la última partida (para "Reintentar")
         this.lastMode = 'normal'; // modo de la última partida (para "Reintentar")
+        this.pickMode = 'normal'; // modo con el que arrancan las tarjetas del selector
         this._render();
     }
 
@@ -83,7 +85,7 @@ export default class Screens {
             </div>
 
             <div class="screen hidden" data-view="levels">
-                <h2 class="title-sm">Elige un checkpoint</h2>
+                <h2 class="title-sm" data-levels-title>Elige un checkpoint</h2>
                 <div class="level-grid">
                     ${Array.from({ length: CHECKPOINT_COUNT }, (_, i) => this._levelCard(ambienceFor(i), i)).join('')}
                 </div>
@@ -177,8 +179,8 @@ export default class Screens {
                 const action = btn.dataset.action;
                 this.audio?.playSfx('ui');
                 if (action === 'play') this._start(0);
-                else if (action === 'play-nolose') this._start(0, 'sinPerder');
-                else if (action === 'levels') this._show('levels');
+                else if (action === 'play-nolose') this._showLevels('sinPerder');
+                else if (action === 'levels') this._showLevels('normal');
                 else if (action === 'settings') this._show('settings');
                 else if (action === 'back') this._show('home');
                 else if (action === 'home') this.showMenu();
@@ -192,7 +194,7 @@ export default class Screens {
         this.el.querySelectorAll('.level-card').forEach((card) => {
             card.addEventListener('click', () => {
                 this.audio?.playSfx('ui');
-                this._start(parseInt(card.dataset.level, 10));
+                this._start(parseInt(card.dataset.level, 10), this.pickMode);
             });
         });
 
@@ -229,6 +231,15 @@ export default class Screens {
         this.el.querySelectorAll('.screen').forEach((sc) => {
             sc.classList.toggle('hidden', sc.dataset.view !== view);
         });
+    }
+
+    // Selector de checkpoint para un modo: las tarjetas arrancan en ese modo
+    _showLevels(mode) {
+        this.pickMode = mode;
+        this.el.querySelector('[data-levels-title]').textContent = mode === 'sinPerder'
+            ? `${MODE_LABELS.sinPerder} · elige un checkpoint`
+            : 'Elige un checkpoint';
+        this._show('levels');
     }
 
     _start(levelIndex, mode = 'normal') {
