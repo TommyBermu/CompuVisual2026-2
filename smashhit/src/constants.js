@@ -89,8 +89,9 @@ export const CHECKPOINT_COUNT = 10;   // checkpoints 0..9 (fin del recorrido en 
 export const CRYSTAL_BREAK_REWARD = 3; // +bolas al reventar una PIRÁMIDE apoyada (los cristales normales no dan)
 export const DIAMOND_REWARD = 5;       // +bolas al reventar un ROMBO flotante
 // -bolas al chocar de frente con un cristal: la MISMA en todos los niveles
-// (como en el Smash Hit original, que quita 10)
-export const CRASH_PENALTY_BASE = 10;
+// (como en el Smash Hit original; aquí 5, que con 25 bolas al empezar es lo
+// que ya quitaba el checkpoint 0)
+export const CRASH_PENALTY_BASE = 5;
 // Cuántos más bonus (pirámides + rombos) salen respecto al reparto base del
 // Spawner: 1.2 = un 20 % más de media por tramo (mantiene la proporción
 // pirámide/rombo). Ver Spawner._populate y Spawner._perchBonus.
@@ -106,7 +107,7 @@ export const NOLOSE_POWER_BONUS_POINTS = 500; // gema "+bolas" (en el normal, +1
 // (con triple bola, cada una de las 3) y chocar con vidrio también resta.
 // La puntuación nunca baja de 0.
 export const NOLOSE_SHOT_COST = 10;           // -puntos por bola disparada
-export const NOLOSE_CRASH_PENALTY = 500;      // -puntos al chocar (≈ las 10 bolas del modo normal)
+export const NOLOSE_CRASH_PENALTY = 250;      // -puntos al chocar (≈ las 5 bolas del modo normal)
 
 // --- Puntuación y combo (ver systems/Score.js) ---
 // Puntos = metros recorridos + cristales rotos (x combo) + bonos.
@@ -150,7 +151,7 @@ export const BALL_MAX_FLIGHT_TIME = 0.8;
 export const BALL_VISUAL_ARC = 1;
 export const BALL_ARC_FADE = 0.12; // s en que se desvanece la joroba si choca antes de llegar
 export const BALL_LIFETIME = 6;     // segundos antes de borrar una bola
-export const BALLS_AVAILABLE = 40;  // bolas al empezar (modo normal)
+export const BALLS_AVAILABLE = 25;
 export const AIM_MAX_DISTANCE = 40; // si el clic no apunta a nada, se apunta a esta distancia
 
 // --- Rotura del vidrio (ver utils/fracture.js y entities/Crystal.js) ---

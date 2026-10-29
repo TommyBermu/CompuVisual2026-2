@@ -50,8 +50,8 @@ Asteroids del repo).
 
 ## Bolas, choques y bonus (modo normal)
 
-Las bolas son munición y vida: se empieza con `BALLS_AVAILABLE` (40) y cada
-disparo cuesta 1. Chocar de frente con vidrio quita `CRASH_PENALTY_BASE` (10)
+Las bolas son munición y vida: se empieza con `BALLS_AVAILABLE` (25) y cada
+disparo cuesta 1. Chocar de frente con vidrio quita `CRASH_PENALTY_BASE` (5)
 bolas, **igual en todos los niveles** (como en el Smash Hit de móvil). Los
 bonus dan bolas: pirámide apoyada +3, rombo flotante +5. Cuántos salen se
 ajusta con `BONUS_SPAWN_MULT` (1.2 = un 20 % más que el reparto base, misma
@@ -69,7 +69,7 @@ solo termina al llegar a la meta. El objetivo es la máxima puntuación:
 | Rombo (en el normal, +5 bolas) | +`NOLOSE_DIAMOND_POINTS` (250) |
 | Gema "+bolas" (en el normal, +10 bolas) | +`NOLOSE_POWER_BONUS_POINTS` (500) |
 | Cada bola disparada (triple bola = 3) | −`NOLOSE_SHOT_COST` (10) |
-| Chocar con vidrio | −`NOLOSE_CRASH_PENALTY` (500) |
+| Chocar con vidrio | −`NOLOSE_CRASH_PENALTY` (250) |
 
 El resto de la puntuación (distancia, cristales x combo, checkpoints, final)
 funciona igual que en el modo normal, salvo el extra por bolas sobrantes. La
