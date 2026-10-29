@@ -48,6 +48,35 @@ Asteroids del repo).
 > pausa y se apagan al morir, terminar o salir al menú. Ajustes en
 > `src/constants.js` (bloque `POWER_*`).
 
+## Bolas, choques y bonus (modo normal)
+
+Las bolas son munición y vida: se empieza con `BALLS_AVAILABLE` (40) y cada
+disparo cuesta 1. Chocar de frente con vidrio quita `CRASH_PENALTY_BASE` (10)
+bolas, **igual en todos los niveles** (como en el Smash Hit de móvil). Los
+bonus dan bolas: pirámide apoyada +3, rombo flotante +5. Cuántos salen se
+ajusta con `BONUS_SPAWN_MULT` (1.2 = un 20 % más que el reparto base, misma
+proporción pirámide/rombo). Si las bolas llegan a 0, se acaba la partida.
+
+## Modo "Sin perder"
+
+Botón **∞ Sin perder** del menú principal (empieza desde el checkpoint 0). Las
+bolas son infinitas (el HUD muestra ∞ y la etiqueta del modo) y la partida
+solo termina al llegar a la meta. El objetivo es la máxima puntuación:
+
+| Qué | Puntos (`src/constants.js`, bloque `NOLOSE_*`) |
+|---|---|
+| Pirámide (en el normal, +3 bolas) | +`NOLOSE_PYRAMID_POINTS` (150) |
+| Rombo (en el normal, +5 bolas) | +`NOLOSE_DIAMOND_POINTS` (250) |
+| Gema "+bolas" (en el normal, +10 bolas) | +`NOLOSE_POWER_BONUS_POINTS` (500) |
+| Cada bola disparada (triple bola = 3) | −`NOLOSE_SHOT_COST` (10) |
+| Chocar con vidrio | −`NOLOSE_CRASH_PENALTY` (500) |
+
+El resto de la puntuación (distancia, cristales x combo, checkpoints, final)
+funciona igual que en el modo normal, salvo el extra por bolas sobrantes. La
+puntuación nunca baja de 0. La gema de "Bolas infinitas" no sale en este
+modo. Su récord se guarda aparte (`smashhit.records.sinPerder`) y la pantalla
+de resultados indica el modo.
+
 ## Puntuación, combo y récord
 
 La puntuación la lleva `src/systems/Score.js` (solo cuenta; el HUD la pinta y
@@ -74,7 +103,8 @@ insignia "xN" y una barrita de progreso hacia el siguiente multiplicador; al
 sumar sale un "+N" pequeño junto al marcador (no en el centro, para no tapar
 la mira). En pausa, tras morir o tras terminar no se suma nada.
 
-**Récord** (`src/records.js`, localStorage `smashhit.records`, con try/catch
+**Récord** (`src/records.js`, localStorage `smashhit.records`, y
+`smashhit.records.sinPerder` para el modo "Sin perder", con try/catch
 como `settings.js`): mejor puntuación, más metros recorridos en una partida y
 checkpoint más lejano alcanzado empezando desde el 0. Empezar desde un
 checkpoint avanzado **sí cuenta** para puntuación y distancia, porque solo
@@ -141,7 +171,17 @@ API: `playSfx(name, opts)`, `startMusic(level|'menu')`, `setLevel(n)`,
 Necesita un servidor local porque usa módulos ES (abrir el `index.html` con
 `file://` no funciona).
 
-### Opción A — con Node
+### Opción A — servidor del proyecto (Express)
+
+Desde la carpeta `smashhit/`:
+
+```bash
+npm install && npm start
+```
+
+Queda en http://localhost:1024 (otro puerto con la variable `PORT`).
+
+### Opción B — `npx serve`
 
 ```bash
 npx serve
@@ -149,7 +189,7 @@ npx serve
 
 Normalmente queda en http://localhost:3000
 
-### Opción B — con Python
+### Opción C — con Python
 
 ```bash
 python3 -m http.server 8000

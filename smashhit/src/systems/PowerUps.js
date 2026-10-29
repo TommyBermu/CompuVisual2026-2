@@ -7,7 +7,10 @@
         triple    Triple bola: cada disparo lanza 3 bolas en abanico (cuesta 1).
         infinite  Bolas infinitas: disparar no gasta bolas.
         slowmo    Cámara lenta: todo el juego va a POWER_SLOWMO_SCALE.
-        bonus     +POWER_BONUS_BALLS bolas al instante (no dura).
+        bonus     +POWER_BONUS_BALLS bolas al instante (no dura). En el modo
+                  "Sin perder" da NOLOSE_POWER_BONUS_POINTS puntos (lo hace el Game).
+
+    En el modo "Sin perder" no sale 'infinite' (randomPower(['infinite'])).
 
     Los que duran llevan un temporizador (segundos de tiempo REAL, así la
     cámara lenta no alarga su propia duración). Pueden estar varios activos a
@@ -37,9 +40,10 @@ export const POWERS = {
     bonus: { name: `+${POWER_BONUS_BALLS} bolas`, color: '#5dff8a', duration: 0 },
 };
 
-// Elige un tipo de poder al azar según POWER_WEIGHTS
-export function randomPower() {
-    const entries = Object.entries(POWER_WEIGHTS);
+// Elige un tipo de poder al azar según POWER_WEIGHTS, sin los de `exclude`
+// (p. ej. el modo "Sin perder" quita 'infinite': ahí las bolas ya son infinitas)
+export function randomPower(exclude = []) {
+    const entries = Object.entries(POWER_WEIGHTS).filter(([type]) => !exclude.includes(type));
     let r = Math.random() * entries.reduce((sum, [, w]) => sum + w, 0);
     for (const [type, w] of entries) {
         r -= w;

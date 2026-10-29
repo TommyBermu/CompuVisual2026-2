@@ -15,9 +15,16 @@
     velocidad) y el pasillo gira. Las bolas son
     munición Y vida: disparar cuesta 1; reventar un bonus con una bola da
     bolas: pirámide apoyada +3, rombo flotante +5 (los cristales normales no dan);
-    chocar contra vidrio sólido resta (5 + N) bolas (N = checkpoint) y lo rompe
-    donde lo tocó. Si las bolas llegan a 0 -> game over. Llegar al final
-    (TOTAL_LENGTH) completa el recorrido.
+    chocar contra vidrio sólido resta CRASH_PENALTY_BASE bolas (las mismas en
+    todos los niveles, como en el original) y lo rompe donde lo tocó. Si las
+    bolas llegan a 0 -> game over. Llegar al final (TOTAL_LENGTH) completa el
+    recorrido.
+
+    Modo "Sin perder" (mode = 'sinPerder', desde el menú): bolas infinitas y
+    nunca hay game over; solo termina en la meta. Lo que daba bolas da puntos
+    (NOLOSE_*_POINTS), cada bola disparada resta NOLOSE_SHOT_COST y chocar
+    resta NOLOSE_CRASH_PENALTY (la puntuación no baja de 0). No sale la gema
+    de bolas infinitas. Su récord se guarda aparte (records.js).
     Puntuación y combo en systems/Score.js; al morir / terminar / salir se
     guarda el récord (records.js) y se enseña la pantalla de resultados.
     ESC pausa/reanuda. Clic/toque dispara una bola (InputManager -> Shooter).
@@ -45,12 +52,15 @@ import Shooter from '../systems/Shooter.js';
 import PowerUps from '../systems/PowerUps.js';
 import Score from '../systems/Score.js';
 import HUD from '../ui/HUD.js';
-import Screens from '../ui/Screens.js';
+import Screens, { MODE_LABELS } from '../ui/Screens.js';
 import { checkpointAt, checkpointStart, ambienceFor, TOTAL_LENGTH } from '../levels.js';
 import { environmentFor } from '../environments.js';
 import { getSettings, onSettingsChange } from '../settings.js';
 import { submitRun } from '../records.js';
-import { MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS } from '../constants.js';
+import {
+    MAX_DELTA, CRASH_PENALTY_BASE, CRYSTAL_BREAK_REWARD, CRASH_COOLDOWN, POWER_BONUS_BALLS, CHECKPOINT_COUNT,
+    NOLOSE_PYRAMID_POINTS, NOLOSE_DIAMOND_POINTS, NOLOSE_POWER_BONUS_POINTS, NOLOSE_SHOT_COST, NOLOSE_CRASH_PENALTY,
+} from '../constants.js';
 export default class Game {
     constructor(container) {
         this.renderer = new Renderer(container);
@@ -71,23 +81,33 @@ export default class Game {
         this.score.onChange = (state) => this.hud.setScore(state);
         this.score.onGain = (points, kind, mult) => this.hud.popScore(points, kind, mult);
         this.startCheckpoint = 0;
+        this.mode = 'normal'; // 'normal' | 'sinPerder' (lo elige el menú)
 
         this.shooter = new Shooter(this.renderer, this.physics, this.rail, this.audio);
         this.shooter.getAimTargets = () => this.spawner.aimTargets(); // para apuntar donde está la mira
         this.shooter.onAmmoChange = (n) => {
-            this.hud.setBalls(n);
-            // Las bolas son vida: si se acaban durante la partida, game over.
-            if (this.started && !this.dead && n <= 0) this._gameOver();
+            this.hud.setBalls(this.noLose ? Infinity : n);
+            // Las bolas son vida: si se acaban durante la partida, game over
+            // (en "Sin perder" no se acaban nunca).
+            if (this.started && !this.dead && !this.noLose && n <= 0) this._gameOver();
         };
         this.shooter.onMiss = () => this.score.onMiss(); // tiro que no tocó vidrio: pierde el combo
 
         // Romper un cristal normal suma a la puntuación (pero NO da bolas)
         this.spawner.onCrystalBroken = () => this.score.addHit();
-        // Reventar un bonus da bolas: pirámide apoyada +3, rombo flotante +5
+        // Reventar un bonus da bolas: pirámide apoyada +3, rombo flotante +5.
+        // En "Sin perder" da puntos. Nada durante el final del recorrido.
         this.spawner.onBonusBroken = (bonus) => {
-            const n = bonus?.reward ?? CRYSTAL_BREAK_REWARD;
-            this.shooter.addAmmo(n);
-            this.hud.showBanner(`+${n}`, 700);
+            if (!this.started || this.dead || this.finished) return;
+            if (this.noLose) {
+                const pts = bonus?.kind === 'diamond' ? NOLOSE_DIAMOND_POINTS : NOLOSE_PYRAMID_POINTS;
+                this.score.addBonusPoints(pts);
+                this.hud.showBanner(`+${pts}`, 700);
+            } else {
+                const n = bonus?.reward ?? CRYSTAL_BREAK_REWARD;
+                this.shooter.addAmmo(n);
+                this.hud.showBanner(`+${n}`, 700);
+            }
             this.score.addHit();
         };
 
@@ -99,13 +119,17 @@ export default class Game {
 
         this.input = new InputManager(this.renderer.renderer.domElement, this.renderer.camera);
         this.input.onShoot = (dir) => {
-            if (this.started && !this.paused) this.shooter.shoot(dir);
+            // No se dispara en pausa, tras morir ni durante el final del recorrido
+            if (!this.started || this.paused || this.finished || this.dead) return;
+            const fired = this.shooter.shoot(dir);
+            // "Sin perder": cada bola disparada cuesta puntos (triple bola = 3)
+            if (this.noLose && fired > 0) this.score.addPenalty(fired * NOLOSE_SHOT_COST, 'shot');
         };
 
         // Menú: al elegir un nivel, empieza el recorrido ahí; pausa gestiona ESC
         this.screens = new Screens(document.getElementById('menu'), {
             audio: this.audio,
-            onStart: (levelIndex) => this._begin(levelIndex),
+            onStart: (levelIndex, mode) => this._begin(levelIndex, mode),
             onResume: () => this._setPaused(false),
             onExitToMenu: () => this._exitToMenu(),
         });
@@ -154,8 +178,22 @@ export default class Game {
         };
     }
 
-    // Empezar el recorrido desde el checkpoint elegido en el menú.
-    _begin(startCheckpoint) {
+    // ¿Partida en modo "Sin perder"?
+    get noLose() {
+        return this.mode === 'sinPerder';
+    }
+
+    // Fija el modo de juego (antes de limpiar/generar: el Spawner y el Shooter lo usan)
+    _setMode(mode) {
+        this.mode = mode === 'sinPerder' ? 'sinPerder' : 'normal';
+        this.shooter.infiniteAmmo = this.noLose;
+        this.spawner.excludePowers = this.noLose ? ['infinite'] : []; // ahí ya son infinitas
+        this.hud.setMode(this.noLose ? MODE_LABELS.sinPerder : '');
+    }
+
+    // Empezar el recorrido desde el checkpoint elegido en el menú, en ese modo.
+    _begin(startCheckpoint, mode = 'normal') {
+        this._setMode(mode);
         const startDistance = checkpointStart(startCheckpoint);
         this.spawner.clear(startDistance); // empezar con pasillo limpio desde ahí
         this.track.reset();                // cada partida tiene curvas distintas
@@ -163,7 +201,7 @@ export default class Game {
         this.shooter.clear();
         this.powers.clear();
         this.rail.resume();             // reactivar el avance (si veníamos de morir/pausa)
-        this.hud.setBalls(this.shooter.ammo);
+        this.hud.setBalls(this.noLose ? Infinity : this.shooter.ammo);
         this.hud.hideDamage();
         this.checkpoint = -1;
         this.crashCooldown = 0;
@@ -188,7 +226,7 @@ export default class Game {
         this.rail.setSpeed(amb.speed);
         this.rail.setFx(environmentFor(amb).camera, first); // boca abajo / dar vueltas
         this.renderer.setTheme(amb.colors, amb.sunIntensity, first ? 0 : 2, environmentFor(amb));
-        this.hud.setLevel(checkpoint, 9); // muestra "Checkpoint N/9"
+        this.hud.setLevel(checkpoint, CHECKPOINT_COUNT - 1); // muestra "Checkpoint N/9"
         this.hud.showBanner(amb.name);
         if (!first) this.score.addCheckpoint(); // bono por llegar (no por el de salida)
         // Música del nuevo checkpoint (crossfade) + campanas en su tonalidad
@@ -202,7 +240,8 @@ export default class Game {
         this.rail.pause();
         this.powers.clear();
         this.score.setDistance(this.rail.distance); // los últimos metros, antes de cerrar
-        this.score.addFinish(this.shooter.ammo); // bono final + bolas que quedan
+        // bono final + bolas que quedan (en "Sin perder" son infinitas: no cuentan)
+        this.score.addFinish(this.noLose ? 0 : this.shooter.ammo);
         const result = this._saveRun('¡Recorrido completado!');
         this.hud.showBanner('¡Recorrido completado!', 4000);
         this.audio.playSfx('complete');
@@ -232,8 +271,10 @@ export default class Game {
         if (!this.score.active) return null;
         this.score.stop();
         const sum = this.score.summary();
-        const saved = submitRun({ ...sum, startCheckpoint: this.startCheckpoint, checkpoint: this.checkpoint });
-        return { title, ...sum, checkpoint: this.checkpoint, ...saved };
+        const saved = submitRun({
+            ...sum, startCheckpoint: this.startCheckpoint, checkpoint: this.checkpoint, mode: this.mode,
+        });
+        return { title, ...sum, checkpoint: this.checkpoint, mode: this.mode, ...saved };
     }
 
     // Tras la animación de fin: limpia la escena (como salir al menú) y
@@ -243,26 +284,42 @@ export default class Game {
         if (result) this.screens.showResults(result);
     }
 
-    // Una bola rompió un cristal de poder: activarlo (+bolas al instante si es el bonus)
+    // Una bola rompió un cristal de poder: activarlo (+bolas al instante si es
+    // el bonus; en "Sin perder", +puntos)
     _activatePower(type) {
         if (!this.started || this.dead || this.finished) return;
         const def = this.powers.activate(type);
         if (!def) return;
-        if (type === 'bonus') this.shooter.addAmmo(POWER_BONUS_BALLS);
+        let label = def.duration ? `¡${def.name}!` : def.name;
+        if (type === 'bonus') {
+            if (this.noLose) {
+                this.score.addBonusPoints(NOLOSE_POWER_BONUS_POINTS);
+                label = `+${NOLOSE_POWER_BONUS_POINTS} puntos`;
+            } else {
+                this.shooter.addAmmo(POWER_BONUS_BALLS);
+            }
+        }
         this.score.addPowerUp();       // puntos extra (x combo)
-        this.hud.showPower(def.duration ? `¡${def.name}!` : def.name, def.color);
+        this.hud.showPower(label, def.color);
         this.audio.playSfx('powerup');
     }
 
     // El jugador chocó con vidrio sólido (un trozo de panel o un bloque que
-    // cae): pierde (5 + N) bolas y rompe el vidrio donde lo tocó. Después hay
-    // un pequeño tiempo de gracia; pasado ese tiempo, cualquier otro trozo
-    // sólido que se cruce (p.ej. un bloque que rebotó) vuelve a golpear.
+    // cae): pierde CRASH_PENALTY_BASE bolas (igual en todos los niveles; en
+    // "Sin perder", NOLOSE_CRASH_PENALTY puntos) y rompe el vidrio donde lo
+    // tocó. Después hay un pequeño tiempo de gracia; pasado ese tiempo,
+    // cualquier otro trozo sólido que se cruce (p.ej. un bloque que rebotó)
+    // vuelve a golpear.
     _crashInto(hit) {
-        const penalty = CRASH_PENALTY_BASE + this.checkpoint; // N = checkpoint actual
         this.score.onCrash();          // el choque rompe el combo (antes de que el game over cierre la puntuación)
-        this.shooter.addAmmo(-penalty);
-        this.hud.showBanner(`-${penalty}`, 900);
+        if (this.noLose) {
+            this.score.addPenalty(NOLOSE_CRASH_PENALTY, 'penalty');
+            this.hud.showBanner(`-${NOLOSE_CRASH_PENALTY}`, 900);
+        } else {
+            const penalty = CRASH_PENALTY_BASE;
+            this.shooter.addAmmo(-penalty);
+            this.hud.showBanner(`-${penalty}`, 900);
+        }
         this.hud.flashDamage();        // destello rojo breve
         this.audio.playSfx('crash');
         this.spawner.breakByCamera(hit, this.rail.velocity);
@@ -290,6 +347,7 @@ export default class Game {
     // Salir de la partida y volver al menú principal
     _exitToMenu() {
         this._saveRun('');   // salir desde la pausa también guarda el récord (no-op si ya se guardó)
+        this._setMode('normal'); // el fondo del menú, como siempre
         this.paused = false;
         this.started = false;
         this.finished = false;

@@ -33,12 +33,13 @@ import Pyramid from '../entities/Pyramid.js';
 import Shatter from './Shatter.js';
 import { createObstacles, createProps } from '../obstacles/index.js';
 import PowerUp from '../obstacles/PowerUp.js';
+import { randomPower } from './PowerUps.js';
 import { checkpointAt, LEVELS } from '../levels.js';
 import { environmentFor, needsPortal, portalHeight, bottomY } from '../environments.js';
 import {
     SEGMENT_LENGTH, SPAWN_AHEAD, DESPAWN_BEHIND, CRYSTAL_WALL_CHANCE,
     CAMERA_RADIUS, CRASH_BREAK_RADIUS, POWER_CHANCE, POWER_MIN_GAP,
-    TUNNEL_WIDTH, WALL_THICKNESS,
+    TUNNEL_WIDTH, WALL_THICKNESS, BONUS_SPAWN_MULT,
 } from '../constants.js';
 
 // Ningún obstáculo se extiende más de esto (en s) desde su centro (descarte rápido)
@@ -57,6 +58,16 @@ const POWER_GAP_AT = 17.5;
 const PYRAMID_CHANCE = 0.75;
 // Fracción de los rombos flotantes (+5) que se generan de verdad (1/4: son raros)
 const DIAMOND_KEEP = 0.25;
+// Probabilidad base de posar una pirámide sobre un obstáculo con sitios libres
+const PERCH_CHANCE = 0.5;
+
+// n * BONUS_SPAWN_MULT redondeado al azar (1.2 -> 1, o 2 el 20 % de las
+// veces): así la MEDIA de bonus sube justo en ese factor
+function scaledCount(n) {
+    const x = n * BONUS_SPAWN_MULT;
+    const whole = Math.floor(x);
+    return whole + (Math.random() < x - whole ? 1 : 0);
+}
 
 export default class Spawner {
     constructor(renderer, physics, track) {
@@ -70,6 +81,7 @@ export default class Spawner {
         this.onCrystalBroken = null; // callback(panel) cuando una bola rompe un cristal normal (puntos)
         this.onBonusBroken = null;   // callback(bonus) cuando una bola revienta una pirámide/rombo (bolas)
         this.onPowerCrystalBroken = null; // callback(tipo, panel) cuando una bola rompe un cristal de poder
+        this.excludePowers = [];          // poderes que no salen (el Game lo fija según el modo)
         this._startAt(0);
     }
 
@@ -209,8 +221,10 @@ export default class Spawner {
         // Bonus de bolas a los lados del camino, fuera del paso de la cámara:
         //  - con suelo, a veces una PIRÁMIDE apoyada en él (+3)
         //  - si no, un ROMBO flotando (+5); sin suelo, muchas veces por debajo de la vista
+        // El número de candidatos se escala con BONUS_SPAWN_MULT (más bonus de
+        // media sin cambiar la proporción pirámide/rombo)
         if (s0 + 2 > this.freeUntilS - 25 && Math.random() < PYRAMID_CHANCE) {
-            const n = Math.random() < 0.35 ? 2 : 1;
+            const n = scaledCount(Math.random() < 0.35 ? 2 : 1);
             for (let k = 0; k < n; k++) {
                 const s = s0 + 2 + Math.random() * (SEGMENT_LENGTH - 4);
                 const frame = this.track.frameAt(s);
@@ -233,9 +247,10 @@ export default class Spawner {
     }
 
     // A veces se posa una pirámide (+3) en un sitio libre del obstáculo (bordes
-    // de su base flotante, pedestales vacíos): apoyada en algo que no es cristal
+    // de su base flotante, pedestales vacíos): apoyada en algo que no es cristal.
+    // La probabilidad también se escala con BONUS_SPAWN_MULT.
     _perchBonus(ob, level) {
-        if (!ob.perches.length || Math.random() > 0.5) return;
+        if (!ob.perches.length || Math.random() > Math.min(1, PERCH_CHANCE * BONUS_SPAWN_MULT)) return;
         const p = ob.perches[Math.floor(Math.random() * ob.perches.length)];
         this._addBonus(new Pyramid(ob.frame, level, p.x, p.y, { z: p.z, kind: 'pyramid' }));
     }
@@ -250,7 +265,7 @@ export default class Spawner {
         const p = POWER_CHANCE[0] + (POWER_CHANCE[1] - POWER_CHANCE[0]) * k;
         if (Math.random() >= p) return null;
         this.lastPowerS = s;
-        return new PowerUp(this.track.frameAt(s), level);
+        return new PowerUp(this.track.frameAt(s), level, randomPower(this.excludePowers));
     }
 
     // ¿La cámara (una esfera de radio CAMERA_RADIUS) toca algo sólido?

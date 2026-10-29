@@ -54,12 +54,15 @@ export default class Shooter {
         this.onMiss = null;         // callback: un tiro no tocó vidrio (rompe el combo)
         this.getAimTargets = null;  // () => objetos 3D contra los que apuntar (lo asigna el Game)
         this.powers = null;         // PowerUps activos (triple bola, bolas infinitas); lo asigna el Game
+        this.infiniteAmmo = false;  // modo "Sin perder": disparar nunca gasta bolas (lo fija el Game)
         this.raycaster = new THREE.Raycaster();
     }
 
+    // Dispara hacia `direction`. Devuelve cuántas bolas salieron (0 si no
+    // quedaban): con triple bola son 3 (el modo "Sin perder" cobra por bola).
     shoot(direction) {
-        const free = this.powers ? this.powers.freeShots : false;
-        if (this.ammo <= 0 && !free) return false;
+        const free = this.infiniteAmmo || (this.powers ? this.powers.freeShots : false);
+        if (this.ammo <= 0 && !free) return 0;
 
         // Triple bola: la central + las laterales en abanico (un solo coste).
         // Todas comparten la ráfaga: el disparo falla solo si fallan todas.
@@ -69,7 +72,7 @@ export default class Shooter {
 
         if (this.audio) this.audio.playSfx('shoot');
         if (!free) this.setAmmo(this.ammo - 1);
-        return true;
+        return dirs.length;
     }
 
     // Direcciones de un disparo: 1, o `count` en abanico horizontal centrado

@@ -12,6 +12,9 @@
         - Power-up:   SCORE_POWERUP x combo (extra; lo llama Game._activatePower).
         - Checkpoint: SCORE_CHECKPOINT al cruzar a un checkpoint nuevo.
         - Final:      SCORE_FINISH + SCORE_FINISH_PER_BALL por bola que quede.
+        - Modo "Sin perder": addBonusPoints() (lo que en el normal da bolas)
+                      y addPenalty() (cada bola disparada, choques). Nunca
+                      deja la puntuación por debajo de 0.
 
     Combo: cada acierto seguido suma 1 a la racha; cada COMBO_STEP aciertos el
     multiplicador sube en 1 (x1 -> x2 -> ... -> xCOMBO_MAX). Chocar con vidrio
@@ -27,6 +30,7 @@
                            hacia el siguiente multiplicador)
         onGain(points, kind, multiplier) -> para los "+N" del HUD
                            kind: 'crystal' | 'powerup' | 'checkpoint' | 'finish' | 'combo'
+                                 | 'bonus' | 'shot' | 'penalty' (points < 0 en los dos últimos)
 */
 
 import {
@@ -120,6 +124,23 @@ export default class Score {
     addFinish(ballsLeft = 0) {
         if (!this.active) return 0;
         return this._gain(SCORE_FINISH + SCORE_FINISH_PER_BALL * Math.max(0, ballsLeft), 'finish', 1);
+    }
+
+    // Modo "Sin perder": puntos fijos (sin combo) por lo que en el normal da
+    // bolas (pirámide, rombo, gema +bolas)
+    addBonusPoints(points) {
+        if (!this.active || points <= 0) return 0;
+        return this._gain(points, 'bonus', 1);
+    }
+
+    // Modo "Sin perder": resta puntos (disparo, choque). La puntuación nunca
+    // baja de 0: se quita como mucho lo que haya. Devuelve lo que se restó.
+    // kind: 'shot' | 'penalty' (color del "-N" en el HUD)
+    addPenalty(points, kind = 'penalty') {
+        if (!this.active) return 0;
+        const lost = Math.min(points, this.score);
+        if (lost <= 0) return 0;
+        return -this._gain(-lost, kind, 1);
     }
 
     // Chocó con vidrio: se pierde el combo

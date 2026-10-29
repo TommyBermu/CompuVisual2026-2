@@ -22,7 +22,12 @@
         showMenu()  -> muestra el menú principal (con el récord al día)
         showResults(result) -> pantalla de fin de partida (ver _fillResults)
         hide()      -> oculta el overlay (al empezar a jugar)
-        onStart(levelIndex) -> callback que arranca el juego en ese nivel
+        onStart(levelIndex, mode) -> callback que arranca el juego en ese nivel
+                                     y modo ('normal' | 'sinPerder')
+
+    Modos: "▶ Jugar" y "Elegir checkpoint" son el modo normal; "∞ Sin perder"
+    arranca desde el inicio el modo de bolas infinitas (objetivo: puntos).
+    Cada modo tiene su récord (records.js) y los resultados dicen el modo.
 */
 
 import { ambienceFor } from '../levels.js';
@@ -34,6 +39,9 @@ import { CHECKPOINT_COUNT, FOG_DENSITY_SCALE } from '../constants.js';
 // Texto del deslizador de niebla: % respecto a la densidad por defecto
 const fogLabel = (v) => `${Math.round((v / FOG_DENSITY_SCALE) * 100)}%`;
 
+// Nombre de cada modo de juego (menú, resultados, HUD)
+export const MODE_LABELS = { normal: 'Modo normal', sinPerder: 'Sin perder' };
+
 export default class Screens {
     constructor(menuEl, { audio, onStart, onResume, onExitToMenu }) {
         this.el = menuEl;
@@ -42,6 +50,7 @@ export default class Screens {
         this.onResume = onResume;
         this.onExitToMenu = onExitToMenu;
         this.lastStart = 0; // checkpoint de la última partida (para "Reintentar")
+        this.lastMode = 'normal'; // modo de la última partida (para "Reintentar")
         this._render();
     }
 
@@ -53,6 +62,7 @@ export default class Screens {
                 <p class="subtitle">un pasillo lineal de color · rompe cristales para no quedarte sin bolas</p>
                 <div class="menu-buttons">
                     <button class="btn btn-primary" data-action="play">▶ Jugar</button>
+                    <button class="btn" data-action="play-nolose" title="Bolas infinitas: cada bola cuesta puntos, los bonus dan puntos">∞ Sin perder</button>
                     <button class="btn" data-action="levels">Elegir checkpoint</button>
                     <button class="btn" data-action="settings">⚙ Configuración</button>
                 </div>
@@ -61,6 +71,7 @@ export default class Screens {
 
             <div class="screen hidden" data-view="results">
                 <h2 class="title-sm" data-res="title"></h2>
+                <div class="result-mode" data-res="mode"></div>
                 <div class="new-record hidden" data-res="new">¡Nuevo récord!</div>
                 <div class="result-score" data-res="score"></div>
                 <div class="result-stats" data-res="stats"></div>
@@ -166,11 +177,12 @@ export default class Screens {
                 const action = btn.dataset.action;
                 this.audio?.playSfx('ui');
                 if (action === 'play') this._start(0);
+                else if (action === 'play-nolose') this._start(0, 'sinPerder');
                 else if (action === 'levels') this._show('levels');
                 else if (action === 'settings') this._show('settings');
                 else if (action === 'back') this._show('home');
                 else if (action === 'home') this.showMenu();
-                else if (action === 'retry') this._start(this.lastStart);
+                else if (action === 'retry') this._start(this.lastStart, this.lastMode);
                 else if (action === 'resume') this.onResume?.();
                 else if (action === 'to-menu') this.onExitToMenu?.();
             });
@@ -219,10 +231,11 @@ export default class Screens {
         });
     }
 
-    _start(levelIndex) {
+    _start(levelIndex, mode = 'normal') {
         this.lastStart = levelIndex;
+        this.lastMode = mode;
         this.hide();
-        this.onStart(levelIndex);
+        this.onStart(levelIndex, mode);
     }
 
     showMenu() {
@@ -231,27 +244,32 @@ export default class Screens {
         this._show('home');
     }
 
-    // Tarjeta del récord en el menú principal
+    // Tarjeta del récord en el menú principal (el del modo "Sin perder", aparte)
     _fillRecord() {
-        const r = getRecords();
+        const r = getRecords('normal');
         const card = this.el.querySelector('[data-record]');
+        const np = getRecords('sinPerder');
+        const nolose = np.score > 0
+            ? `<span class="record-extra">${MODE_LABELS.sinPerder}: ${fmt(np.score)}</span>`
+            : '';
         if (r.score <= 0) {
-            card.innerHTML = `<span class="record-label">Récord</span><span class="record-empty">aún sin récord: ¡juega una partida!</span>`;
+            card.innerHTML = `<span class="record-label">Récord</span><span class="record-empty">aún sin récord: ¡juega una partida!</span>${nolose}`;
             return;
         }
         const reach = r.checkpoint >= 1 ? ` · checkpoint ${r.checkpoint} desde el inicio` : '';
         card.innerHTML = `
             <span class="record-label">Récord</span>
             <span class="record-score">${fmt(r.score)}</span>
-            <span class="record-extra">mejor recorrido ${fmt(r.distance)} m${reach}</span>`;
+            <span class="record-extra">mejor recorrido ${fmt(r.distance)} m${reach}</span>${nolose}`;
     }
 
     /*
         Fin de partida. result = {
             title,                              // '¡Sin bolas!' / '¡Recorrido completado!'
             score, distance, crystals, bestMultiplier, checkpoint,
-            newScore,                           // ¿batió el récord de puntuación?
-            records,                            // récords ya actualizados
+            mode,                               // 'normal' | 'sinPerder'
+            newScore,                           // ¿batió el récord de puntuación (de su modo)?
+            records,                            // récords de ese modo ya actualizados
         }
     */
     showResults(result) {
@@ -263,6 +281,7 @@ export default class Screens {
     _fillResults(r) {
         const q = (k) => this.el.querySelector(`[data-res="${k}"]`);
         q('title').textContent = r.title;
+        q('mode').textContent = MODE_LABELS[r.mode] || MODE_LABELS.normal;
         q('new').classList.toggle('hidden', !r.newScore);
         q('score').textContent = fmt(r.score);
         q('stats').innerHTML = [

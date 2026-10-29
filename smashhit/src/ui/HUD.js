@@ -15,6 +15,10 @@
     combo "xN" con una barrita de progreso hacia el siguiente multiplicador.
     Al sumar puntos sale un "+N" pequeño que sube y se desvanece junto al
     marcador (no en el centro, para no tapar la mira) y el número da un pulso.
+
+    Modo "Sin perder" (setMode): el contador de bolas muestra ∞ y bajo el
+    checkpoint sale la etiqueta del modo; las pérdidas de puntos salen como
+    "−N" en rojo y el marcador da un destello rojo.
 */
 
 // Tope de "+N" en pantalla a la vez (si se rompen muchos cristales seguidos)
@@ -24,7 +28,10 @@ export default class HUD {
     constructor(hudElement) {
         hudElement.innerHTML = `
             <div class="hud-top">
-                <span class="hud-level"></span>
+                <span class="hud-left">
+                    <span class="hud-level"></span>
+                    <small class="hud-mode"></small>
+                </span>
                 <span class="hud-balls"></span>
                 <span class="hud-distance"></span>
             </div>
@@ -40,6 +47,7 @@ export default class HUD {
         `;
         this.levelEl = hudElement.querySelector('.hud-level');
         this.ballsEl = hudElement.querySelector('.hud-balls');
+        this.modeEl = hudElement.querySelector('.hud-mode');
         this.distanceEl = hudElement.querySelector('.hud-distance');
         this.bannerEl = hudElement.querySelector('.hud-banner');
         this.damageEl = hudElement.querySelector('.hud-damage');
@@ -70,9 +78,16 @@ export default class HUD {
         this.levelEl.textContent = `Checkpoint ${checkpoint}/${total}`;
     }
 
+    // n = Infinity -> "∞" (modo "Sin perder")
     setBalls(n) {
-        this.ballsEl.textContent = n;
+        this.ballsEl.textContent = n === Infinity ? '∞' : n;
         this.ballsEl.classList.toggle('empty', n === 0);
+    }
+
+    // Etiqueta del modo bajo las bolas ('' = modo normal, sin etiqueta)
+    setMode(label) {
+        this.modeEl.textContent = label;
+        this.modeEl.classList.toggle('visible', !!label);
     }
 
     setDistance(meters) {
@@ -95,10 +110,13 @@ export default class HUD {
         this.comboBarEl.style.width = `${Math.round(progress * 100)}%`;
     }
 
-    // "+N" que sube junto al marcador. kind = 'crystal' | 'powerup' |
-    // 'checkpoint' | 'finish' | 'combo' (cambia el color, ver CSS).
+    // "+N" (o "−N" si points < 0) que sube junto al marcador. kind = 'crystal' |
+    // 'powerup' | 'checkpoint' | 'finish' | 'combo' | 'bonus' | 'shot' |
+    // 'penalty' (cambia el color, ver CSS).
     popScore(points, kind = 'crystal', multiplier = 1) {
-        const text = kind === 'combo' ? `¡Combo x${multiplier}!` : `+${points.toLocaleString('es')}`;
+        const text = kind === 'combo'
+            ? `¡Combo x${multiplier}!`
+            : `${points < 0 ? '−' : '+'}${Math.abs(points).toLocaleString('es')}`;
         const el = document.createElement('span');
         el.className = `hud-popup ${kind}`;
         el.textContent = text;
@@ -111,6 +129,7 @@ export default class HUD {
         this.popupsEl.appendChild(el);
         while (this.popupsEl.childElementCount > MAX_POPUPS) this.popupsEl.firstElementChild.remove();
         if (points > 0) this._restartAnim(this.scoreEl, 'pulse');
+        else if (points < 0) this._restartAnim(this.scoreEl, 'drop'); // destello rojo
     }
 
     // Vuelve a lanzar una animación CSS de una clase (aunque ya estuviera puesta)

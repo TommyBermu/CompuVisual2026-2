@@ -4,7 +4,13 @@
     Récords del jugador persistidos en localStorage (mismo patrón que
     settings.js), para que sobrevivan al recargar la página.
 
-    Se guarda UN récord global:
+    Se guarda UN récord por MODO de juego, cada uno en su propia clave (así
+    las partidas "Sin perder", con bolas infinitas, no se mezclan con las
+    normales):
+        'normal'     -> smashhit.records            (la de siempre)
+        'sinPerder'  -> smashhit.records.sinPerder
+
+    Cada récord tiene:
         score:      mejor puntuación de una partida.
         distance:   más metros RECORRIDOS en una partida (desde donde empezó).
         checkpoint: checkpoint más lejano alcanzado empezando desde el 0
@@ -15,12 +21,15 @@
     que te saltaste). Para el checkpoint más lejano solo valen las partidas
     desde el inicio; si no, bastaría con elegir el checkpoint 9.
 
-    getRecords()     -> objeto con los récords actuales.
-    submitRun(run)   -> run = { score, distance, startCheckpoint, checkpoint }.
-                        Actualiza y guarda; devuelve { records, newScore, newDistance, newCheckpoint }.
+    getRecords(mode)  -> objeto con los récords actuales de ese modo.
+    submitRun(run)    -> run = { score, distance, startCheckpoint, checkpoint, mode }.
+                         Actualiza y guarda; devuelve { records, newScore, newDistance, newCheckpoint }.
 */
 
-const STORAGE_KEY = 'smashhit.records';
+const STORAGE_KEYS = {
+    normal: 'smashhit.records',
+    sinPerder: 'smashhit.records.sinPerder',
+};
 
 export const DEFAULT_RECORDS = {
     score: 0,
@@ -28,17 +37,21 @@ export const DEFAULT_RECORDS = {
     checkpoint: -1,
 };
 
-let current = load();
+const current = {};
+for (const mode of Object.keys(STORAGE_KEYS)) current[mode] = load(STORAGE_KEYS[mode]);
 
-function load() {
+// Modo desconocido -> normal
+const modeKey = (mode) => (mode in STORAGE_KEYS ? mode : 'normal');
+
+function load(key) {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(key);
         if (!raw) return { ...DEFAULT_RECORDS };
         const saved = JSON.parse(raw);
         // Solo números válidos (por si alguien editó el localStorage a mano)
         const out = { ...DEFAULT_RECORDS };
-        for (const key of Object.keys(out)) {
-            if (Number.isFinite(saved?.[key])) out[key] = saved[key];
+        for (const k of Object.keys(out)) {
+            if (Number.isFinite(saved?.[k])) out[k] = saved[k];
         }
         return out;
     } catch {
@@ -46,23 +59,25 @@ function load() {
     }
 }
 
-export function getRecords() {
-    return { ...current };
+export function getRecords(mode = 'normal') {
+    return { ...current[modeKey(mode)] };
 }
 
-export function submitRun({ score, distance, startCheckpoint, checkpoint }) {
-    const newScore = score > current.score;
-    const newDistance = distance > current.distance;
-    const newCheckpoint = startCheckpoint === 0 && checkpoint > current.checkpoint;
-    if (newScore) current.score = Math.floor(score);
-    if (newDistance) current.distance = Math.floor(distance);
-    if (newCheckpoint) current.checkpoint = checkpoint;
+export function submitRun({ score, distance, startCheckpoint, checkpoint, mode = 'normal' }) {
+    const key = modeKey(mode);
+    const rec = current[key];
+    const newScore = score > rec.score;
+    const newDistance = distance > rec.distance;
+    const newCheckpoint = startCheckpoint === 0 && checkpoint > rec.checkpoint;
+    if (newScore) rec.score = Math.floor(score);
+    if (newDistance) rec.distance = Math.floor(distance);
+    if (newCheckpoint) rec.checkpoint = checkpoint;
     if (newScore || newDistance || newCheckpoint) {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+            localStorage.setItem(STORAGE_KEYS[key], JSON.stringify(rec));
         } catch {
             /* localStorage puede fallar en modo privado; no es crítico */
         }
     }
-    return { records: getRecords(), newScore, newDistance, newCheckpoint };
+    return { records: getRecords(key), newScore, newDistance, newCheckpoint };
 }
