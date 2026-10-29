@@ -1,2 +1,5 @@
 # Carpeta local de Claude Code (worktrees, ajustes)
 .claude/
+
+# Dependencias instaladas localmente
+smashhit/node_modules/
