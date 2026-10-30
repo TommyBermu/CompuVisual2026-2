@@ -52,6 +52,7 @@ export default class Shooter {
         this.ammo = BALLS_AVAILABLE;
         this.onAmmoChange = null;   // callback para el HUD
         this.onMiss = null;         // callback: un tiro no tocó vidrio (rompe el combo)
+        this.onVolleyResolved = null; // callback cuando todas las bolas disparadas impactaron
         this.getAimTargets = null;  // () => objetos 3D contra los que apuntar (lo asigna el Game)
         this.powers = null;         // PowerUps activos (triple bola, bolas infinitas); lo asigna el Game
         this.infiniteAmmo = false;  // modo "Sin perder": disparar nunca gasta bolas (lo fija el Game)
@@ -67,7 +68,7 @@ export default class Shooter {
         // Triple bola: la central + las laterales en abanico (un solo coste).
         // Todas comparten la ráfaga: el disparo falla solo si fallan todas.
         const dirs = this._spread(direction);
-        const volley = { pending: dirs.length, hit: false };
+        const volley = { pending: dirs.length, hit: false, lastAmmo: !free && this.ammo === 1 };
         for (const dir of dirs) this._launch(dir).volley = volley;
 
         if (this.audio) this.audio.playSfx('shoot');
@@ -251,7 +252,10 @@ export default class Shooter {
         const glass = ball.firstContact === 'crystal' || ball.firstContact === 'chunk';
         const volley = ball.volley || { pending: 1, hit: false };
         volley.hit ||= glass;
-        if (--volley.pending === 0 && !volley.hit && this.onMiss) this.onMiss();
+        if (--volley.pending === 0) {
+            if (!volley.hit && this.onMiss) this.onMiss();
+            if (this.onVolleyResolved) this.onVolleyResolved(volley);
+        }
     }
 
     // Para reiniciar partida

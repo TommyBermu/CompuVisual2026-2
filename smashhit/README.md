@@ -55,7 +55,10 @@ disparo cuesta 1. Chocar de frente con vidrio quita `CRASH_PENALTY_BASE` (10)
 bolas, **igual en todos los niveles** (como en el Smash Hit de móvil). Los
 bonus dan bolas: pirámide apoyada +3, rombo flotante +5. Cuántos salen se
 ajusta con `BONUS_SPAWN_MULT` (1.2 = un 20 % más que el reparto base, misma
-proporción pirámide/rombo). Si las bolas llegan a 0, se acaba la partida.
+proporción pirámide/rombo). Si las bolas llegan a 0 por un choque, se acaba la
+partida inmediatamente. Si se gastó la última bola en un disparo, se espera a
+que se resuelva ese disparo (o toda la ráfaga) por si rompe un bonus que dé
+bolas; si no quedan bolas al resolverse, termina la partida.
 
 ## Modo "Sin perder"
 

@@ -94,9 +94,16 @@ export default class Game {
         this.shooter.getAimTargets = () => this.spawner.aimTargets(); // para apuntar donde está la mira
         this.shooter.onAmmoChange = (n) => {
             this.hud.setBalls(this.noLose ? Infinity : n);
-            // Las bolas son vida: si se acaban durante la partida, game over
-            // (en "Sin perder" no se acaban nunca).
-            if (this.started && !this.dead && !this.noLose && n <= 0) this._gameOver();
+            if (n > 0) this.lastShotPending = false;
+            // Define último disparo, espera a que se impacte y verificar si continua o finaliza.
+            if (this.started && !this.dead && !this.noLose && n <= 0 && !this.lastShotPending) {
+                this._gameOver();
+            }
+        };
+        this.shooter.onVolleyResolved = (volley) => {
+            if (!volley.lastAmmo || !this.lastShotPending) return;
+            this.lastShotPending = false;
+            if (this.started && !this.dead && !this.noLose && this.shooter.ammo <= 0) this._gameOver();
         };
         this.shooter.onMiss = () => this.score.onMiss(); // tiro que no tocó vidrio: pierde el combo
 
@@ -128,7 +135,12 @@ export default class Game {
         this.input.onShoot = (dir) => {
             // No se dispara en pausa, tras morir ni durante el final del recorrido
             if (!this.started || this.paused || this.finished || this.dead) return;
-            const fired = this.shooter.shoot(dir);
+            // Define ultimo disparo
+            const usesAmmo = !this.shooter.infiniteAmmo && !this.powers.freeShots;
+            const lastAmmoShot = usesAmmo && this.shooter.ammo === 1;
+            if (lastAmmoShot) this.lastShotPending = true;
+            const fired = this.shooter.shoot(dir);      // 
+            if (fired <= 0 && lastAmmoShot) this.lastShotPending = false;
             if (fired > 0) this.totalBallsSpent += fired;
             // "Sin perder": cada bola disparada cuesta puntos (triple bola = 3)
             if (this.noLose && fired > 0) this.score.addPenalty(fired * NOLOSE_SHOT_COST, 'shot');
@@ -216,6 +228,7 @@ export default class Game {
         this.checkpoint = -1;
         this.crashesInCheckpoint = 0;
         this.totalBallsSpent = 0;
+        this.lastShotPending = false;
         this.crashCooldown = 0;
         this.finished = false;
         this.dead = false;
@@ -355,6 +368,7 @@ export default class Game {
         } else {
             const penalty = CRASH_PENALTY_BASE;
             const before = this.shooter.ammo;
+            this.lastShotPending = false;
             this.shooter.addAmmo(-penalty);
             // Logro: Por los pelos (sobrevive con < 5 bolas)
             if (before >= penalty && this.shooter.ammo > 0 && this.shooter.ammo < 5) {
