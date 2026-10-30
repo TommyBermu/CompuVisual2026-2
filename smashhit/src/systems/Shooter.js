@@ -36,7 +36,7 @@ import { getSettings } from '../settings.js';
 import {
     BALL_SPEED, BALL_LIFETIME, BALL_SPAWN_OFFSET, BALLS_AVAILABLE,
     AIM_MAX_DISTANCE, GRAVITY, BALL_SPAWN_DROP, BALL_RADIUS, BALL_MAX_FLIGHT_TIME, BALL_FLIGHT_GRAVITY,
-    POWER_SPREAD_ANGLE,
+    POWER_SPREAD_ANGLE, BALL_REST_SPEED, BALL_REST_TIME,
 } from '../constants.js';
 
 // Rapidez mínima del choque (a lo largo de la normal) para que suene el 'clank'
@@ -233,7 +233,11 @@ export default class Shooter {
     update(delta, view) {
         this.balls = this.balls.filter((ball) => {
             ball.age += delta;
-            const dead = ball.age > BALL_LIFETIME || Shatter.gone(ball.body.position, view);
+            const speed = ball.body.velocity.length();
+            if (!ball.flying && speed < BALL_REST_SPEED) ball.restAge += delta;
+            else ball.restAge = 0;
+            const resting = ball.restAge >= BALL_REST_TIME;
+            const dead = ball.age > BALL_LIFETIME || resting || Shatter.gone(ball.body.position, view);
             this._judge(ball, dead);
             if (dead) {
                 ball.destroy(this.renderer, this.physics);

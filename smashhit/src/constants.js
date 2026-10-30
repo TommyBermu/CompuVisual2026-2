@@ -18,7 +18,7 @@ export const TUNNEL_WIDTH = 11;    // ancho interior (X)
 export const TUNNEL_HEIGHT = 8;    // alto de las paredes (Y)
 export const WALL_THICKNESS = 0.5;
 export const SEGMENT_LENGTH = 20;  // largo de cada tramo de pasillo (Z)
-export const SPAWN_AHEAD = 140;    // cuántos metros por delante de la cámara se generan
+export const SPAWN_AHEAD = 100;    // cuántos metros por delante de la cámara se generan
 export const DESPAWN_BEHIND = 10;  // metros detrás de la cámara antes de borrar
 
 // --- Muros de cristal (salen del suelo, tipo "topo") ---
@@ -91,7 +91,7 @@ export const DIAMOND_REWARD = 5;       // +bolas al reventar un ROMBO flotante
 // -bolas al chocar de frente con un cristal: la MISMA en todos los niveles
 // (como en el Smash Hit original: 10; para compensar se empieza con
 // BALLS_AVAILABLE = 40)
-export const CRASH_PENALTY_BASE = 10;
+export const CRASH_PENALTY_BASE = 5;
 // Cuántos más bonus (pirámides + rombos) salen respecto al reparto base del
 // Spawner: 1.2 = un 20 % más de media por tramo (mantiene la proporción
 // pirámide/rombo). Ver Spawner._populate y Spawner._perchBonus.
@@ -151,6 +151,8 @@ export const BALL_MAX_FLIGHT_TIME = 0.8;
 export const BALL_VISUAL_ARC = 1;
 export const BALL_ARC_FADE = 0.12; // s en que se desvanece la joroba si choca antes de llegar
 export const BALL_LIFETIME = 6;     // segundos antes de borrar una bola
+export const BALL_REST_SPEED = 0.10; // m/s: por debajo se considera detenida
+export const BALL_REST_TIME = 0.25;  // s quieta antes de retirarla
 export const BALLS_AVAILABLE = 40;
 export const AIM_MAX_DISTANCE = 40; // si el clic no apunta a nada, se apunta a esta distancia
 

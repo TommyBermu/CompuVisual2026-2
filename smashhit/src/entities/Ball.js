@@ -177,6 +177,7 @@ export default class Ball extends Entity {
         this.arcAtHit = 0;
         this.hitAge = 0;
         this.age = 0;
+        this.restAge = 0;
         this.trailPositions = [];
         this.world = physics.world;
         this._antiGravity = () => {
