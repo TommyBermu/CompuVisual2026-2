@@ -2,18 +2,18 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smash Hit 3D</title>
-    <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smash Hit 3D</title>
+  <link rel="stylesheet" href="css/style.css" />
 
-    <!--
+  <!--
     Three.js y Cannon-es desde CDN como módulos ES (sin instalar nada).
     Three.js moderno hace imports internos del tipo `import ... from 'three'`,
     por eso necesitamos un import map que resuelva esos nombres a URLs del CDN.
     En los .js importamos con nombres limpios: `import * as THREE from 'three'`.
   -->
-    <script type="importmap">
+  <script type="importmap">
   {
     "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -25,17 +25,19 @@
 </head>
 
 <body>
-    <!-- Three.js inyecta el <canvas> aquí -->
-    <div id="game"></div>
+  <!-- Three.js inyecta el <canvas> aquí -->
+  <div id="game"></div>
 
-    <!-- HUD en HTML por encima del canvas (ver css/style.css) -->
-    <div id="hud"></div>
+  <!-- HUD en HTML por encima del canvas (ver css/style.css) -->
+  <div id="hud"></div>
 
-    <!-- Menú / selector de nivel / ajustes (overlay, ver ui/Screens.js) -->
-    <div id="menu"></div>
+  <button id="mobile-menu-button" class="hidden" type="button" aria-label="Abrir menú">☰</button>
 
-    <!-- Punto de entrada -->
-    <script type="module" src="src/main.js"></script>
+  <!-- Menú / selector de nivel / ajustes (overlay, ver ui/Screens.js) -->
+  <div id="menu"></div>
+
+  <!-- Punto de entrada -->
+  <script type="module" src="src/main.js"></script>
 </body>
 
 </html>

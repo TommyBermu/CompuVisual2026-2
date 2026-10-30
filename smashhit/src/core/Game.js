@@ -97,7 +97,7 @@ export default class Game {
             if (n > 0) this.lastShotPending = false;
             // Define último disparo, espera a que se impacte y verificar si continua o finaliza.
             if (this.started && !this.dead && !this.noLose && n <= 0 && !this.lastShotPending) {
-                this._gameOver();
+                this._gameOver(this.gameOverCause === 'crash');
             }
         };
         this.shooter.onVolleyResolved = (volley) => {
@@ -145,6 +145,11 @@ export default class Game {
             // "Sin perder": cada bola disparada cuesta puntos (triple bola = 3)
             if (this.noLose && fired > 0) this.score.addPenalty(fired * NOLOSE_SHOT_COST, 'shot');
         };
+
+        this.mobileMenuButton = document.getElementById('mobile-menu-button');
+        this.mobileMenuButton?.addEventListener('click', () => {
+            if (this.started && !this.finished && !this.dead) this._togglePause();
+        });
 
         // Menú: al elegir un nivel, empieza el recorrido ahí; pausa gestiona ESC
         this.screens = new Screens(document.getElementById('menu'), {
@@ -229,6 +234,7 @@ export default class Game {
         this.crashesInCheckpoint = 0;
         this.totalBallsSpent = 0;
         this.lastShotPending = false;
+        this.gameOverCause = null;
         this.crashCooldown = 0;
         this.finished = false;
         this.dead = false;
@@ -238,6 +244,7 @@ export default class Game {
         this.audio.setPaused(false);
         this.audio.startMusic(startCheckpoint); // tema del checkpoint (crossfade desde el menú)
         this.hud.show();
+        this.mobileMenuButton?.classList.remove('hidden');
         this.spawner.update(this._view()); // generar el primer tramo
         this._setAmbience(startCheckpoint);
     }
@@ -293,7 +300,7 @@ export default class Game {
 
     // Game over: se acabaron las bolas. Marco rojo, lluvia de bolas (estilo
     // Sonic) y, tras unos segundos, vuelta al menú.
-    _gameOver() {
+    _gameOver(showScatter = false) {
         if (this.dead) return;
         this.dead = true;
         this.rail.pause();
@@ -301,7 +308,7 @@ export default class Game {
         const result = this._saveRun('¡Sin bolas!'); // deja de sumar ya
         this.hud.showDamage();
         this.hud.showBanner('¡Sin bolas!', 2500);
-        this.shooter.scatter(getSettings().ballSkin);        // lluvia de bolas
+        if (showScatter) this.shooter.scatter(getSettings().ballSkin);
         this.audio.playSfx('gameover');
         this.audio.stopMusic(2.5);     // la música se apaga mientras cae la lluvia
         setTimeout(() => this._showResults(result), 2800);
@@ -369,7 +376,9 @@ export default class Game {
             const penalty = CRASH_PENALTY_BASE;
             const before = this.shooter.ammo;
             this.lastShotPending = false;
+            this.gameOverCause = 'crash';
             this.shooter.addAmmo(-penalty);
+            if (!this.dead) this.gameOverCause = null;
             // Logro: Por los pelos (sobrevive con < 5 bolas)
             if (before >= penalty && this.shooter.ammo > 0 && this.shooter.ammo < 5) {
                 unlock('close_call');
@@ -392,9 +401,11 @@ export default class Game {
         this.paused = paused;
         if (paused) {
             this.screens.showPause(); // overlay con Reanudar / Salir al menú
+            this.mobileMenuButton?.classList.add('hidden');
             this.audio.setPaused(true); // música lejana (filtrada y más baja)
         } else {
             this.screens.hide();
+            this.mobileMenuButton?.classList.remove('hidden');
             this.audio.setPaused(false);
             this.lastTime = 0; // reinicia el delta para no "saltar" tras la pausa
         }
@@ -408,6 +419,8 @@ export default class Game {
         this.started = false;
         this.finished = false;
         this.dead = false;
+        this.gameOverCause = null;
+        this.mobileMenuButton?.classList.add('hidden');
         this.rail.pause();
         this.shooter.clear();
         this.powers.clear();

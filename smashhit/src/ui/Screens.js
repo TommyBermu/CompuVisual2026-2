@@ -41,6 +41,15 @@ import { CHECKPOINT_COUNT, FOG_DENSITY_SCALE } from '../constants.js';
 // Texto del deslizador de niebla: % respecto a la densidad por defecto
 const fogLabel = (v) => `${Math.round((v / FOG_DENSITY_SCALE) * 100)}%`;
 
+const REWARD_ITEMS = {
+    skin: [
+        ['default', 'Predeterminada'], ['silver', 'Plata'], ['bronze', 'Bronce'],
+        ['amethyst', 'Amatista'], ['gold', 'Oro'], ['emerald', 'Esmeralda'],
+        ['sapphire', 'Zafiro'], ['diamond', 'Diamante'],
+    ],
+    trail: [['none', 'Sin estela'], ['rainbow', 'Arcoíris'], ['ghost', 'Fantasma']],
+};
+
 // Nombre de cada modo de juego (menú, resultados, HUD)
 export const MODE_LABELS = { normal: 'Modo normal', sinPerder: 'Sin perder' };
 
@@ -110,8 +119,6 @@ export default class Screens {
                     ${this._slider('sensitivity', 'Sensibilidad', s.sensitivity, 0.5, 2, 0.1)}
                     ${this._sliderDeg('fov', 'Campo de visión', s.fov)}
                     ${this._sliderFog(s.fogScale)}
-                    ${this._rewardSelect('ballSkin', 'Apariencia de bola', s.ballSkin, 'skin')}
-                    ${this._rewardSelect('ballTrail', 'Estela de bola', s.ballTrail, 'trail')}
                     <button class="btn btn-ghost reward-preview-button" data-action="reward-preview">Visualizar bolas y estelas</button>
                     ${this._toggle('muted', 'Silenciar todo', s.muted)}
                     ${this._toggle('shadows', 'Sombras', s.shadows)}
@@ -130,7 +137,7 @@ export default class Screens {
 
             <div class="screen hidden" data-view="reward-preview">
                 <h2 class="title-sm">Galería de bolas y estelas</h2>
-                <p class="subtitle">Aquí puedes probar visualmente todas las recompensas, aunque aún estén bloqueadas.</p>
+                <p class="subtitle">Desbloquea apreciencias completando los logros</p>
                 <div class="reward-gallery">
                     <div class="reward-gallery-section">
                         <h3>Apariencias</h3>
@@ -257,78 +264,40 @@ export default class Screens {
             });
         });
 
-        this.el.querySelectorAll('select[data-setting]').forEach((input) => {
-            input.addEventListener('change', () => saveSettings({ [input.dataset.setting]: input.value }));
-        });
-
         this.el.querySelectorAll('[data-preview-type]').forEach((card) => {
             card.addEventListener('click', () => {
-                this.el.querySelectorAll('[data-preview-type]').forEach((item) => item.classList.remove('selected'));
+                if (card.disabled) return;
+                this.el.querySelectorAll(`[data-preview-type="${card.dataset.previewType}"]`)
+                    .forEach((item) => item.classList.remove('selected'));
                 card.classList.add('selected');
+                const key = card.dataset.previewType === 'skin' ? 'ballSkin' : 'ballTrail';
+                saveSettings({ [key]: card.dataset.previewId });
                 this.audio?.playSfx('ui');
             });
         });
     }
 
     _showSettings() {
-        this._refreshRewardSelects();
         this._show('settings');
     }
 
-    _rewardSelect(key, label, value, type) {
-        const unlocked = new Set(getUnlockedIds());
-        const options = type === 'skin'
-            ? [{ id: 'default', name: 'Predeterminada' }]
-            : [{ id: 'none', name: 'Sin estela' }];
-        for (const achievement of ACHIEVEMENTS) {
-            if (achievement.reward?.type === type && unlocked.has(achievement.id)) {
-                options.push({ id: achievement.reward.id, name: achievement.reward.name });
-            }
-        }
-        const selected = options.some((option) => option.id === value) ? value : options[0].id;
-        return `
-            <label class="setting">
-                <span class="setting-label">${label}</span>
-                <select data-setting="${key}">${options.map((option) => `
-                    <option value="${option.id}" ${option.id === selected ? 'selected' : ''}>${option.name}</option>
-                `).join('')}</select>
-            </label>`;
-    }
-
     _previewCards(type) {
-        const items = type === 'skin'
-            ? [
-                ['default', 'Predeterminada'], ['silver', 'Plata'], ['bronze', 'Bronce'],
-                ['amethyst', 'Amatista'], ['gold', 'Oro'], ['emerald', 'Esmeralda'],
-                ['sapphire', 'Zafiro'], ['diamond', 'Diamante'],
-            ]
-            : [['none', 'Sin estela'], ['rainbow', 'Arcoíris'], ['ghost', 'Fantasma']];
-        return items.map(([id, name]) => `
-            <button class="reward-card" data-preview-type="${type}" data-preview-id="${id}">
+        const settings = getSettings();
+        const selected = type === 'skin' ? settings.ballSkin : settings.ballTrail;
+        const unlocked = new Set(getUnlockedIds());
+        return REWARD_ITEMS[type].map(([id, name]) => {
+            const achievement = ACHIEVEMENTS.find((item) => item.reward?.type === type && item.reward.id === id);
+            const available = !achievement || unlocked.has(achievement.id);
+            return `
+            <button class="reward-card ${available ? '' : 'locked'} ${selected === id ? 'selected' : ''}"
+                data-preview-type="${type}" data-preview-id="${id}" ${available ? '' : 'disabled'}
+                aria-pressed="${selected === id}" aria-label="${name}${available ? '' : ', bloqueada'}">
                 <span class="preview-ball preview-${type} preview-${id}"></span>
                 <strong>${name}</strong>
-                <small>Vista previa</small>
+                <small>${available ? (selected === id ? 'Seleccionada' : 'Disponible') : '🔒 Bloqueada'}</small>
             </button>
-        `).join('');
-    }
-
-    _refreshRewardSelects() {
-        const settings = getSettings();
-        for (const [key, label, type] of [
-            ['ballSkin', 'Apariencia de bola', 'skin'],
-            ['ballTrail', 'Estela de bola', 'trail'],
-        ]) {
-            const old = this.el.querySelector(`select[data-setting="${key}"]`);
-            if (!old) continue;
-            const wrapper = old.closest('.setting');
-            const replacement = document.createRange().createContextualFragment(
-                this._rewardSelect(key, label, settings[key], type),
-            );
-            wrapper.replaceWith(replacement);
-        }
-        this.el.querySelectorAll('select[data-setting]').forEach((input) => {
-            input.addEventListener('change', () => saveSettings({ [input.dataset.setting]: input.value }));
-        });
+        `;
+        }).join('');
     }
 
     _show(view) {
