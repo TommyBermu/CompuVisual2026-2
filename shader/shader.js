@@ -1,4 +1,4 @@
-// poner este código en https://editor.p5js.org/
+// se usó editor.p5js.org
 
 let sh;
 let img;
@@ -46,14 +46,15 @@ function setup() {
     img.rect(0, 0, 32, 32);
     img.rect(32, 32, 32, 32);
 
+    // sliders
     nearS = createSlider(0, 1, 0.9, 0.001);
     nearS.position(80, height + 10);
-    nearLabel = createP("Fog near");
+    nearLabel = createP("fog near");
     nearLabel.position(10, height - 5);
 
     farS = createSlider(0, 1, 0.983, 0.001);
     farS.position(80, height + 40);
-    farLabel = createP("Fog far");
+    farLabel = createP("fog far");
     farLabel.position(10, height + 25);
 }
 
