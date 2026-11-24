@@ -1,0 +1,160 @@
+===========================================================================
+  DLSS — GUIÓN Y REPARTO DE TIEMPOS  (NO se muestra en la presentación web)
+  Presentación total: ~60 min  ·  4 integrantes  ·  ~15 min cada uno
+===========================================================================
+
+Formato de la presentación web (carpeta presentationnDLSS/):
+  - Navegar con las flechas ← →, barra espaciadora o rueda del mouse.
+  - Tecla F: pantalla completa.  Tecla M: abrir/cerrar el índice.
+  - En móvil/tablet: deslizar con el dedo a izquierda/derecha.
+  - La barra superior muestra el progreso; abajo, el contador de slides.
+
+Las slides están numeradas en el orden en que aparecen en el índice (tecla M).
+Abajo se indica qué rango de slides le toca a cada integrante.
+
+---------------------------------------------------------------------------
+NOTA GENERAL PARA TODOS
+---------------------------------------------------------------------------
+  - Cada integrante abre conectando con lo que dijo el anterior
+    ("como vimos...", "ahora que ya conocemos...").
+  - Cada integrante cierra anticipando el siguiente bloque.
+  - Aclarar siempre QUÉ se mide al citar un número de FPS (cuadros reales,
+    cuadros generados o latencia). Es el hilo conductor de toda la charla.
+  - Ritmo objetivo: ~1.5–2 min por slide de contenido; menos en portadas
+    y divisores de capítulo.
+
+
+===========================================================================
+ INTEGRANTE 1  ·  ~15 min  ·  Origen y era espacial (2018–2019)
+===========================================================================
+Slides: Portada + "¿Qué es DLSS?" + "Dos eras" + "Tres matices"
+        + Capítulo 1 completo (NGX/Turing, DLSS 1.0, DLSS "1.9")
+
+Puntos a cubrir:
+  1. Abrir la presentación. Decir el tema y la tesis: DLSS pasó de ahorrar
+     cómputo (rendimiento) a gastarlo (fidelidad) con la versión 5.
+  2. Qué es DLSS en una frase: renderizar menos píxeles y que la IA
+     complete el resto en los Tensor Cores.
+  3. El punto de quiebre rendimiento vs. fidelidad (slide "Dos eras").
+     Dejarlo plantado; es la idea que amarra toda la charla.
+  4. Tres aclaraciones de rigor: no hubo "beta pública" 1.0; muchas cifras
+     son internas de NVIDIA; Reflex 2 sigue sin salir.
+  5. 2018: Turing, chip TU102, Tensor Cores, plataforma NGX, demo Infiltrator.
+     Explicar qué es un Tensor Core (multiplicación de matrices = base de la IA).
+  6. DLSS 1.0: escalador espacial en dos etapas, un solo fotograma, sin
+     historial temporal. Entrenamiento POR JUEGO en Saturn V (64 spp).
+     Problemas: 2–4 ms, imagen blanda, "alucinaciones" en geometrías finas.
+  7. El caso "1.9" en Control: nombre informal, corría en shaders CUDA (no
+     Tensor Cores), puente experimental antes de DLSS 2.0.
+
+Cierre / transición: "Ese puente anticipa el gran cambio: pasar de inventar
+  píxeles a RECUPERAR información real a lo largo del tiempo. De eso habla [2]."
+
+
+===========================================================================
+ INTEGRANTE 2  ·  ~15 min  ·  Revolución temporal (2020–2023)
+===========================================================================
+Slides: Capítulo 2 completo
+        (DLSS 2.0, TAA vs DLSS 2.0, DLSS 3.0 Frame Gen, DLSS 3.5 Ray Reconstruction)
+
+Puntos a cubrir:
+  1. DLSS 2.0 (abr 2020): rediseño total, incompatible con 1.0. Es TAAU
+     acelerado por IA. Explicar el jitter subpíxel: capturar muestras
+     distintas de la misma escena entre fotogramas.
+  2. Las CUATRO entradas del motor: fotograma de baja res, vectores de
+     movimiento, buffers de profundidad, exposición/brillo.
+  3. Logros: modelo único genérico (adiós entrenamiento por juego),
+     1–2 ms por fotograma, y DLAA (la misma red sin escalar = antialiasing).
+  4. TAA clásico vs DLSS 2.0: el TAA usa reglas manuales (neighborhood
+     clamping) y emborrona; la red decide qué historia conservar.
+     Mencionar el ajuste de mip-map negativo que debe hacer el desarrollador.
+  5. DLSS 3.0 (sep 2022, RTX 40): Frame Generation. Explicar la interpolación
+     de un cuadro intermedio con el Optical Flow Accelerator (OFA) por hardware.
+     Por eso quedó exclusivo de RTX 40. Introducir el problema de latencia y
+     el emparejamiento con Reflex.
+  6. DLSS 3.5 (sep 2023): Ray Reconstruction. Un solo modelo de IA reemplaza
+     los denoisers manuales del ray tracing (entrenado con 5x más datos).
+     Funciona en TODAS las RTX (20+) porque es solo procesamiento de imagen.
+     Ejemplos: Cyberpunk Phantom Liberty, Alan Wake 2, Portal with RTX.
+
+Cierre / transición: "Hasta aquí seguimos usando redes convolucionales.
+  El próximo gran salto cambia la arquitectura neuronal entera. Eso lo ve [3]."
+
+
+===========================================================================
+ INTEGRANTE 3  ·  ~15 min  ·  Era Transformer, MFG y competencia (2025–2026)
+===========================================================================
+Slides: Capítulo 3 completo
+        (CNN vs Transformer, MFG, DLSS 4.5 + FP8, matriz de compatibilidad,
+         comparativa DLSS vs FSR vs XeSS)
+
+Puntos a cubrir:
+  1. DLSS 4.0 (ene 2025, CES, Blackwell/RTX 50): se reemplaza la CNN por un
+     Vision Transformer. Explicar la diferencia: CNN mira regiones locales;
+     el Transformer pondera la importancia de cada píxel en todo el fotograma
+     y a través de varios cuadros (misma familia que los modelos generativos).
+     ~30% menos ghosting; SR, RR y DLAA pasan a Transformer; llega a toda la
+     gama RTX vía DLSS Override.
+  2. Multi Frame Generation (MFG): hasta 3 cuadros extra por cuadro real
+     (3x–4x), "15 de cada 16 píxeles". Los tres rediseños: flujo óptico por IA
+     (no OFA), 5 modelos simultáneos en Tensor Cores de 5ª gen, Hardware Flip
+     Metering. Datos Cyberpunk: 27 -> 250 FPS (slides NVIDIA) vs +5.1% reales
+     (Gamers Nexus). INSISTIR en separar cuadros reales de generados.
+  3. DLSS 4.5 (2026): Transformer de 2ª gen y Dynamic MFG 6x (hasta 5 cuadros
+     por real, 23 de cada 24 píxeles), adaptado a monitores de 360/480 Hz.
+     El cuello de botella: FP8. En RTX 20/30 cae ~20% de FPS -> conservar el
+     modelo anterior. Mencionar que Reflex 2 (Frame Warp) sigue sin lanzarse.
+  4. Matriz de compatibilidad: recorrer la tabla por generación.
+     Nota: Nintendo Switch 2 fue la primera consola con DLSS (Tegra T239).
+  5. Comparativa DLSS vs AMD FSR 4.1 (Redstone) vs Intel XeSS 2/3: escalado,
+     generación de frames, ray tracing/latencia y render neuronal.
+     DLSS lidera en fidelidad pero exige RTX; FSR/XeSS corren en más hardware.
+
+Cierre / transición: "Todo esto todavía busca rendimiento. La versión 5
+  invierte la lógica: gasta cómputo para ganar realismo. Cierra [4]."
+
+
+===========================================================================
+ INTEGRANTE 4  ·  ~15 min  ·  DLSS 5, debates y estado actual (2026)
+===========================================================================
+Slides: Capítulo 4 completo
+        (DLSS 5 qué es, qué sintetiza, maduración 2026, los 4 debates,
+         ventajas/limitaciones, síntesis de la línea de tiempo, conclusión,
+         slide de cierre)
+
+Puntos a cubrir:
+  1. DLSS 5 (16 mar 2026, GTC, "el momento GPT de los gráficos"): NO es
+     escalador ni generador de frames. Es una etapa de render generativo al
+     final del pipeline. Modelo de difusión en espacio de píxeles de UN paso,
+     causal y determinista, one-frame-in/one-frame-out, hasta 4K.
+     Los CUATRO condicionantes: color, vectores de movimiento, estado temporal,
+     dirección artística del estudio.
+  2. Qué sintetiza: dispersión subsuperficial (piel), luz en el cabello,
+     microreflejos, sombras de contacto, oclusión ambiental. Regla de oro:
+     mejor escena base (path tracing) = salida neuronal más fiel.
+  3. Maduración 2026 (línea de tiempo): marzo = dos RTX 5090 + polémica;
+     julio (SIGGRAPH) = una sola GPU + controles por escena; 3 sep = NBA 2K27,
+     primer juego (370 FPS 4K); 13 oct = modelo -24%, 2x interno PERO solo
+     1.4x FPS reales; noviembre = RTX Remix, Hogwarts Legacy, War Thunder,
+     Where Winds Meet.
+  4. Los cuatro debates:
+       - Fotogramas falsos y latencia (partir de 50-60 FPS nativos; off en
+         competitivo). FPS mostrados != FPS con los que responde el juego.
+       - Exclusividad vs hardware (OFA -> Tensor Cores; mods OptiScaler).
+       - Laboratorio vs mundo real (-20% sin FP8; 2x != 2x; +5.1%).
+       - Intención artística vs IA (máscaras semánticas, controles de tono).
+  5. Ventajas y limitaciones (balance honesto).
+  6. Síntesis: los cuatro paradigmas en una línea de tiempo.
+  7. Conclusión: de promesa experimental a pilar del render; la IA como parte
+     estándar del pipeline. Slide final de agradecimiento y fuentes.
+     Abrir turno de preguntas.
+
+===========================================================================
+ CONSEJOS DE ENSAYO
+===========================================================================
+  - Cronometrar cada bloque por separado. Si alguien se pasa, los capítulos
+    con tablas (compatibilidad, comparativa) se pueden resumir señalando solo
+    2-3 filas clave.
+  - Tener a mano el índice (tecla M) para saltar si el tiempo aprieta.
+  - Reservar 3-5 min al final del bloque 4 para preguntas dentro de la hora.
+===========================================================================
