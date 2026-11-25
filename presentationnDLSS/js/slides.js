@@ -506,37 +506,31 @@ export const slides = [
     html: `
       <div class="big-num">04</div>
       <span class="kicker">2026</span>
-      <h2>DLSS 5, los debates críticos<br>y el estado actual</h2>
-      <p class="lead">El renderizado neuronal guiado en 3D, la polémica de marzo a noviembre,
-      los "fotogramas falsos" y la intención artística.</p>`
+      <h2>DLSS 5 · renderizado neuronal<br>y debates críticos</h2>
+      <div class="route">
+        <div class="step"><span class="n">01</span><h3>Arquitectura 3D</h3></div>
+        <div class="step"><span class="n">02</span><h3>Polémica y métricas</h3></div>
+        <div class="step"><span class="n">03</span><h3>Intención artística</h3></div>
+      </div>`
   },
 
   {
     type: "content",
     title: "DLSS 5 · qué es (y qué no es)",
     html: `
-      <span class="kicker">16 mar 2026 · GTC · "el momento GPT de los gráficos"</span>
+      <span class="tech-tag">Difusión en espacio de píxeles · 1 paso · inferencia causal 1-frame-in / 1-frame-out</span>
       <h2>DLSS 5 · renderizado neuronal guiado en 3D</h2>
-      <div class="cols side">
-        <div>
-          <p class="body"><b>No es</b> un escalador de resolución ni un generador de fotogramas.
-          Es una <span class="hl-m">etapa de renderizado generativo</span> al final del pipeline:
-          mejora iluminación, sombreado y materiales <b>sin sustituir</b> la rasterización, el ray
-          tracing ni el path tracing.</p>
-          <p class="body" style="margin-top:1rem;">Técnicamente, un <b>modelo de difusión en espacio
-          de píxeles de un solo paso</b> (one-step pixel-space diffusion). Su inferencia es
-          <b>causal, determinista y fotograma a fotograma</b> (one-frame-in, one-frame-out) en
-          tiempo real hasta 4K.</p>
-        </div>
-        <div class="card mg">
-          <h3>Cuatro condicionantes por cuadro</h3>
-          <ol class="num-list" style="margin-top:.6rem;">
-            <li>Fotograma de color recién renderizado</li>
-            <li>Vectores de movimiento del motor</li>
-            <li>Estado temporal de cuadros previos (coherencia)</li>
-            <li>Dirección artística del estudio (tono, estructura, máscaras semánticas)</li>
-          </ol>
-        </div>
+      <div class="band" style="margin-top:.8rem;"><b>En pocas palabras:</b> DLSS 5 es una etapa de renderizado neuronal que combina la imagen del juego con datos del motor —como color, movimiento y máscaras— para sintetizar iluminación y materiales en el fotograma final. No crea la escena desde cero: transforma visualmente una escena 3D ya renderizada.</div>
+      <div class="arch" style="margin-top:1.4rem;">
+        <div class="block"><span class="n" style="font-family:var(--mono);color:var(--dim);font-size:.72rem;">ENTRADA</span><h3>Rasterización /<br>Path Tracing</h3></div>
+        <div class="block core"><span class="n" style="font-family:var(--mono);color:var(--dim);font-size:.72rem;">GENERATIVO</span><h3>Bloque central<br>DLSS 5</h3></div>
+        <div class="block"><span class="n" style="font-family:var(--mono);color:var(--dim);font-size:.72rem;">SALIDA</span><h3>Fotograma final<br>4K</h3></div>
+      </div>
+      <div class="feeds">
+        <span class="feed">Color base</span>
+        <span class="feed">Vectores movimiento</span>
+        <span class="feed">Historial temporal</span>
+        <span class="feed">Máscaras estudio</span>
       </div>`
   },
 
@@ -545,16 +539,20 @@ export const slides = [
     title: "Qué sintetiza el renderizado neuronal",
     html: `
       <span class="kicker">Semántica de la escena</span>
-      <h2>La IA entiende piel, cabello, tela, metal, agua</h2>
-      <p class="body">Anclado a la geometría 3D de la escena, el modelo sintetiza fenómenos ópticos
-      difíciles de simular en tiempo real:</p>
-      <div class="cols c3" style="margin-top:1.4rem;">
-        <div class="card"><h3>Dispersión subsuperficial</h3><p>Calidez de la piel bajo focos, translucidez en orejas (subsurface scattering).</p></div>
-        <div class="card"><h3>Luz en el cabello</h3><p>Transmisión de luz a través de los mechones y brillo fino en tejidos.</p></div>
-        <div class="card"><h3>Microreflejos</h3><p>Reflejos sutiles sobre metales y superficies.</p></div>
-        <div class="card"><h3>Sombras de contacto</h3><p>Bordes de sombra más definidos donde los objetos se tocan.</p></div>
-        <div class="card"><h3>Oclusión ambiental</h3><p>Sombras suaves en oquedades, refinadas por la red.</p></div>
-        <div class="card accent"><h3>Regla de oro</h3><p>Cuanto mejor sea la escena base (path tracing &gt; rasterización simple), más fiel es la salida neuronal.</p></div>
+      <h2>La IA entiende piel, cabello, metal y contacto</h2>
+      <div class="cols" style="grid-template-columns:55fr 45fr;align-items:start;">
+        <div class="imgframe" style="min-height:360px;">
+          <img src="assets/img_dlss5/sintesis-antes-despues.jpg" alt="Comparativa render base vs DLSS 5">
+        </div>
+        <div>
+          <ul class="ticks" style="margin-top:0;">
+            <li><b>1 · Subsurface scattering</b> — translucidez en piel</li>
+            <li><b>2 · Cabello y tela</b> — brillo y transmisión</li>
+            <li><b>3 · Microreflejos</b> — superficies metálicas</li>
+            <li><b>4 · Sombras de contacto / AO</b> — precisión en oquedades</li>
+          </ul>
+          <div class="band" style="margin-top:1.4rem;"><b>Regla de oro:</b> mejor escena base (path tracing &gt; rasterización) = salida neuronal más fiel.</div>
+        </div>
       </div>`
   },
 
@@ -564,13 +562,35 @@ export const slides = [
     html: `
       <span class="kicker">De la polémica a la optimización</span>
       <h2>Marzo → noviembre de 2026</h2>
-      <div class="timeline">
-        <div class="tl-row mg"><div class="tl-year">Mar 2026</div><div class="tl-body"><h3>Anuncio y controversia</h3><p>Las demos requerían <b>dos RTX 5090 en paralelo</b> (una para el juego, otra para el modelo). Temor de los jugadores a que la IA distorsione el arte original.</p></div></div>
-        <div class="tl-row"><div class="tl-year">Jul 2026</div><div class="tl-body"><h3>SIGGRAPH</h3><p>Versiones que corren en <b>una sola GPU</b> y controles granulares por escena/personaje para preservar la intención artística.</p></div></div>
-        <div class="tl-row"><div class="tl-year">3 Sep 2026</div><div class="tl-body"><h3>Debut comercial · NBA 2K27</h3><p>Primer juego con DLSS 5. NVIDIA reporta hasta <b>370 FPS a 4K</b> Ultra con ray tracing en una RTX 5090 con toda la suite.</p></div></div>
-        <div class="tl-row"><div class="tl-year">13 Oct 2026</div><div class="tl-body"><h3>Modelo optimizado</h3><p>Huella −24% (≈118M parámetros), −20% de VRAM en 4K y modelo <b>2× más rápido</b> internamente. Pero eso no son 2× FPS: la ganancia real en NBA 2K27 fue hasta <b>1,4×</b>.</p></div></div>
-        <div class="tl-row"><div class="tl-year">Nov 2026</div><div class="tl-body"><h3>Más juegos</h3><p>RTX Remix, Hogwarts Legacy, War Thunder (Eagle's Shadow) y Where Winds Meet. Soporte: RTX 50, portátiles RTX Spark y GeForce NOW.</p></div></div>
-      </div>`
+      <div class="timeline htimeline">
+        <div class="hnode mg">
+          <span class="date">Mar 2026</span>
+          <div class="fig">2× RTX 5090</div>
+          <span class="ctx">Demo inicial y polémica</span>
+        </div>
+        <div class="hnode">
+          <span class="date">Jul 2026</span>
+          <div class="fig">1× GPU + controles</div>
+          <span class="ctx">Ajuste por escena / personaje</span>
+        </div>
+        <div class="hnode">
+          <span class="date">Sep 2026</span>
+          <div class="fig">370 FPS 4K</div>
+          <span class="ctx">Debut en NBA 2K27</span>
+        </div>
+        <div class="hnode">
+          <span class="date">Oct 2026</span>
+          <div class="fig">−24% params · 1,4× FPS</div>
+          <span class="ctx">Modelo optimizado</span>
+        </div>
+        <div class="hnode mg">
+          <span class="date">Nov 2026</span>
+          <div class="fig">4 juegos + RTX Spark</div>
+          <span class="ctx">Expansión de catálogo</span>
+        </div>
+      </div>
+      <!-- Miniaturas opcionales sobre hitos: logo GTC (mar), portada NBA 2K27 (sep),
+           collage Hogwarts Legacy / Where Winds Meet (nov) en assets/img_dlss5/ -->`
   },
 
   {
@@ -579,23 +599,29 @@ export const slides = [
     html: `
       <span class="kicker">Debate crítico · 1 de 4</span>
       <h2>"Fotogramas falsos" y la latencia real</h2>
-      <div class="cols side">
+      <div class="cols c2">
         <div>
-          <p class="body">Multiplicar cuadros con Frame Generation o MFG <b>suaviza el movimiento
-          visual</b>, pero <b>no acelera la simulación lógica</b> del juego ni la respuesta a los
-          controles.</p>
-          <ul class="ticks">
-            <li>No corrige tasas base bajas: no conviertas 30 FPS en una experiencia de 120 FPS "real".</li>
-            <li>Se recomienda partir de <b>50–60 FPS nativos</b> (o ~90 para monitores de 360–480 Hz+).</li>
-            <li>Desactivarlo en <b>juegos competitivos</b>, donde la latencia mínima manda.</li>
+          <div class="bars">
+            <div class="bar-row">
+              <div class="lbl"><span>Frametime visual <b>30 FPS → 120 (MFG 4×)</b></span></div>
+              <div class="bar-track"><div class="bar-fill good" style="width:25%;">33 ms → 8,3 ms</div></div>
+            </div>
+            <div class="bar-row">
+              <div class="lbl"><span>Latencia clic-a-pantalla <b>sigue alta</b></span></div>
+              <div class="bar-track"><div class="bar-fill bad" style="width:80%;">~60 ms</div></div>
+            </div>
+          </div>
+          <p class="note">Verde: fluidez aparente que gana el MFG. Rojo: la respuesta real a tus controles apenas cambia.</p>
+        </div>
+        <div>
+          <ul class="ticks" style="margin-top:0;">
+            <li><b>Base mínima:</b> 50–60 FPS nativos</li>
+            <li><b>Monitores 360 Hz+:</b> ~90 FPS base</li>
+            <li><b>Competitivos:</b> desactivar FG / MFG</li>
           </ul>
         </div>
-        <div class="card accent">
-          <h3>La métrica honesta</h3>
-          <p>FPS mostrados ≠ FPS con los que el juego responde a tu ratón. Una presentación seria
-          debe precisar <b>qué se está midiendo</b>: cuadros reales, cuadros generados o latencia de entrada.</p>
-        </div>
-      </div>`
+      </div>
+      <div class="punch"><span class="hl">FPS visuales</span> ≠ <span class="hl-m">latencia de entrada</span></div>`
   },
 
   {
@@ -603,22 +629,33 @@ export const slides = [
     title: "Debate 2 · exclusividad vs hardware",
     html: `
       <span class="kicker">Debate crítico · 2 de 4</span>
-      <h2>¿Barrera física o segmentación comercial?</h2>
-      <div class="cols side">
-        <div>
-          <p class="body">Cuando DLSS 3 salió exclusivo de RTX 40, NVIDIA lo justificó por el
-          hardware <b>OFA</b>. Pero en DLSS 4 el flujo óptico se movió a los Tensor Cores…</p>
-          <p class="body" style="margin-top:1rem;">…y aparecieron mods no oficiales (como
-          <span class="mono">OptiScaler</span>) capaces de ejecutar Frame Generation, MFG e incluso
-          DLSS 5 en RTX 20, 30 y 40 (con fuerte pérdida de FPS).</p>
-        </div>
-        <div class="card mg">
-          <h3>La pregunta abierta</h3>
-          <p>Si los mods lo logran (aunque con penalización), ¿qué límites son <b>estrictamente
-          físicos</b> y cuáles responden a <b>segmentación de producto</b>? La comunidad no deja de
-          cuestionarlo.</p>
-        </div>
-      </div>`
+      <h2>¿Barrera física o segmentación?</h2>
+      <table class="tbl matrix">
+        <thead>
+          <tr><th>Generación</th><th>Frame Gen</th><th>Multi-Frame Gen</th><th>DLSS 5</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>RTX 20 / 30</b></td>
+            <td><span class="mod">OptiScaler (Mod)</span></td>
+            <td><span class="mod">OptiScaler (Mod)</span></td>
+            <td><span class="mod">OptiScaler (Mod)</span></td>
+          </tr>
+          <tr>
+            <td><b>RTX 40</b></td>
+            <td>nativo</td>
+            <td><span class="mod">OptiScaler (Mod)</span></td>
+            <td><span class="mod">OptiScaler (Mod)</span></td>
+          </tr>
+          <tr>
+            <td><b>RTX 50</b></td>
+            <td>nativo</td>
+            <td>nativo</td>
+            <td>nativo</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="punch" style="font-size:clamp(1.05rem,2vw,1.4rem);margin-top:1.4rem;">¿Limitación física del silicio o <span class="hl-m">segmentación comercial</span>?</p>`
   },
 
   {
@@ -626,22 +663,33 @@ export const slides = [
     title: "Debate 3 · laboratorio vs mundo real",
     html: `
       <span class="kicker">Debate crítico · 3 de 4</span>
-      <h2>Las cifras del fabricante vs. las independientes</h2>
-      <div class="cols c3">
-        <div class="card">
-          <div class="big">−20%</div>
-          <p>Penalización del Transformer de DLSS 4.5 en GPU sin FP8, medida por la comunidad — no por NVIDIA.</p>
+      <h2>Fabricante vs. mediciones independientes</h2>
+      <div class="cols" style="grid-template-columns:1.6fr 1fr;align-items:start;">
+        <div class="bars">
+          <div class="bar-row">
+            <div class="lbl"><span>DLSS 5 Oct · <b>Marketing NVIDIA</b></span><span>velocidad interna</span></div>
+            <div class="bar-track"><div class="bar-fill mk" style="width:100%;">2,0×</div></div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl"><span>DLSS 5 Oct · <b>Medición independiente</b></span><span>FPS reales</span></div>
+            <div class="bar-track"><div class="bar-fill real" style="width:70%;">1,4×</div></div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl"><span>DLSS 4 · <b>Promesa de salto</b></span><span>marketing</span></div>
+            <div class="bar-track"><div class="bar-fill mk" style="width:100%;">"gran salto"</div></div>
+          </div>
+          <div class="bar-row">
+            <div class="lbl"><span>DLSS 4 · <b>Gamers Nexus</b></span><span>cuadros reales</span></div>
+            <div class="bar-track"><div class="bar-fill real" style="width:12%;">+5,1%</div></div>
+          </div>
         </div>
         <div class="card mg">
-          <div class="big">2× ≠ 2×</div>
-          <p>El modelo de octubre de DLSS 5 es "2× más rápido" <b>internamente</b>, pero eso se traduce en hasta <b>1,4× FPS</b> en el juego.</p>
-        </div>
-        <div class="card">
-          <div class="big">+5,1%</div>
-          <p>Mejora de cuadros reales de DLSS 4 (RTX 5090) según Gamers Nexus, lejos de los saltos de marketing.</p>
+          <h3>Alerta</h3>
+          <div class="big">−20%</div>
+          <p class="unit">rendimiento en GPUs sin FP8 (medido por la comunidad)</p>
         </div>
       </div>
-      <p class="note">Moraleja: toda exposición seria debe aclarar qué se mide exactamente antes de citar un número.</p>`
+      <p class="note">Auditar siempre qué se mide: inferencia interna vs. fotogramas finales.</p>`
   },
 
   {
@@ -650,20 +698,49 @@ export const slides = [
     html: `
       <span class="kicker">Debate crítico · 4 de 4</span>
       <h2>¿La IA respeta la visión del estudio?</h2>
-      <div class="cols side">
-        <div>
-          <p class="body">DLSS 5 reavivó la discusión sobre <b>automatización por IA frente a la
-          intención artística</b>. ¿Puede una red neuronal "repintar" la iluminación sin traicionar
-          el estilo que diseñó el estudio?</p>
-          <p class="body" style="margin-top:1rem;">La respuesta de NVIDIA: priorizar
-          <span class="hl">máscaras semánticas</span> y <span class="hl">controles de tono</span>
-          para que la iluminación neuronal respete la estética de cada juego.</p>
-        </div>
+      <div class="triptych">
+        <figure class="imgframe" style="min-height:150px;"><img src="assets/img_dlss5/arte-original.webp" alt="Escena original del estudio"></figure>
+        <span class="arrow">→</span>
+        <figure class="imgframe" style="min-height:150px;"><img src="assets/img_dlss5/arte-mascara.webp" alt="Mapa de máscara semántica por colores"></figure>
+        <span class="arrow">→</span>
+        <figure class="imgframe" style="min-height:150px;"><img src="assets/img_dlss5/arte-iluminado.webp" alt="Iluminación IA respetando el estilo"></figure>
+      </div>
+      <div class="standoff">
         <div class="card accent">
-          <h3>El argumento a favor</h3>
-          <p>El modelo solo añade efectos de luz sobre geometrías ya definidas, sin cambiar formas
-          ni posiciones. En pruebas ciegas, parte del público <b>prefirió</b> la imagen con IA.
-          Pero el debate purista sigue abierto.</p>
+          <h3 class="hl">A favor</h3>
+          <ul class="ticks" style="margin-top:.5rem;">
+            <li>Conserva geometría 3D</li>
+            <li>Control por máscaras</li>
+            <li>Preferido en pruebas ciegas</li>
+          </ul>
+        </div>
+        <div class="card mg">
+          <h3 class="hl-m">El debate</h3>
+          <ul class="ticks" style="margin-top:.5rem;">
+            <li>Riesgo de homogeneización</li>
+            <li>Autoría de la iluminación</li>
+          </ul>
+        </div>
+      </div>`
+  },
+
+  {
+    type: "content",
+    title: "Comparación interactiva · sin IA vs con IA",
+    html: `
+      <span class="kicker">Antes / después · arrastra el control</span>
+      <h2>Escena base vs. iluminación neuronal</h2>
+      <div class="ics" data-ics>
+        <div class="ics-img ics-before">
+          <img src="assets/img_dlss5/arte-original.webp" alt="Escena de juego sin efectos de IA (Antes)">
+        </div>
+        <div class="ics-img ics-after" data-ics-after>
+          <img src="assets/img_dlss5/arte-iluminado.webp" alt="Escena de juego con iluminación neuronal (Después)">
+        </div>
+        <div class="ics-line" data-ics-line>
+          <button class="ics-handle" type="button" aria-label="Arrastrar para comparar" data-ics-handle>
+            <span>&#9664;</span><span>&#9654;</span>
+          </button>
         </div>
       </div>`
   },
@@ -678,19 +755,19 @@ export const slides = [
         <div class="card accent">
           <h3 class="hl">Ventajas</h3>
           <ul class="ticks" style="margin-top:.6rem;">
-            <li>Aumento notable de FPS: 4K con ray tracing jugable.</li>
-            <li>Mejor calidad: elimina aliasing, a veces supera a la nativa.</li>
-            <li>Presets ajustables (calidad / equilibrio / rendimiento).</li>
-            <li>Estándar de facto: ~80% de usuarios RTX lo activan; miles de juegos.</li>
+            <li><b>4K ray tracing jugable</b></li>
+            <li><b>Calidad superior a la nativa</b></li>
+            <li><b>Presets ajustables</b></li>
+            <li><b>~80% adopción RTX</b></li>
           </ul>
         </div>
         <div class="card mg">
           <h3 class="hl-m">Limitaciones</h3>
           <ul class="ticks" style="margin-top:.6rem;">
-            <li>Solo hardware NVIDIA con Tensor Cores.</li>
-            <li>DLSS 4.5/5 consumen mucho; en GPU modestas el beneficio es marginal.</li>
-            <li>Depende de que el estudio integre y calibre bien la tecnología.</li>
-            <li>Artefactos menores y ghosting ocasional según la escena.</li>
+            <li><b>Exclusivo Tensor Cores</b></li>
+            <li><b>Alto coste en DLSS 4.5/5</b></li>
+            <li><b>Dependiente del estudio</b></li>
+            <li><b>Ghosting ocasional</b></li>
           </ul>
         </div>
       </div>`
@@ -702,48 +779,65 @@ export const slides = [
     html: `
       <span class="kicker">Síntesis</span>
       <h2>La evolución en un vistazo</h2>
-      <div class="timeline">
-        <div class="tl-row"><div class="tl-year">2018–19</div><div class="tl-body"><h3>Escalado espacial</h3><p>DLSS 1.0: CNN, un fotograma, entrenamiento por juego. El caso "1.9" como puente.</p></div></div>
-        <div class="tl-row"><div class="tl-year">2020</div><div class="tl-body"><h3>Reconstrucción temporal</h3><p>DLSS 2.0 + DLAA: modelo genérico, acumulación temporal, 1–2 ms.</p></div></div>
-        <div class="tl-row"><div class="tl-year">2022–25</div><div class="tl-body"><h3>Síntesis de fotogramas y rayos</h3><p>DLSS 3.0 (Frame Gen + OFA), 3.5 (Ray Reconstruction), 4.0/4.5 (Transformer + MFG hasta 6×).</p></div></div>
-        <div class="tl-row mg"><div class="tl-year">2026</div><div class="tl-body"><h3>Renderizado neuronal generativo</h3><p>DLSS 5: difusión de un paso que añade iluminación y materiales fotorrealistas.</p></div></div>
-      </div>`
-  },
-
-  {
-    type: "content",
-    title: "Conclusión",
-    html: `
-      <span class="kicker">Cierre</span>
-      <h2 class="grad">De promesa experimental<br>a pilar del render moderno</h2>
-      <div class="cols side">
-        <div>
-          <ul class="ticks">
-            <li>DLSS pasó de <b>escalar un fotograma</b> entrenado por juego a un <b>ecosistema</b> de reconstrucción, generación y síntesis neuronal.</li>
-            <li>Hasta 4.5 persigue <b>rendimiento</b>; DLSS 5 invierte la lógica y busca <b>fidelidad</b>.</li>
-            <li>El reto hoy: coste computacional, dependencia del hardware más nuevo y <b>honestidad en las métricas</b>.</li>
-            <li>El futuro: gráficos donde la <b>IA es parte estándar del pipeline</b>.</li>
-          </ul>
+      <div class="stair">
+        <div class="stp">
+          <span class="yr">2018–19 · DLSS 1</span>
+          <h3>Escalado espacial</h3>
+          <p>CNN por juego · 1 cuadro → upscale</p>
         </div>
-        <div class="card accent">
-          <h3>La frase de Jensen Huang</h3>
-          <p style="font-size:1.1rem;line-height:1.5;">"El momento GPT para los gráficos."</p>
-          <p style="margin-top:.8rem;">DLSS 5 no cierra la historia: abre la era del renderizado neuronal en tiempo real.</p>
+        <div class="stp">
+          <span class="yr">2020 · DLSS 2</span>
+          <h3>Reconstrucción temporal</h3>
+          <p>+ historial temporal → imagen estable</p>
         </div>
-      </div>`
+        <div class="stp">
+          <span class="yr">2022–25 · DLSS 3–4.5</span>
+          <h3>Síntesis de cuadros y rayos</h3>
+          <p>OFA / Transformer → cuadros sintéticos</p>
+        </div>
+        <div class="stp">
+          <span class="yr">2026 · DLSS 5</span>
+          <h3>Render neuronal generativo</h3>
+          <p>Difusión → relighting 3D</p>
+        </div>
+      </div>
+      <div class="band" style="margin-top:1.2rem;"><b>Conclusión:</b> De escalar píxeles a sintetizar iluminación en tiempo real.</div>
+      <div class="challenge-row" style="margin-top:1rem;">
+        <span class="ch">Coste computacional</span>
+        <span class="ch">Barrera de hardware</span>
+        <span class="ch">Métricas honestas</span>
+      </div>
+      <p class="open-q" style="margin-top:1rem;">¿Dónde trazamos el límite entre <span class="hl">optimización gráfica</span> y <span class="hl-m">autoría artística</span>?</p>`
   },
 
   {
     type: "cover",
     title: "Gracias · Fuentes",
     html: `
-      <div class="eyebrow">Fin de la presentación</div>
-      <h1 class="grad">Gracias</h1>
-      <p class="sub">Preguntas y discusión.</p>
-      <div class="meta" style="flex-direction:column;gap:.5rem;align-items:flex-start;">
-        <span>Fuentes principales: <b>NVIDIA</b> (GeForce News, Developer Blog, Research ADLR), <b>Wikipedia</b>, <b>TechPowerUp</b>, <b>Gamers Nexus</b>, <b>Tom's Hardware</b>, <b>IGN</b></span>
-        <span>Comparativas: <b>HyperPC</b>, <b>FlowUP</b>, <b>DropReference</b>, <b>SageTweaks</b>, <b>Digital Foundry</b></span>
-        <span>Período cubierto: <b>2018 – noviembre 2026</b></span>
+      <div class="cols" style="grid-template-columns:40fr 60fr;align-items:center;">
+        <div>
+          <div class="eyebrow">Fin de la presentación</div>
+          <h1 class="grad">Gracias</h1>
+          <p class="sub">Preguntas y discusión.</p>
+        </div>
+        <div class="cols c2" style="margin-top:0;">
+          <div class="card accent">
+            <h3 class="hl">Fuentes oficiales</h3>
+            <ul class="ticks" style="margin-top:.5rem;">
+              <li>NVIDIA Developer Blog</li>
+              <li>GTC · GeForce News</li>
+              <li>Research ADLR</li>
+            </ul>
+          </div>
+          <div class="card mg">
+            <h3 class="hl-m">Benchmarks independientes</h3>
+            <ul class="ticks" style="margin-top:.5rem;">
+              <li>Digital Foundry</li>
+              <li>Gamers Nexus</li>
+              <li>TechPowerUp</li>
+            </ul>
+          </div>
+        </div>
       </div>`
   }
 ];
