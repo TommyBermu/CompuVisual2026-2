@@ -23,11 +23,16 @@ export const slides = [
       <h1 class="grad">De la supermuestra espacial<br>al renderizado neuronal</h1>
       <p class="sub">La evolución de DLSS desde los prototipos de 2018 hasta DLSS&nbsp;5,
       el modelo generativo que reescribe el final del pipeline gráfico.</p>
-      <div class="meta">
-        <span>Línea temporal · <b>2018 → 2026</b></span>
-        <span>Siete generaciones · <b>DLSS 1.0 a DLSS 5</b></span>
-        <span>Computación Visual</span>
-      </div>`
+      <div class="meta authors-meta">
+        <span class="authors-label">Hecho por</span>
+        <div class="author-slots" aria-label="Espacios para los cuatro integrantes">
+          <span>Tomas Alejandro Bermudez Guaqueta</span>
+          <span>Daniel Alfonso Cely Infante </span>
+          <span>Juan David Cruz Giraldo </span>
+          <span>Juan Esteban Ruiz Guasca</span>
+        </div>
+      </div>
+      <span class="course-label">Computación Visual</span>`
   },
 
   {
@@ -40,18 +45,34 @@ export const slides = [
         <div>
           <p class="body"><b>Deep Learning Super Sampling</b> es el conjunto de técnicas de
           NVIDIA que usa redes neuronales, ejecutadas en los <span class="hl">Tensor Cores</span>
-          de las GPU RTX, para producir más imagen de la que la tarjeta rasteriza directamente.</p>
+          de las GPU RTX, para producir más imagen de la que la tarjeta renderiza.</p>
           <ul class="ticks">
-            <li>El juego se renderiza a <b>menor resolución</b> y la IA reconstruye el fotograma final.</li>
-            <li>La IA puede además <b>generar fotogramas intermedios</b> para elevar los FPS.</li>
-            <li>En su versión más reciente, <b>sintetiza iluminación y materiales</b> fotorrealistas.</li>
+            <li>Se renderiza a <b>menor resolución</b> y la IA reconstruye el fotograma final.</li>
+            <li>La IA puede <b>generar fotogramas intermedios</b> para elevar los FPS.</li>
+            <li>Recientemente, <b>sintetiza iluminación y materiales</b> fotorrealistas.</li>
           </ul>
         </div>
-        <div class="card accent">
-          <h3>La idea en una frase</h3>
-          <p>Renderizar menos píxeles "a mano" y dejar que una red neuronal entrenada
-          complete el resto con calidad igual o superior a la nativa.</p>
-          <p style="margin-top:1rem;" class="mono" >menos cómputo clásico<br>+ más inferencia de IA<br>= más rendimiento o más fidelidad</p>
+        <div class="dlss-flow" aria-label="Resolución baja, reconstrucción con Tensor Cores e IA, salida de mayor resolución">
+          <div class="dlss-flow__stage">
+            <span class="dlss-flow__label">ENTRADA</span>
+            <div class="pixel-sample pixel-sample--low" aria-hidden="true"></div>
+            <b>Resolución baja</b>
+            <small>Menos píxeles renderizados</small>
+          </div>
+          <span class="dlss-flow__arrow" aria-hidden="true">→</span>
+          <div class="dlss-flow__stage dlss-flow__stage--ai">
+            <span class="dlss-flow__label">RECONSTRUCCIÓN</span>
+            <div class="tensor-orb" aria-hidden="true">AI</div>
+            <b>Tensor Cores + IA</b>
+            <small>Reconstruyen el fotograma</small>
+          </div>
+          <span class="dlss-flow__arrow" aria-hidden="true">→</span>
+          <div class="dlss-flow__stage">
+            <span class="dlss-flow__label">SALIDA</span>
+            <div class="pixel-sample pixel-sample--high" aria-hidden="true"></div>
+            <b>Mayor resolución</b>
+            <small>Imagen final en pantalla</small>
+          </div>
         </div>
       </div>`
   },
@@ -60,44 +81,55 @@ export const slides = [
     type: "content",
     title: "El punto de quiebre: rendimiento vs. fidelidad",
     html: `
-      <span class="kicker">Tesis de la charla</span>
+      <span class="kicker"></span>
       <h2>Dos eras en una misma tecnología</h2>
       <div class="versus">
         <div class="card">
           <h3 class="hl">DLSS 1.0 → 4.5 · ahorrar cómputo</h3>
-          <p>Todas estas generaciones buscan <b>más FPS</b>: renderizan a menor resolución
-          o intercalan fotogramas generados. La IA sustituye trabajo para que la GPU vaya más rápido.</p>
+          <p><b>Más FPS</b>: renderizan a menor resolución y
+          la IA sustituye trabajo para que la GPU vaya más rápido.</p>
         </div>
         <div class="vs">VS</div>
         <div class="card mg">
           <h3 class="hl-m">DLSS 5 · gastar cómputo</h3>
-          <p>Invierte la lógica: parte de una escena ya renderizada y <b>añade fidelidad</b>
-          (iluminación y materiales neuronales). Consume cómputo extra en vez de ahorrarlo.</p>
+          <p>De una escena ya renderizada y <b>añade fidelidad</b>. 
+          Consume cómputo extra.</p>
         </div>
       </div>
-      <p class="note">Esta distinción ordena toda la historia: hasta 4.5, DLSS es una tecnología
-      de rendimiento; con 5 se convierte también en una etapa de síntesis visual.</p>`
+      <figure class="era-comparison">
+        <img src="assets/elements/4.5vs5.jpg" alt="Comparación visual rotulada DLSS 5 y DLSS 4.5 en Cyberpunk 2077">
+      </figure>
+    `
   },
 
   {
     type: "content",
     title: "Tres matices que se suelen malinterpretar",
     html: `
-      <span class="kicker">Rigor documental</span>
+      <span class="kicker"></span>
       <h2>Antes de empezar, tres aclaraciones</h2>
-      <div class="cols c3">
-        <div class="card">
+      <div class="cols c3 matices-grid">
+        <div class="card matiz-card">
+          <div class="matiz-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M7 5h18v22H7z"/><path d="M12 12a4 4 0 0 1 8 0c0 3-4 3-4 6"/><path d="M16 22v.1"/></svg>
+          </div>
           <h3>No hubo "beta pública" 1.0</h3>
           <p>No existe una versión oficial etiquetada como beta previa a DLSS 1.0: hubo demos
           técnicas bajo el marco <span class="mono">NGX</span> y una etapa de transición apodada
           informalmente <b>"1.9"</b>.</p>
         </div>
-        <div class="card">
+        <div class="card matiz-card">
+          <div class="matiz-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M5 26h22"/><path d="M8 23v-7h4v7M14 23V9h4v14M20 23v-11h4v11"/></svg>
+          </div>
           <h3>Cifras del fabricante</h3>
           <p>Muchos números de rendimiento de DLSS 4.5 y 5 vienen de <b>pruebas internas de NVIDIA</b>
           en títulos concretos. Hay que separar métricas de marketing de mediciones independientes.</p>
         </div>
-        <div class="card">
+        <div class="card matiz-card">
+          <div class="matiz-icon" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><circle cx="16" cy="17" r="10"/><path d="M16 11v6l4 2M12 3h8M16 3v4M5 8l3 3"/></svg>
+          </div>
           <h3>Reflex 2 sigue sin salir</h3>
           <p>Funciones muy publicitadas como <b>Reflex 2 (Frame Warp)</b> siguen sin lanzamiento
           comercial más de 18 meses después de su anuncio.</p>
@@ -136,11 +168,16 @@ export const slides = [
             <li>Demo técnica <b>Unreal Infiltrator</b>: 4K a más de <b>70 FPS</b> en una RTX 2080 Ti.</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="turing-visual">
+          <figure class="turing-figure">
+            <img src="assets/elements/rtx-2080-ti-02.png" alt="Tarjeta gráfica NVIDIA GeForce RTX 2080 Ti">
+            <figcaption>GeForce RTX 2080 Ti · arquitectura Turing</figcaption>
+          </figure>
+          <div class="card">
           <h3>¿Qué es un Tensor Core?</h3>
           <p>Unidad de hardware especializada en multiplicación de matrices, la operación
-          base de las redes neuronales. Es lo que permite ejecutar inferencia de IA
-          en tiempo real dentro del presupuesto de un fotograma.</p>
+          base de las redes neuronales.</p>
+          </div>
         </div>
       </div>`
   },
@@ -165,37 +202,34 @@ export const slides = [
         <div class="card mg">
           <h3>Entrenamiento por juego</h3>
           <p>NVIDIA entrenaba un modelo <b>específico para cada videojuego</b> en su
-          supercomputadora <span class="mono">Saturn V</span>, usando imágenes de referencia
+          supercomputadora <span class="mono">Saturn V</span>, con imágenes de referencia
           por supermuestreo a <b>64 muestras por píxel</b>.</p>
-          <p style="margin-top:.9rem;">Coste: <b>2–4 ms</b> por fotograma. Resultado: imágenes
-          blandas y "alucinaciones" en geometrías finas (hojas, vallas).</p>
+          <p style="margin-top:.9rem;">Coste: <b>2–4 ms</b> por fotograma.</p>
         </div>
       </div>
-      <p class="note">Recepción tibia: debutó en Battlefield V y Metro Exodus como prueba de concepto.</p>`
+    `
   },
 
   {
     type: "content",
     title: 'El caso puente DLSS "1.9"',
     html: `
-      <span class="kicker">Ago 2019 · Control</span>
+      <span class="kicker">Ago 2019</span>
       <h2>DLSS "1.9": un puente sin Tensor Cores</h2>
-      <div class="cols side">
-        <div>
-          <p class="body">Nombre <b>informal</b> acuñado por la comunidad para la implementación
-          que llegó inicialmente al juego <b>Control</b>. Fue un caso único en la historia de DLSS.</p>
+      <div class="control-layout">
+        <div class="control-copy">
+          <p class="body">Nombre <b>informal</b> acuñado por la comunidad e implementada
+          para <b>Control</b>.</p>
           <ul class="ticks">
-            <li>No usaba los Tensor Cores dedicados, sino los <b>núcleos shader CUDA</b> tradicionales.</li>
-            <li>Algoritmo de escalado y reconstrucción, no de pura inferencia neuronal.</li>
-            <li>Sirvió como <b>puente experimental</b> antes de la actualización oficial a DLSS 2.0.</li>
+            <li>No usaba los Tensor Cores, sino los <b>núcleos shader CUDA</b>.</li>
+            <li>Algoritmo de escalado y reconstrucción.</li>
+            <li><b>Puente experimental</b> antes de DLSS 2.0.</li>
           </ul>
         </div>
-        <div class="card accent">
-          <h3>Por qué importa</h3>
-          <p>Demuestra que NVIDIA estaba buscando el método correcto: entre el escalado espacial
-          de 1.0 y la reconstrucción temporal de 2.0 hubo un experimento intermedio que
-          anticipa el gran cambio de paradigma.</p>
-        </div>
+        <figure class="control-comparison">
+          <img src="assets/elements/control.png" alt="Comparativa de Control con DLSS desactivado, DLSS 1.X y DLSS 2.0">
+          <figcaption>Control · comparación entre DLSS OFF, 1.X y 2.0</figcaption>
+        </figure>
       </div>`
   },
 

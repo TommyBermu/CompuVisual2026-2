@@ -1740,3 +1740,284 @@ figure.media figcaption { font-family: var(--mono); font-size: .75rem; color: va
 /* Capturas de juegos reales (Cap. 2) */
 figure.media.shot { text-align: center; }
 figure.media.shot img { width: auto; max-width: 100%; max-height: 56vh; margin: 0 auto; }
+
+.era-comparison {
+  display: flex;
+  justify-content: center;
+  margin: clamp(14px, 2vh, 24px) auto 0;
+}
+
+.era-comparison img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 30vh;
+  object-fit: contain;
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+}
+
+.control-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .75rem;
+  margin-top: .55rem;
+}
+
+.control-copy .ticks {
+  margin-top: .75rem;
+  gap: .5rem;
+}
+
+.control-comparison {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.control-comparison img {
+  display: block;
+  width: auto;
+  height: clamp(180px, 38vh, 460px);
+  max-width: 100%;
+  object-fit: contain;
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+}
+
+.control-comparison figcaption {
+  margin-top: .5rem;
+  color: var(--dim);
+  font: .72rem var(--mono);
+  text-align: center;
+}
+
+/* --- Persona 1: autores, diagrama DLSS y referencia Turing --- */
+.cover .meta.authors-meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .75rem 1.1rem;
+}
+
+.authors-label {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.author-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: .45rem 1rem;
+}
+
+.cover .course-label {
+  position: absolute;
+  left: clamp(28px, 5vw, 80px);
+  bottom: clamp(68px, 8vh, 88px);
+  color: var(--dim);
+  font: .82rem var(--mono);
+}
+
+.dlss-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(5px, .8vw, 12px);
+  padding: clamp(12px, 1.4vw, 20px);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  background: linear-gradient(145deg, rgba(58, 214, 196, .08), rgba(255, 255, 255, .025));
+  text-align: center;
+}
+
+.dlss-flow__stage {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .45rem;
+}
+
+.dlss-flow__label {
+  color: var(--dim);
+  font: 500 .62rem var(--mono);
+  letter-spacing: .08em;
+}
+
+.dlss-flow__stage b {
+  color: var(--ink);
+  font-size: clamp(.72rem, 1vw, .95rem);
+  line-height: 1.2;
+}
+
+.dlss-flow__stage small {
+  color: var(--muted);
+  font-size: clamp(.62rem, .8vw, .75rem);
+  line-height: 1.35;
+}
+
+.pixel-sample {
+  width: clamp(48px, 5.2vw, 72px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(58, 214, 196, .42);
+  border-radius: 10px;
+  background-image:
+    linear-gradient(rgba(7, 9, 15, .55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(7, 9, 15, .55) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(58, 214, 196, .85), rgba(65, 182, 255, .28));
+  background-size: 25% 25%, 25% 25%, 100% 100%;
+  box-shadow: 0 0 24px rgba(58, 214, 196, .12);
+}
+
+.pixel-sample--high {
+  background-size: 12.5% 12.5%, 12.5% 12.5%, 100% 100%;
+  border-color: rgba(65, 182, 255, .55);
+  box-shadow: 0 0 28px rgba(65, 182, 255, .2);
+}
+
+.tensor-orb {
+  width: clamp(48px, 5.2vw, 72px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(58, 214, 196, .65);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(58, 214, 196, .25), rgba(58, 214, 196, .04) 70%);
+  box-shadow: 0 0 28px rgba(58, 214, 196, .2), inset 0 0 18px rgba(58, 214, 196, .12);
+  color: var(--teal);
+  font: 700 1.15rem var(--mono);
+}
+
+.dlss-flow__arrow {
+  color: var(--teal);
+  font: 700 clamp(1rem, 1.8vw, 1.6rem) var(--mono);
+}
+
+.matiz-card {
+  height: 100%;
+}
+
+.matiz-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(58, 214, 196, .3);
+  border-radius: 12px;
+  background: rgba(58, 214, 196, .08);
+  color: var(--teal);
+}
+
+.matiz-icon svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.turing-visual {
+  display: grid;
+  gap: 1rem;
+}
+
+.turing-figure {
+  margin: 0;
+  padding: .8rem 1rem .65rem;
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  background: rgba(255, 255, 255, .025);
+}
+
+.turing-figure img {
+  display: block;
+  width: 100%;
+  height: clamp(120px, 19vh, 190px);
+  object-fit: contain;
+}
+
+.turing-figure figcaption {
+  margin-top: .35rem;
+  color: var(--dim);
+  font: .7rem var(--mono);
+  text-align: center;
+}
+
+@keyframes visual-enter {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes arrow-enter {
+  0% { opacity: 0; transform: translateX(-6px); }
+  70% { opacity: 1; transform: translateX(3px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes arrow-enter-vertical {
+  0% { opacity: 0; transform: translateY(-6px) rotate(90deg); }
+  70% { opacity: 1; transform: translateY(3px) rotate(90deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(90deg); }
+}
+
+.slide.active .dlss-flow__stage,
+.slide.active .matiz-card {
+  animation: visual-enter .6s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.slide.active .dlss-flow__stage:nth-of-type(2),
+.slide.active .matiz-card:nth-child(2) {
+  animation-delay: .12s;
+}
+
+.slide.active .dlss-flow__stage:nth-of-type(3),
+.slide.active .matiz-card:nth-child(3) {
+  animation-delay: .24s;
+}
+
+.slide.active .dlss-flow__arrow {
+  animation: arrow-enter .55s ease-out both;
+}
+
+.slide.active .dlss-flow__arrow:nth-of-type(2) {
+  animation-delay: .18s;
+}
+
+.slide.active .turing-figure {
+  animation: visual-enter .7s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@media (max-width: 600px) {
+  .author-slots {
+    grid-template-columns: 1fr;
+  }
+
+  .dlss-flow {
+    grid-template-columns: 1fr;
+    gap: .65rem;
+  }
+
+  .dlss-flow__arrow {
+    transform: rotate(90deg);
+  }
+
+  .slide.active .dlss-flow__arrow,
+  .slide.active .dlss-flow__arrow:nth-of-type(2) {
+    animation-name: arrow-enter-vertical;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide.active .dlss-flow__stage,
+  .slide.active .dlss-flow__arrow,
+  .slide.active .matiz-card,
+  .slide.active .turing-figure {
+    animation: none;
+  }
+}
