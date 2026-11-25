@@ -10,6 +10,7 @@
 */
 
 import { slides } from "./slides.js";
+import { initDemos } from "./demos.js";
 
 /* ---------------- Render de slides ---------------- */
 const deck = document.getElementById("deck");
@@ -21,6 +22,8 @@ slides.forEach((s, i) => {
   el.innerHTML = `<div class="wrap">${s.html}</div>`;
   deck.appendChild(el);
 });
+
+initDemos(deck); // mini-demos animadas del Capítulo 2
 
 const slideEls = [...deck.querySelectorAll(".slide")];
 const total = slideEls.length;

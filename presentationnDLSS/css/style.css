@@ -846,3 +846,34 @@ ul.ticks li b {
     transition: none !important;
   }
 }
+
+/* =========================================================
+   Capítulo 2 — mini-demos y componentes visuales
+   ========================================================= */
+.demo { background: var(--panel); border: 1px solid var(--panel-brd); border-radius: var(--r); padding: clamp(10px, 1.4vw, 18px); }
+.demo-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.demo figure { margin: 0; }
+.demo figcaption { font-family: var(--mono); font-size: .74rem; color: var(--muted); text-align: center; margin-top: .45rem; }
+.demo-canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--bg-2); }
+.demo .counter { text-align: center; font-size: .78rem; color: var(--teal); margin-top: .6rem; }
+.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .7rem; }
+.tbtn { font-family: var(--mono); font-size: .78rem; padding: .4rem .8rem; border-radius: 999px; border: 1px solid var(--panel-brd); background: rgba(255,255,255,.03); color: var(--muted); cursor: pointer; }
+.tbtn:hover { border-color: rgba(58,214,196,.5); color: var(--ink); }
+.tbtn.on { border-color: var(--teal); color: var(--teal); background: rgba(58,214,196,.08); }
+.demo .readout { margin-left: auto; font-size: .78rem; color: var(--muted); }
+.demo .readout b { color: var(--cyan); font-size: 1.05rem; }
+.demo .readout b.hot { color: var(--magenta); }
+.demo .readout i { color: var(--dim); font-style: normal; }
+.demo .mode-caption { text-align: center; font-size: .8rem; color: var(--teal); margin-top: .6rem; min-height: 1.2em; }
+ul.ticks.tight { margin-top: .2rem; gap: .7rem; }
+.card.chip { text-align: left; padding: clamp(12px, 1.3vw, 18px); }
+.card.chip h3 { font-size: 1rem; margin-bottom: .25rem; }
+.card.chip p { font-size: .88rem; line-height: 1.4; }
+.card.chip .ico { font-size: 1.6rem; color: var(--teal); margin-bottom: .3rem; }
+.flow-arrow { text-align: center; font-family: var(--mono); font-size: .85rem; color: var(--magenta); margin: 1.1rem 0 .3rem; letter-spacing: .08em; }
+p.short { color: var(--muted); font-size: clamp(.95rem, 1.35vw, 1.08rem); line-height: 1.5; }
+p.short b { color: var(--ink); }
+figure.media { margin: 0; }
+figure.media video, figure.media img { width: 100%; border-radius: var(--r); border: 1px solid var(--panel-brd); display: block; }
+figure.media figcaption { font-family: var(--mono); font-size: .75rem; color: var(--dim); margin-top: .5rem; }
+@media (max-width: 860px) { .demo-panes { grid-template-columns: 1fr; } .demo .readout { margin-left: 0; } }

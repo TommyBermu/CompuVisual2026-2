@@ -10,6 +10,9 @@
   NO contiene guión, tiempos ni nombres de integrantes (eso va aparte).
 */
 
+/* Ponlo en true cuando agregues assets/ch2/demo.mp4 y assets/ch2/comparacion.jpg */
+const MEDIA_CH2 = false;
+
 export const slides = [
   /* ============ PORTADA ============ */
   {
@@ -205,120 +208,156 @@ export const slides = [
       <div class="big-num">02</div>
       <span class="kicker">2020 – 2023</span>
       <h2>Revolución temporal y<br>los primeros fotogramas generados</h2>
-      <p class="lead">DLSS 2.0, DLAA, la generación de fotogramas de DLSS 3.0 y la
-      reconstrucción de rayos de DLSS 3.5.</p>`
+      <p class="lead">Recuperar detalle en el tiempo, inventar cuadros enteros y limpiar los rayos con IA.</p>`
   },
 
+  /* ---- 2.1 DLSS 2.0: jitter ---- */
   {
     type: "content",
-    title: "DLSS 2.0 · reconstrucción temporal",
+    title: "DLSS 2.0 · recuperar, no inventar",
     html: `
-      <span class="kicker">Abr 2020 · rediseño total</span>
+      <span class="kicker">23 mar 2020 · rediseño total</span>
       <h2>DLSS 2.0 · recuperar, no inventar</h2>
       <div class="cols side">
-        <div>
-          <p class="body">Rediseño completo, incompatible con 1.0. En lugar de escalar un cuadro
-          aislado, implementa una forma de <b>TAAU</b> (Temporal Anti-Aliasing Upsampling)
-          acelerada por IA.</p>
-          <p class="body" style="margin-top:1rem;">La clave: el motor aplica pequeños
-          <span class="hl">desplazamientos subpíxel</span> entre fotogramas para capturar muestras
-          distintas de la misma escena. La IA acumula información <b>real a lo largo del tiempo</b>
-          en vez de inventarla.</p>
+        <div class="demo" data-demo="jitter">
+          <div class="demo-panes">
+            <figure><div class="pane-a"></div><figcaption>1 cuadro de baja resolución</figcaption></figure>
+            <figure><div class="pane-b"></div><figcaption class="hl">Cuadros acumulados con jitter</figcaption></figure>
+          </div>
+          <div class="counter mono">cuadros acumulados: 0 / 16</div>
         </div>
-        <div class="card accent">
-          <h3>Cuatro entradas del motor</h3>
-          <ul class="ticks" style="margin-top:.6rem;">
-            <li>Fotograma bruto a baja resolución</li>
-            <li>Vectores de movimiento</li>
-            <li>Buffers de profundidad</li>
-            <li>Exposición / brillo</li>
-          </ul>
-        </div>
+        <ul class="ticks tight">
+          <li>Ya no escala <b>un</b> cuadro: acumula <b>varios</b>.</li>
+          <li>El motor mueve la cámara una fracción de píxel (<span class="hl">jitter subpíxel</span>).</li>
+          <li>Cada cuadro ve puntos distintos → la IA los junta. Es detalle <b>real</b>.</li>
+        </ul>
       </div>
-      <div class="cols c3" style="margin-top:1.4rem;">
-        <div class="card"><div class="big">1</div><p>modelo único genérico — se acabó el entrenamiento por juego</p></div>
-        <div class="card"><div class="big">1–2 ms</div><p>coste por fotograma, frente a 2–4 ms de DLSS 1.0</p></div>
-        <div class="card"><div class="big">DLAA</div><p>la misma red al 100% de resolución nativa: antialiasing por IA sin escalar</p></div>
+      <p class="note">Ilustración conceptual con escena quieta. Con movimiento, los vectores de movimiento reubican las muestras.</p>`
+  },
+
+  /* ---- 2.2 Entradas y logros ---- */
+  {
+    type: "content",
+    title: "DLSS 2.0 · entradas y logros",
+    html: `
+      <span class="kicker">Qué le entra a la red</span>
+      <h2>Cuatro entradas, un solo modelo</h2>
+      <div class="cols c4">
+        <div class="card chip"><div class="ico">▦</div><h3>Baja resolución</h3><p>El cuadro bruto</p></div>
+        <div class="card chip"><div class="ico">➜</div><h3>Vectores de movimiento</h3><p>Hacia dónde se mueve cada cosa</p></div>
+        <div class="card chip"><div class="ico">▤</div><h3>Profundidad</h3><p>Buffer Z</p></div>
+        <div class="card chip"><div class="ico">☀</div><h3>Exposición</h3><p>Brillo de la escena</p></div>
+      </div>
+      <div class="flow-arrow">▼ red convolucional en Tensor Cores ▼</div>
+      <div class="cols c3" style="margin-top:.4rem;">
+        <div class="card accent"><div class="big">1</div><p>modelo genérico: se acabó el entrenamiento por juego</p></div>
+        <div class="card"><div class="big">1–2 ms</div><p>por fotograma (DLSS 1.0: 2–4 ms)</p></div>
+        <div class="card mg"><div class="big">DLAA</div><p>la misma red a resolución nativa: antialiasing sin escalar</p></div>
       </div>`
   },
 
+  /* ---- 2.3 TAA vs DLSS 2.0 ---- */
   {
     type: "content",
     title: "TAA clásico vs. DLSS 2.0",
     html: `
       <span class="kicker">Por qué fue un salto</span>
       <h2>La red decide qué historia conservar</h2>
-      <div class="versus">
-        <div class="card">
-          <h3 class="hl-m">TAA convencional</h3>
-          <p>Usa reglas manuales como el <span class="mono">neighborhood clamping</span> para
-          descartar píxeles históricos que no concuerdan. Tiende a <b>emborronar</b> la imagen.</p>
-        </div>
-        <div class="vs">VS</div>
-        <div class="card accent">
-          <h3 class="hl">DLSS 2.0</h3>
-          <p>La red neuronal <b>distingue</b> qué datos temporales conservar y cuáles descartar.
-          A menudo iguala o supera la nitidez del render nativo con TAA.</p>
+      <div class="demo" data-demo="taa">
+        <div class="demo-panes">
+          <figure><div class="pane-a"></div><figcaption class="hl-m">TAA convencional · reglas manuales</figcaption></figure>
+          <figure><div class="pane-b"></div><figcaption class="hl">DLSS 2.0 · la red decide</figcaption></figure>
         </div>
       </div>
-      <p class="note">Condición: el desarrollador debe aplicar un sesgo de mip-map negativo
-      para cargar texturas de alta resolución y aprovechar el detalle recuperado.</p>`
+      <div class="cols c2" style="margin-top:1rem;">
+        <p class="short"><b>TAA:</b> descarta historia con reglas fijas (<span class="mono">neighborhood clamping</span>) → <b>emborrona</b> y deja estela.</p>
+        <p class="short"><b>DLSS 2.0:</b> distingue qué conservar → a menudo iguala o supera el nativo con TAA.</p>
+      </div>
+      <p class="note">Ilustración conceptual (no es captura real). Condición: el juego aplica un sesgo de mip-map negativo para aprovechar el detalle.</p>`
   },
 
+  /* ---- 2.4 DLSS 3.0 Frame Generation ---- */
   {
     type: "content",
     title: "DLSS 3.0 · generación de fotogramas",
     html: `
       <span class="kicker">Sep 2022 · Ada Lovelace (RTX 40)</span>
-      <h2>DLSS 3.0 · inventar fotogramas enteros</h2>
-      <p class="body">Introduce <b>Frame Generation</b>: toma dos fotogramas renderizados e
-      <b>interpola con IA un fotograma completo intermedio</b> (modo 2×).</p>
-      <div class="pipe">
-        <div class="pipe-step"><span class="n">frame N</span><h4>Render real</h4><p>El motor rasteriza el fotograma.</p></div>
-        <div class="pipe-step ai"><span class="n">IA + OFA</span><h4>Fotograma generado</h4><p>Se interpola un cuadro intermedio con el Acelerador de Flujo Óptico.</p></div>
-        <div class="pipe-step"><span class="n">frame N+1</span><h4>Render real</h4><p>Siguiente fotograma rasterizado.</p></div>
+      <h2>DLSS 3.0 · inventar cuadros enteros</h2>
+      <div class="demo" data-demo="framegen">
+        <div class="demo-bar">
+          <button data-mode="off" class="tbtn">Frame Gen OFF</button>
+          <button data-mode="on" class="tbtn">Frame Gen ON</button>
+          <span class="mono readout">pantalla: <b class="out-shown">120</b> FPS · cuadros reales: <b class="out-real">60</b> FPS <i>(ejemplo ilustrativo)</i></span>
+        </div>
+        <div class="pane-a"></div>
       </div>
-      <div class="cols c2" style="margin-top:1.4rem;">
-        <div class="card">
-          <h3>Optical Flow Accelerator (OFA)</h3>
-          <p>Hardware dedicado en las RTX 40 que calcula el movimiento de elementos que los
-          vectores geométricos no describen: sombras, reflejos, partículas. Por esta dependencia,
-          Frame Generation quedó <b>exclusivo de RTX 40+</b>.</p>
-        </div>
-        <div class="card mg">
-          <h3>El coste: latencia</h3>
-          <p>Interpolar añade retraso de entrada. NVIDIA lo vincula con <b>Reflex</b> para
-          sincronizar CPU y GPU, vaciar la cola de render y mitigar ese aumento de latencia.</p>
-        </div>
+      <div class="cols c3" style="margin-top:1rem;">
+        <div class="card chip"><h3>2 cuadros → 1 nuevo</h3><p>La IA interpola un cuadro intermedio</p></div>
+        <div class="card chip accent"><h3>Optical Flow Accelerator</h3><p>Hardware de RTX 40: sigue sombras, reflejos, partículas</p></div>
+        <div class="card chip mg"><h3>El costo: latencia</h3><p>Más FPS en pantalla ≠ más respuesta → se une a Reflex</p></div>
       </div>`
   },
 
+  /* ---- 2.5 DLSS 3.5 Ray Reconstruction ---- */
   {
     type: "content",
     title: "DLSS 3.5 · Ray Reconstruction",
     html: `
       <span class="kicker">Sep 2023 · todas las RTX</span>
-      <h2>DLSS 3.5 · un denoiser de IA para ray tracing</h2>
+      <h2>DLSS 3.5 · un denoiser de IA</h2>
       <div class="cols side">
+        <div class="demo" data-demo="ray">
+          <div class="demo-bar">
+            <button data-mode="noisy" class="tbtn">Pocos rayos</button>
+            <button data-mode="manual" class="tbtn">Denoisers manuales</button>
+            <button data-mode="rr" class="tbtn">Ray Reconstruction</button>
+          </div>
+          <div class="pane-a"></div>
+          <div class="mode-caption mono"></div>
+        </div>
         <div>
-          <p class="body">En juegos con trazado de rayos intensivo o path tracing, el motor traza
-          pocos rayos por píxel y depende de varios <b>denoisers ajustados a mano</b> que
-          difuminan reflejos o provocan parpadeos.</p>
-          <p class="body" style="margin-top:1rem;"><b>Ray Reconstruction</b> reemplaza todos esos
-          filtros por un <span class="hl">único modelo de IA</span>, entrenado con 5× más datos
-          que DLSS 3, que genera píxeles mucho más estables entre los rayos muestreados.</p>
+          <ul class="ticks tight">
+            <li>Path tracing: <b>pocos rayos</b> por píxel → ruido.</li>
+            <li>Antes: varios <b>denoisers hechos a mano</b> (difuminan, parpadean).</li>
+            <li>Ahora: <span class="hl">un solo modelo de IA</span>, entrenado con <b>5×</b> más datos.</li>
+          </ul>
           <div class="pills">
             <span class="pill on">Cyberpunk 2077: Phantom Liberty</span>
             <span class="pill on">Alan Wake 2</span>
             <span class="pill on">Portal with RTX</span>
           </div>
+          <div class="card accent" style="margin-top:1.1rem;"><p><b>Desde la serie RTX 20.</b> Es solo procesamiento de imagen: no necesita el OFA.</p></div>
         </div>
-        <div class="card accent">
-          <h3>Compatibilidad amplia</h3>
-          <p>Al ser solo procesamiento de imagen (no requiere OFA), funciona en
-          <b>toda la línea RTX, de la serie 20 en adelante</b>.</p>
-        </div>
+      </div>
+      <p class="note">Ilustración conceptual (no es captura real).</p>`
+  },
+
+  /* ---- 2.6 (OPCIONAL) Media real: poner MEDIA_CH2 = true cuando estén los archivos ---- */
+  ...(MEDIA_CH2 ? [{
+    type: "content",
+    title: "Míralo en un juego real",
+    html: `
+      <span class="kicker">Demostración</span>
+      <h2>En un juego real</h2>
+      <div class="cols c2">
+        <figure class="media"><video src="assets/ch2/demo.mp4" autoplay muted loop playsinline></video><figcaption>Demo (≈15 s) · Fuente: NVIDIA</figcaption></figure>
+        <figure class="media"><img src="assets/ch2/comparacion.jpg" alt="Comparación DLSS" /><figcaption>Comparación · Fuente: NVIDIA</figcaption></figure>
       </div>`
+  }] : []),
+
+  /* ---- 2.7 Resumen del capítulo ---- */
+  {
+    type: "content",
+    title: "Resumen del capítulo 2",
+    html: `
+      <span class="kicker">Para llevarse</span>
+      <h2>Tres movimientos, una idea</h2>
+      <div class="cols c3">
+        <div class="card accent"><div class="big">2020</div><h3>Recuperar</h3><p>DLSS 2.0: detalle real acumulado en el tiempo.</p></div>
+        <div class="card mg"><div class="big">2022</div><h3>Inventar cuadros</h3><p>DLSS 3.0: Frame Generation con OFA (RTX 40).</p></div>
+        <div class="card"><div class="big">2023</div><h3>Limpiar rayos</h3><p>DLSS 3.5: Ray Reconstruction (todas las RTX).</p></div>
+      </div>
+      <p class="lead">Todo esto con <b>redes convolucionales</b>. El siguiente salto cambia la arquitectura →</p>`
   },
 
   /* ============ CAPÍTULO 3 ============ */
