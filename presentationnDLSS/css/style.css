@@ -792,6 +792,594 @@ ul.ticks li b {
   border-radius: 8px;
 }
 
+/* =========================================================
+   Parte 4 · Helpers visuales para DLSS 5
+   (láminas como apoyo visual, no documento de lectura)
+   ========================================================= */
+
+/* --- Imagen marco genérico --- */
+.imgframe {
+  position: relative;
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--bg-2);
+}
+
+.imgframe img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder visible mientras no hay imagen real */
+.imgframe.ph {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, .02) 0 12px, transparent 12px 24px),
+    var(--bg-2);
+}
+
+.imgframe.ph::after {
+  content: attr(data-ph);
+  font-family: var(--mono);
+  font-size: .76rem;
+  color: var(--dim);
+  letter-spacing: .08em;
+  text-align: center;
+  padding: 1rem;
+  max-width: 30ch;
+}
+
+/* Imagen de fondo tenue para portada de capítulo */
+.bg-split {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .16;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  filter: saturate(1.1);
+}
+
+/* --- Puntos calientes numerados sobre una imagen --- */
+.hotspot {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: .85rem;
+  color: var(--bg);
+  background: var(--teal);
+  box-shadow: 0 0 0 4px rgba(58, 214, 196, .25), 0 0 18px rgba(58, 214, 196, .5);
+  transform: translate(-50%, -50%);
+}
+
+.hotspot.mg {
+  background: var(--magenta);
+  box-shadow: 0 0 0 4px rgba(255, 93, 177, .25), 0 0 18px rgba(255, 93, 177, .5);
+}
+
+/* --- Tarjetas horizontales de ruta (portada) --- */
+.route {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 2vw, 26px);
+  margin-top: 2rem;
+}
+
+.route .step {
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  padding: 1.4rem 1.3rem;
+  backdrop-filter: blur(6px);
+}
+
+.route .step .ico {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-bottom: .6rem;
+}
+
+.route .step .n {
+  font-family: var(--mono);
+  color: var(--teal);
+  font-size: .78rem;
+  letter-spacing: .12em;
+}
+
+.route .step h3 {
+  margin-top: .35rem;
+  font-size: 1.15rem;
+}
+
+/* --- Timeline horizontal de nodos --- */
+.htimeline {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin-top: 2.2rem;
+  position: relative;
+}
+
+.htimeline::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 6%;
+  right: 6%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--cyan), var(--magenta));
+}
+
+.hnode {
+  position: relative;
+  padding: 0 .6rem;
+  text-align: center;
+}
+
+.hnode::before {
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--teal);
+  margin: 0 auto 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.hnode.mg::before {
+  border-color: var(--magenta);
+}
+
+.hnode .date {
+  font-family: var(--mono);
+  color: var(--cyan);
+  font-size: .76rem;
+  letter-spacing: .06em;
+}
+
+.hnode .fig {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 1.9vw, 1.55rem);
+  color: var(--teal);
+  line-height: 1.1;
+  margin: .3rem 0;
+}
+
+.hnode.mg .fig {
+  color: var(--magenta);
+}
+
+.hnode .ctx {
+  color: var(--muted);
+  font-size: .82rem;
+  line-height: 1.35;
+}
+
+/* --- Gráfico de barras horizontales --- */
+.bars {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 1.4rem;
+}
+
+.bar-row .lbl {
+  font-size: .9rem;
+  color: var(--muted);
+  margin-bottom: .35rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bar-row .lbl b {
+  color: var(--ink);
+}
+
+.bar-track {
+  height: 26px;
+  background: rgba(255, 255, 255, .04);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 .6rem;
+  font-family: var(--mono);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--bg);
+  white-space: nowrap;
+}
+
+.bar-fill.good {
+  background: linear-gradient(90deg, var(--good), var(--teal));
+}
+
+.bar-fill.bad {
+  background: linear-gradient(90deg, var(--bad), var(--magenta));
+}
+
+.bar-fill.mk {
+  background: linear-gradient(90deg, var(--good), #7bf0a8);
+}
+
+.bar-fill.real {
+  background: linear-gradient(90deg, var(--amber), #ff9b5c);
+  color: var(--bg);
+}
+
+/* --- Matriz de compatibilidad --- */
+.matrix td .ok {
+  color: var(--good);
+  font-weight: 700;
+}
+
+.matrix td .lock {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+.matrix td .mod {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--amber);
+  border: 1px solid rgba(255, 207, 92, .5);
+  border-radius: 999px;
+  padding: .1rem .55rem;
+}
+
+/* --- Escalera ascendente de paradigmas --- */
+.stair {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.6vw, 22px);
+  align-items: end;
+  margin-top: 2rem;
+}
+
+.stair .stp {
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  padding: 1.2rem 1.1rem;
+  backdrop-filter: blur(6px);
+}
+
+.stair .stp:nth-child(1) { margin-top: 90px; }
+.stair .stp:nth-child(2) { margin-top: 60px; }
+.stair .stp:nth-child(3) { margin-top: 30px; }
+.stair .stp:nth-child(4) {
+  margin-top: 0;
+  border-color: rgba(255, 93, 177, .4);
+  background: rgba(255, 93, 177, .05);
+}
+
+.stair .stp .yr {
+  font-family: var(--mono);
+  color: var(--cyan);
+  font-size: .78rem;
+}
+
+.stair .stp:nth-child(4) .yr {
+  color: var(--magenta);
+}
+
+.stair .stp h3 {
+  margin: .3rem 0 .4rem;
+  font-size: 1.02rem;
+}
+
+.stair .stp p {
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.4;
+}
+
+/* --- Tesis grande de cierre --- */
+.thesis {
+  font-size: clamp(1.8rem, 4.2vw, 3.2rem);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  max-width: 20ch;
+  margin-top: .5rem;
+}
+
+.challenge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin-top: 2rem;
+}
+
+.challenge-row .ch {
+  font-family: var(--mono);
+  font-size: .85rem;
+  padding: .55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 207, 92, .4);
+  background: rgba(255, 207, 92, .06);
+  color: var(--amber);
+}
+
+.open-q {
+  margin-top: 2rem;
+  font-size: clamp(1.1rem, 2.1vw, 1.5rem);
+  color: var(--ink);
+  font-weight: 600;
+  border-left: 3px solid var(--teal);
+  padding-left: 1rem;
+  max-width: 50ch;
+}
+
+/* --- Secuencia de 3 cuadros (wipe semántico) --- */
+.triptych {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: .8rem;
+  align-items: center;
+  margin-top: 1.6rem;
+}
+
+.triptych .arrow {
+  color: var(--teal);
+  font-size: 1.4rem;
+  font-family: var(--mono);
+}
+
+.triptych figcaption {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--dim);
+  text-align: center;
+  margin-top: .5rem;
+}
+
+.triptych figure.imgframe {
+  margin: 0;
+}
+
+/* Franja destacada (regla de oro) */
+.band {
+  margin-top: 1.6rem;
+  background: rgba(58, 214, 196, .08);
+  border: 1px solid rgba(58, 214, 196, .3);
+  border-radius: 12px;
+  padding: .9rem 1.2rem;
+  color: var(--ink);
+  font-size: .98rem;
+}
+
+.band b {
+  color: var(--teal);
+}
+
+/* Frase/punchline grande a pie */
+.punch {
+  margin-top: 1.6rem;
+  font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: -.01em;
+}
+
+/* Etiqueta técnica mono arriba */
+.tech-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--teal);
+  border: 1px solid rgba(58, 214, 196, .35);
+  background: rgba(58, 214, 196, .06);
+  border-radius: 999px;
+  padding: .4rem .9rem;
+  margin-bottom: 1rem;
+}
+
+/* --- Diagrama de arquitectura de 3 bloques --- */
+.arch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-top: 2.4rem;
+  flex-wrap: wrap;
+}
+
+.arch .block {
+  flex: 1 1 0;
+  min-width: 150px;
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  border-radius: 14px;
+  padding: 1.3rem 1rem;
+  text-align: center;
+  position: relative;
+  margin-right: 42px;
+}
+
+.arch .block:last-child { margin-right: 0; }
+
+.arch .block::after {
+  content: "→";
+  position: absolute;
+  right: -34px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--teal);
+  font-size: 1.6rem;
+}
+
+.arch .block:last-child::after { content: none; }
+
+.arch .block h3 {
+  font-size: 1rem;
+}
+
+.arch .block.core {
+  border-color: rgba(255, 93, 177, .5);
+  background: rgba(255, 93, 177, .07);
+  box-shadow: 0 0 0 1px rgba(255, 93, 177, .1), 0 20px 60px -30px rgba(255, 93, 177, .5);
+}
+
+.arch .block.core h3 { color: var(--magenta); }
+
+/* Flechas condicionantes entrantes al bloque central */
+.feeds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .6rem;
+  margin-top: 1.6rem;
+}
+
+.feeds .feed {
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--muted);
+  border: 1px dashed rgba(255, 93, 177, .4);
+  border-radius: 8px;
+  padding: .4rem .8rem;
+}
+
+.feeds .feed::before {
+  content: "↘ ";
+  color: var(--magenta);
+}
+
+/* --- Dos columnas a favor / en debate --- */
+.standoff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  margin-top: 1.4rem;
+}
+
+/* --- Comparador de imágenes antes/después (slider) --- */
+.ics {
+  position: relative;
+  width: 100%;
+  max-width: 920px;
+  margin: 1.6rem auto 0;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--panel-brd);
+  user-select: none;
+  touch-action: none;
+  background: var(--bg-2);
+}
+
+.ics-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ics-img img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* La capa "después" se recorta según la posición del control.
+   No se cambia su ancho: la imagen conserva su proporción. */
+.ics-after {
+  clip-path: inset(0 0 0 50%);
+  will-change: clip-path;
+}
+
+.ics-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: #fff;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(0, 0, 0, .5);
+  z-index: 3;
+}
+
+.ics-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(7, 9, 15, .72);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: .72rem;
+  line-height: 1;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, .55);
+}
+
+.ics-handle:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+
+.ics-label {
+  position: absolute;
+  bottom: 14px;
+  z-index: 4;
+  font-family: var(--mono);
+  font-size: .82rem;
+  padding: .4rem .8rem;
+  border-radius: 8px;
+  letter-spacing: .04em;
+  pointer-events: none;
+}
+
+.ics-label-l {
+  left: 14px;
+  background: rgba(7, 9, 15, .72);
+  color: #fff;
+}
+
+.ics-label-r {
+  right: 14px;
+  background: #fff;
+  color: #07090f;
+  font-weight: 600;
+  border-bottom: 3px solid var(--good);
+}
+
 /* ------------- Responsive ------------- */
 @media (max-width: 860px) {
 
@@ -839,6 +1427,46 @@ ul.ticks li b {
   .tbl {
     font-size: .76rem;
   }
+
+  .route,
+  .stair,
+  .standoff {
+    grid-template-columns: 1fr;
+  }
+
+  .stair .stp { margin-top: 0 !important; }
+
+  .htimeline {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+  }
+
+  .htimeline::before { display: none; }
+
+  .hnode { text-align: left; }
+
+  .hnode::before { margin: 0 0 .4rem; }
+
+  .arch { flex-direction: column; }
+
+  .arch .block {
+    margin-right: 0;
+    margin-bottom: 42px;
+  }
+
+  .arch .block::after {
+    content: "↓";
+    right: 50%;
+    top: auto;
+    bottom: -34px;
+    transform: translateX(50%);
+  }
+
+  .triptych {
+    grid-template-columns: 1fr;
+  }
+
+  .triptych .arrow { transform: rotate(90deg); justify-self: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1077,3 +1705,38 @@ ul.ticks li b {
   .attn-grid { grid-template-columns: 1fr; }
   .mfg-stats { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* =========================================================
+   Capítulo 2 — mini-demos y componentes visuales
+   ========================================================= */
+.demo { background: var(--panel); border: 1px solid var(--panel-brd); border-radius: var(--r); padding: clamp(10px, 1.4vw, 18px); }
+.demo-panes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.demo figure { margin: 0; }
+.demo figcaption { font-family: var(--mono); font-size: .74rem; color: var(--muted); text-align: center; margin-top: .45rem; }
+.demo-canvas { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--bg-2); }
+.demo .counter { text-align: center; font-size: .78rem; color: var(--teal); margin-top: .6rem; }
+.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .7rem; }
+.tbtn { font-family: var(--mono); font-size: .78rem; padding: .4rem .8rem; border-radius: 999px; border: 1px solid var(--panel-brd); background: rgba(255,255,255,.03); color: var(--muted); cursor: pointer; }
+.tbtn:hover { border-color: rgba(58,214,196,.5); color: var(--ink); }
+.tbtn.on { border-color: var(--teal); color: var(--teal); background: rgba(58,214,196,.08); }
+.demo .readout { margin-left: auto; font-size: .78rem; color: var(--muted); }
+.demo .readout b { color: var(--cyan); font-size: 1.05rem; }
+.demo .readout b.hot { color: var(--magenta); }
+.demo .readout i { color: var(--dim); font-style: normal; }
+.demo .mode-caption { text-align: center; font-size: .8rem; color: var(--teal); margin-top: .6rem; min-height: 1.2em; }
+ul.ticks.tight { margin-top: .2rem; gap: .7rem; }
+.card.chip { text-align: left; padding: clamp(12px, 1.3vw, 18px); }
+.card.chip h3 { font-size: 1rem; margin-bottom: .25rem; }
+.card.chip p { font-size: .88rem; line-height: 1.4; }
+.card.chip .ico { font-size: 1.6rem; color: var(--teal); margin-bottom: .3rem; }
+.flow-arrow { text-align: center; font-family: var(--mono); font-size: .85rem; color: var(--magenta); margin: 1.1rem 0 .3rem; letter-spacing: .08em; }
+p.short { color: var(--muted); font-size: clamp(.95rem, 1.35vw, 1.08rem); line-height: 1.5; }
+p.short b { color: var(--ink); }
+figure.media { margin: 0; }
+figure.media video, figure.media img { width: 100%; border-radius: var(--r); border: 1px solid var(--panel-brd); display: block; }
+figure.media figcaption { font-family: var(--mono); font-size: .75rem; color: var(--dim); margin-top: .5rem; }
+@media (max-width: 860px) { .demo-panes { grid-template-columns: 1fr; } .demo .readout { margin-left: 0; } }
+
+/* Capturas de juegos reales (Cap. 2) */
+figure.media.shot { text-align: center; }
+figure.media.shot img { width: auto; max-width: 100%; max-height: 56vh; margin: 0 auto; }

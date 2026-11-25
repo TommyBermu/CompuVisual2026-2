@@ -10,7 +10,7 @@
 */
 
 import { slides } from "./slides.js";
-import { DEMOS } from "./demos.js";
+import { DEMOS, initDemos } from "./demos.js";
 
 /* ---------------- Render de slides ---------------- */
 const deck = document.getElementById("deck");
@@ -22,6 +22,8 @@ slides.forEach((s, i) => {
   el.innerHTML = `<div class="wrap">${s.html}</div>`;
   deck.appendChild(el);
 });
+
+initDemos(deck); // mini-demos animadas del Capítulo 2
 
 const slideEls = [...deck.querySelectorAll(".slide")];
 const total = slideEls.length;
@@ -289,3 +291,75 @@ if (!reduce) {
   ctx.fillStyle = "#07090f";
   ctx.fillRect(0, 0, W, H);
 }
+
+/* =========================================================
+   Comparador de imágenes antes/después (image comparison slider)
+   Se inicializa sobre cada [data-ics] del deck. Soporta mouse,
+   táctil (pointer events) y teclado (flechas). Recorta la capa
+   "después" con clip-path, sin deformar las imágenes.
+   ========================================================= */
+function initImageCompare(root) {
+  const after = root.querySelector("[data-ics-after]");
+  const line = root.querySelector("[data-ics-line]");
+  const handle = root.querySelector("[data-ics-handle]");
+  if (!after || !line || !handle) return;
+
+  let pos = 50; // porcentaje revelado
+  let dragging = false;
+
+  function setPos(pct) {
+    pos = Math.max(0, Math.min(100, pct));
+    after.style.clipPath = `inset(0 0 0 ${pos}%)`;
+    line.style.left = pos + "%";
+    handle.setAttribute("aria-valuenow", Math.round(pos));
+  }
+
+  function pctFromClientX(clientX) {
+    const r = root.getBoundingClientRect();
+    return ((clientX - r.left) / r.width) * 100;
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    e.preventDefault();
+    setPos(pctFromClientX(e.clientX));
+  }
+
+  function stop() {
+    dragging = false;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", stop);
+  }
+
+  // Arrastre: iniciar desde el control o desde cualquier punto del contenedor
+  function start(e) {
+    dragging = true;
+    setPos(pctFromClientX(e.clientX));
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", stop);
+  }
+
+  handle.addEventListener("pointerdown", (e) => { e.preventDefault(); start(e); });
+  root.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("[data-ics-handle]")) return;
+    start(e);
+  });
+
+  // Teclado accesible
+  handle.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") { setPos(pos - 2); e.preventDefault(); e.stopPropagation(); }
+    else if (e.key === "ArrowRight") { setPos(pos + 2); e.preventDefault(); e.stopPropagation(); }
+    else if (e.key === "Home") { setPos(0); e.preventDefault(); e.stopPropagation(); }
+    else if (e.key === "End") { setPos(100); e.preventDefault(); e.stopPropagation(); }
+  });
+
+  // ARIA
+  handle.setAttribute("role", "slider");
+  handle.setAttribute("aria-valuemin", "0");
+  handle.setAttribute("aria-valuemax", "100");
+  handle.setAttribute("tabindex", "0");
+
+  setPos(pos);
+}
+
+document.querySelectorAll("[data-ics]").forEach(initImageCompare);
