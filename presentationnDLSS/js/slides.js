@@ -357,7 +357,8 @@ export const slides = [
         <div class="card"><div class="big">~30%</div><p>menos ghosting atribuido al modelo Transformer</p></div>
         <div class="card"><div class="big">SR·RR·DLAA</div><p>las tres rutas pasan a Transformer</p></div>
         <div class="card"><div class="big">todas RTX</div><p>llega a toda la gama vía DLSS Override en la NVIDIA App</p></div>
-      </div>`
+      </div>
+      <div data-demo="attention"></div>`
   },
 
   {
@@ -386,7 +387,8 @@ export const slides = [
           <p style="margin-top:1rem;">Medición independiente (Gamers Nexus, RTX 5090): 143,4 vs 136,4 FPS
           de media, +5,1% en cuadros reales. <b>Importa separar cuadros reales de generados.</b></p>
         </div>
-      </div>`
+      </div>
+      <div data-demo="mfg"></div>`
   },
 
   {
@@ -413,6 +415,7 @@ export const slides = [
           Se recomienda conservar el modelo anterior en esas tarjetas.</p>
         </div>
       </div>
+      <div data-demo="fp8"></div>
       <p class="note">Reflex 2 con Frame Warp se anunció en ene 2025 (promesa: −75% de latencia reproyectando
       el fotograma según la última lectura del ratón), pero sigue sin lanzarse en ningún juego comercial.</p>`
   },
@@ -423,18 +426,7 @@ export const slides = [
     html: `
       <span class="kicker">Qué corre en cada GPU</span>
       <h2>Compatibilidad de funciones por hardware</h2>
-      <table class="tbl">
-        <thead>
-          <tr><th>Serie</th><th>Super Resolution / DLAA</th><th>Ray Reconstruction</th><th>Frame Gen 2×</th><th>MFG 3×–6×</th><th>DLSS 5</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><b>RTX 20</b> (Turing)</td><td class="q">Sí (−20% en 4.5, sin FP8)</td><td class="y">Sí</td><td class="n">No oficial</td><td class="n">No</td><td class="n">No</td></tr>
-          <tr><td><b>RTX 30</b> (Ampere)</td><td class="q">Sí (−20% en 4.5)</td><td class="y">Sí</td><td class="n">Solo mods</td><td class="n">Solo mods</td><td class="n">No</td></tr>
-          <tr><td><b>RTX 40</b> (Ada)</td><td class="y">Sí (FP8)</td><td class="y">Sí</td><td class="y">Sí</td><td class="q">Limitado a 2×</td><td class="q">Planeado, sin fecha</td></tr>
-          <tr><td><b>RTX 50</b> (Blackwell)</td><td class="y">Sí (FP8)</td><td class="y">Sí</td><td class="y">Sí</td><td class="y">Sí (6× dinámico)</td><td class="y">Sí (desde sep 2026)</td></tr>
-          <tr><td><b>GeForce NOW</b></td><td class="y">Según servidor</td><td class="y">Según servidor</td><td class="y">Ultimate</td><td class="y">Según servidor</td><td class="y">Sí desde sep 2026</td></tr>
-        </tbody>
-      </table>
+      <div data-demo="compat"></div>
       <p class="note">Nintendo Switch 2 (jun 2025) fue la primera consola con DLSS integrado, vía SoC NVIDIA Tegra T239 "Drake".</p>`
   },
 
@@ -444,18 +436,7 @@ export const slides = [
     html: `
       <span class="kicker">La competencia en 2026</span>
       <h2>DLSS 4.5 / 5 · AMD FSR 4.1 · Intel XeSS 2/3</h2>
-      <table class="tbl">
-        <thead>
-          <tr><th>Aspecto</th><th>NVIDIA DLSS</th><th>AMD FSR 4.1 (Redstone)</th><th>Intel XeSS 2/3</th></tr>
-        </thead>
-        <tbody>
-          <tr><td><b>Escalado por IA</b></td><td>Transformer 2ª gen; óptimo FP8 en RTX 40/50</td><td>ML en RX 9000/7000; fallback a FSR 3.1</td><td>Motores XMX en Arc; ruta shader en otras</td></tr>
-          <tr><td><b>Generación de frames</b></td><td>FG 2× y MFG dinámico hasta 6×</td><td>FG ML 4.0 en RX 9000 (sin MFG en PC)</td><td>XeSS FG y Multi Frame Gen en Arc</td></tr>
-          <tr><td><b>Ray tracing / latencia</b></td><td>Ray Reconstruction + Reflex</td><td>Ray Regeneration + Radiance Caching + Anti-Lag 2</td><td>Xe Low Latency (XeLL)</td></tr>
-          <tr><td><b>Render neuronal generativo</b></td><td class="y">Sí (DLSS 5)</td><td class="n">Sin equivalente</td><td class="n">Sin equivalente</td></tr>
-          <tr><td><b>Calidad vs rendimiento</b></td><td>Referencia en nitidez; ganó 6 de 7 en prueba ciega vs FSR 4.1</td><td>Algo más suave; 10–15% más rápido</td><td>Buena en XMX; menos nítida en ruta shader</td></tr>
-        </tbody>
-      </table>
+      <div data-demo="rivals"></div>
       <p class="note">AMD e Intel corren en hardware más variado y abierto; NVIDIA exige GPU RTX pero suele liderar en fidelidad.</p>`
   },
 

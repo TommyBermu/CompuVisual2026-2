@@ -846,3 +846,234 @@ ul.ticks li b {
     transition: none !important;
   }
 }
+
+/* =========================================================
+   DEMOS INTERACTIVAS (Capítulo 3)
+   ========================================================= */
+.demo {
+  margin-top: 1.4rem;
+  background: rgba(255, 255, 255, .025);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r);
+  padding: clamp(14px, 1.8vw, 22px);
+}
+
+.demo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.demo-tag {
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--teal);
+  padding: .25rem .6rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.demo-hint {
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--dim);
+}
+
+.demo-foot,
+.compat-note,
+.rivals-note,
+.fp8-verdict {
+  margin-top: 1rem;
+  font-size: .86rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.demo-foot b.c-real,
+.c-real { color: var(--cyan); }
+.demo-foot b.c-gen,
+.c-gen { color: var(--magenta); }
+
+/* ----- Demo atención (CNN vs ViT) ----- */
+.attn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.attn-grid figure { margin: 0; }
+.attn-grid figcaption {
+  font-size: .82rem;
+  color: var(--muted);
+  margin-bottom: .4rem;
+}
+.attn-grid canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--panel-brd);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* ----- Demo MFG ----- */
+.mfg-modes,
+.fp8-gpus,
+.compat-gpus,
+.rivals-axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.mfg-btn, .fp8-btn, .compat-gpu, .rivals-ax {
+  font-family: var(--mono);
+  font-size: .85rem;
+  padding: .45rem .9rem;
+  border-radius: 999px;
+  border: 1px solid var(--panel-brd);
+  background: rgba(255, 255, 255, .03);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.mfg-btn.on, .fp8-btn.on, .compat-gpu.on, .rivals-ax.on {
+  border-color: var(--teal);
+  color: var(--bg);
+  background: var(--teal);
+  font-weight: 700;
+}
+.mfg-btn:hover, .fp8-btn:hover, .compat-gpu:hover, .rivals-ax:hover {
+  border-color: rgba(58, 214, 196, .5);
+  color: var(--ink);
+}
+.mfg-btn.on:hover, .fp8-btn.on:hover, .compat-gpu.on:hover, .rivals-ax.on:hover {
+  color: var(--bg);
+}
+.mfg-stage canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  background: rgba(7, 9, 15, .5);
+  border: 1px solid var(--panel-brd);
+}
+.mfg-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .8rem;
+  margin-top: 1rem;
+}
+.mfg-stats .stat {
+  text-align: center;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--panel-brd);
+  border-radius: 10px;
+  padding: .7rem .4rem;
+}
+.mfg-stats .sv {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.mfg-stats .sl {
+  font-size: .68rem;
+  color: var(--dim);
+  margin-top: .4rem;
+  line-height: 1.3;
+}
+
+/* ----- Demo FP8 ----- */
+.fp8-bars { display: grid; gap: .9rem; }
+.barrow span {
+  font-size: .82rem;
+  color: var(--muted);
+  display: block;
+  margin-bottom: .35rem;
+}
+.barrow .bar {
+  position: relative;
+  height: 26px;
+  background: rgba(255, 255, 255, .05);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.barrow .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--teal);
+  border-radius: 7px;
+  transition: width .5s cubic-bezier(.22, 1, .36, 1);
+}
+.barrow .bar i.down { background: var(--bad); }
+.barrow .bar em {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--mono);
+  font-size: .8rem;
+  color: var(--ink);
+  font-style: normal;
+}
+.fp8-verdict.ok { color: var(--good); }
+.fp8-verdict.bad { color: var(--bad); }
+
+/* ----- Demo compatibilidad ----- */
+.compat-feats { display: grid; gap: .5rem; }
+.compat-feats .feat {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .6rem .9rem;
+  border-radius: 9px;
+  font-size: .95rem;
+  border: 1px solid var(--panel-brd);
+}
+.compat-feats .mk {
+  font-family: var(--mono);
+  font-weight: 700;
+  width: 1.4rem;
+  text-align: center;
+}
+.compat-feats .yes { color: var(--ink); background: rgba(81, 224, 138, .08); border-color: rgba(81, 224, 138, .3); }
+.compat-feats .yes .mk { color: var(--good); }
+.compat-feats .part { color: var(--muted); background: rgba(255, 207, 92, .06); border-color: rgba(255, 207, 92, .25); }
+.compat-feats .part .mk { color: var(--amber); }
+.compat-feats .no { color: var(--dim); opacity: .6; }
+.compat-feats .no .mk { color: var(--bad); }
+
+/* ----- Demo rivales ----- */
+.rivals-bars { display: grid; gap: .8rem; }
+.rbar {
+  display: grid;
+  grid-template-columns: 64px 1fr 48px;
+  align-items: center;
+  gap: .8rem;
+}
+.rbar .rn { font-family: var(--mono); font-weight: 700; font-size: .9rem; }
+.rbar .rtrack {
+  height: 20px;
+  background: rgba(255, 255, 255, .05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.rbar .rtrack i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width .6s cubic-bezier(.22, 1, .36, 1);
+}
+.rbar .rv { font-family: var(--mono); font-size: .85rem; color: var(--muted); text-align: right; }
+
+@media (max-width: 860px) {
+  .attn-grid { grid-template-columns: 1fr; }
+  .mfg-stats { grid-template-columns: repeat(2, 1fr); }
+}

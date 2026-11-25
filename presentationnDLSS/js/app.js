@@ -10,6 +10,7 @@
 */
 
 import { slides } from "./slides.js";
+import { DEMOS } from "./demos.js";
 
 /* ---------------- Render de slides ---------------- */
 const deck = document.getElementById("deck");
@@ -39,12 +40,14 @@ function show(n, dir = 1) {
   const prevEl = slideEls[current];
   prevEl.classList.remove("active");
   prevEl.classList.add("leaving");
+  unmountDemos(current);
   setTimeout(() => prevEl.classList.remove("leaving"), 550);
 
   current = n;
   const el = slideEls[current];
   el.classList.add("active");
   el.scrollTop = 0;
+  mountDemos(current);
 
   bar.style.width = ((current + 1) / total) * 100 + "%";
   curEl.textContent = current + 1;
@@ -54,12 +57,50 @@ function show(n, dir = 1) {
 function next() { show(current + 1, 1); }
 function prev() { show(current - 1, -1); }
 
+/* ---------------- Demos interactivas ----------------
+   Cada slide puede tener <div data-demo="nombre">. Montamos la demo cuando
+   el slide se activa y la destruimos al salir, para no tener animaciones
+   corriendo en slides ocultos. */
+const demoInstances = new Map(); // index -> { destroy }
+
+function mountDemos(n) {
+  const el = slideEls[n];
+  if (!el) return;
+  el.querySelectorAll("[data-demo]").forEach((node) => {
+    const name = node.dataset.demo;
+    const factory = DEMOS[name];
+    if (!factory || node.dataset.mounted === "1") return;
+    try {
+      const inst = factory(node) || {};
+      node.dataset.mounted = "1";
+      const key = n + ":" + name;
+      demoInstances.set(key, inst);
+    } catch (err) {
+      console.error("Error montando demo", name, err);
+    }
+  });
+}
+
+function unmountDemos(n) {
+  const el = slideEls[n];
+  if (!el) return;
+  el.querySelectorAll('[data-demo][data-mounted="1"]').forEach((node) => {
+    const key = n + ":" + node.dataset.demo;
+    const inst = demoInstances.get(key);
+    if (inst && typeof inst.destroy === "function") inst.destroy();
+    demoInstances.delete(key);
+    node.dataset.mounted = "0";
+  });
+}
+
 /* Primer slide (respeta hash si existe) */
 const fromHash = parseInt(location.hash.replace("#", ""), 10);
-show(Number.isFinite(fromHash) && fromHash >= 1 ? fromHash - 1 : 0);
+const startIdx = Number.isFinite(fromHash) && fromHash >= 1 ? fromHash - 1 : 0;
+current = startIdx;
 slideEls[current].classList.add("active");
 bar.style.width = ((current + 1) / total) * 100 + "%";
 curEl.textContent = current + 1;
+mountDemos(current);
 
 /* ---------------- Controles ---------------- */
 document.getElementById("next").addEventListener("click", next);
