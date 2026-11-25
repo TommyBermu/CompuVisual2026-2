@@ -418,12 +418,24 @@ export const slides = [
           de varios cuadros. Misma familia que los modelos generativos modernos. El doble de parámetros.</p>
         </div>
       </div>
-      <div class="cols c3" style="margin-top:1.4rem;">
+      <div data-demo="attention"></div>`
+  },
+
+  {
+    type: "content",
+    title: "CNN vs. Transformer · evidencia",
+    html: `
+      <span class="kicker">DLSS 4.0 · calidad de imagen</span>
+      <h2>El Transformer estabiliza los detalles finos</h2>
+      <div class="cols c2">
+        <figure class="media shot"><img src="assets/ch3/CNNvsTRNF.png" alt="Comparación de calidad entre el modelo CNN y el Transformer de DLSS" /><figcaption>CNN vs Transformer · Fuente: NVIDIA</figcaption></figure>
+        <figure class="media shot"><img src="assets/ch3/CNNvsTRNF2.png" alt="Detalle de reducción de ghosting con el modelo Transformer" /><figcaption>Detalle de estabilidad · Fuente: NVIDIA</figcaption></figure>
+      </div>
+      <div class="cols c3" style="margin-top:1.3rem;">
         <div class="card"><div class="big">~30%</div><p>menos ghosting atribuido al modelo Transformer</p></div>
         <div class="card"><div class="big">SR·RR·DLAA</div><p>las tres rutas pasan a Transformer</p></div>
         <div class="card"><div class="big">todas RTX</div><p>llega a toda la gama vía DLSS Override en la NVIDIA App</p></div>
-      </div>
-      <div data-demo="attention"></div>`
+      </div>`
   },
 
   {
@@ -452,8 +464,19 @@ export const slides = [
           <p style="margin-top:1rem;">Medición independiente (Gamers Nexus, RTX 5090): 143,4 vs 136,4 FPS
           de media, +5,1% en cuadros reales. <b>Importa separar cuadros reales de generados.</b></p>
         </div>
-      </div>
-      <div data-demo="mfg"></div>`
+      </div>`
+  },
+
+  {
+    type: "content",
+    title: "MFG · cómo se ve y demo",
+    html: `
+      <span class="kicker">DLSS 4.0 · Multi Frame Generation</span>
+      <h2>Reales vs generados, en vivo</h2>
+      <div class="cols side">
+        <figure class="media shot"><img src="assets/ch3/nvidia-dlss-4-multi-frame-generation-architecture.jpg" alt="Diagrama de la arquitectura de Multi Frame Generation de DLSS 4" /><figcaption>Arquitectura de Multi Frame Generation · Fuente: NVIDIA</figcaption></figure>
+        <div data-demo="mfg"></div>
+      </div>`
   },
 
   {

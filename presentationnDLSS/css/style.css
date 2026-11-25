@@ -1740,3 +1740,53 @@ figure.media figcaption { font-family: var(--mono); font-size: .75rem; color: va
 /* Capturas de juegos reales (Cap. 2) */
 figure.media.shot { text-align: center; }
 figure.media.shot img { width: auto; max-width: 100%; max-height: 56vh; margin: 0 auto; }
+
+/* Imágenes dentro de columnas (deben caber sin empujar scroll) */
+.cols figure.media.shot img { max-height: 42vh; }
+.cols.side figure.media.shot img { max-height: 46vh; }
+
+/* Pie de fuente para tablas (Cap. 3) */
+.tbl-src {
+  margin-top: .7rem;
+  font-family: var(--mono);
+  font-size: .72rem;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+/* Pie de fuente dentro de una demo (Cap. 3) */
+.demo-src {
+  margin-top: .8rem;
+  padding-top: .6rem;
+  border-top: 1px solid var(--panel-brd);
+  font-family: var(--mono);
+  font-size: .68rem;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+/* =========================================================
+   Ajustes para que cada slide quepa SIN scroll
+   ========================================================= */
+/* La demo de atención no debe crecer demasiado en vertical */
+.attn-grid canvas { max-height: 34vh; }
+
+/* Pantallas de poca altura (proyectores 4:3, ventanas bajas):
+   reducir el aire vertical y el tamaño de imágenes/canvas. */
+@media (max-height: 820px) {
+  .slide { padding-top: clamp(20px, 3vh, 44px); padding-bottom: 78px; }
+  .cols { margin-top: 1rem !important; }
+  figure.media.shot img { max-height: 44vh; }
+  .cols figure.media.shot img { max-height: 34vh; }
+  .cols.side figure.media.shot img { max-height: 38vh; }
+  .attn-grid canvas { max-height: 28vh; }
+}
+
+@media (max-height: 640px) {
+  .slide { padding-top: 16px; padding-bottom: 70px; }
+  .slide h2 { margin-bottom: .7rem; }
+  figure.media.shot img { max-height: 38vh; }
+  .cols figure.media.shot img { max-height: 28vh; }
+  .attn-grid canvas { max-height: 24vh; }
+  .mfg-stats .sv { font-size: 1.2rem; }
+}

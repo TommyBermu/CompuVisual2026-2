@@ -244,7 +244,8 @@ DEMOS.fp8 = function (root) {
     </div>
     <div class="fp8-verdict"></div>
     <p class="demo-foot">La "mejor" versión no siempre rinde mejor: sin unidades <b>FP8</b> (RTX 20/30),
-    el Transformer de 2ª gen hace ~5× más cálculos y la tasa cae. Ahí conviene quedarse en DLSS 4.0.</p>`;
+    el Transformer de 2ª gen hace ~5× más cálculos y la tasa cae. Ahí conviene quedarse en DLSS 4.0.</p>
+    <p class="demo-src">Valores ilustrativos · Fuentes: NVIDIA (CES 2026), Tom's Hardware (ene 2026), FlowUP (2026)</p>`;
   root.appendChild(wrap);
 
   const gpuEl = wrap.querySelector(".fp8-gpus");
@@ -302,7 +303,8 @@ DEMOS.compat = function (root) {
     </div>
     <div class="compat-gpus"></div>
     <div class="compat-feats"></div>
-    <p class="compat-note"></p>`;
+    <p class="compat-note"></p>
+    <p class="demo-src">Fuentes: NVIDIA (matriz oficial de funciones DLSS, 2025–2026); Wikipedia, "Deep Learning Super Sampling"</p>`;
   root.appendChild(wrap);
 
   const gpuEl = wrap.querySelector(".compat-gpus");
@@ -353,7 +355,8 @@ DEMOS.rivals = function (root) {
     </div>
     <div class="rivals-axes"></div>
     <div class="rivals-bars"></div>
-    <p class="rivals-note"></p>`;
+    <p class="rivals-note"></p>
+    <p class="demo-src">Valores ilustrativos · Fuentes: HyperPC (2026), FlowUP (2026), DropReference (2026, prueba ciega 6/7)</p>`;
   root.appendChild(wrap);
 
   const axEl = wrap.querySelector(".rivals-axes");
