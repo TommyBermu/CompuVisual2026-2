@@ -1505,3 +1505,7 @@ figure.media { margin: 0; }
 figure.media video, figure.media img { width: 100%; border-radius: var(--r); border: 1px solid var(--panel-brd); display: block; }
 figure.media figcaption { font-family: var(--mono); font-size: .75rem; color: var(--dim); margin-top: .5rem; }
 @media (max-width: 860px) { .demo-panes { grid-template-columns: 1fr; } .demo .readout { margin-left: 0; } }
+
+/* Capturas de juegos reales (Cap. 2) */
+figure.media.shot { text-align: center; }
+figure.media.shot img { width: auto; max-width: 100%; max-height: 56vh; margin: 0 auto; }

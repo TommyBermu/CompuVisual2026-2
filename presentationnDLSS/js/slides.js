@@ -345,6 +345,32 @@ export const slides = [
       </div>`
   }] : []),
 
+  /* ---- 2.6a Ejemplo real: Alan Wake 2 (imagen) ---- */
+  {
+    type: "content",
+    title: "Ejemplo real · Alan Wake 2",
+    html: `
+      <span class="kicker">Ejemplo real · Alan Wake 2</span>
+      <h2>DLSS 2.0 · 3.0 · 3.5 en un juego</h2>
+      <figure class="media shot">
+        <img src="assets/ch2/alanwake2-comparacion.jpg" alt="Comparación de Alan Wake 2 con DLSS 2.0, 3.0 y 3.5" />
+        <figcaption>Captura de una comparativa en video de Alan Wake 2 (marca «TG»). Los tres cuadros no están sincronizados.</figcaption>
+      </figure>`
+  },
+
+  /* ---- 2.6b Ejemplo real: Alan Wake 2 (números) ---- */
+  {
+    type: "content",
+    title: "Ejemplo real · qué mide ese FPS",
+    html: `
+      <span class="kicker">Ejemplo real · RTX 4090 + i9-13900K</span>
+      <h2>Y los números: ¿qué mide ese FPS?</h2>
+      <figure class="media shot">
+        <img src="assets/ch2/alanwake2-fps.jpg" alt="Métricas de rendimiento con DLSS 2.0, 3.0 y 3.5 en Alan Wake 2" />
+        <figcaption>Mismo video: el overlay muestra <b>36</b> · <b>61</b> · <b>67</b> FPS (DLSS 2.0 · 3.0 · 3.5).</figcaption>
+      </figure>`
+  },
+
   /* ---- 2.7 Resumen del capítulo ---- */
   {
     type: "content",
